@@ -709,17 +709,45 @@ export default function NuvioFlowPage() {
     return () => setAiContext(undefined);
   }, [isCurrentMonth, monthlyBudget, healthPct, statusState, cfg.badgeText, remaining, totalSpent, remainingDays, dailyAvailable, streak, carryOverPenalty, viewMonth, viewYear, weeklyTransactionCount, setAiContext]);
 
-  const topBgColor = useMemo(() =>
-    statusState === 'kursen' ? 'rgb(240,253,250)' :
-    statusState === 'tempo' ? 'rgb(236,253,245)' :
-    statusState === 'warn' ? 'rgb(255,251,235)' :
-    statusState === 'over' ? 'rgb(254,242,242)' :
-    'rgb(232,239,237)',
-  [statusState]);
+  const pageBackground = useMemo(() => {
+    if (statusState === 'kursen') {
+      return {
+        top: 'rgb(240,253,250)',
+        gradient: 'linear-gradient(to bottom, rgba(240,253,250,0.7), rgba(236,253,245,0.3), #ffffff)',
+      };
+    }
+    if (statusState === 'tempo') {
+      return {
+        top: 'rgb(236,253,245)',
+        gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.7), rgba(240,253,250,0.25), #ffffff)',
+      };
+    }
+    if (statusState === 'warn') {
+      return {
+        top: 'rgb(255,251,235)',
+        gradient: 'linear-gradient(to bottom, rgba(255,251,235,0.7), rgba(255,247,237,0.25), #ffffff)',
+      };
+    }
+    if (statusState === 'over') {
+      return {
+        top: 'rgb(254,242,242)',
+        gradient: 'linear-gradient(to bottom, rgba(254,242,242,0.7), rgba(255,241,242,0.25), #ffffff)',
+      };
+    }
+    return {
+      top: '#dfe9e7',
+      gradient: 'linear-gradient(to bottom, rgba(223,233,231,0.9), rgba(237,243,241,0.7), #ffffff)',
+    };
+  }, [statusState]);
+
+  const topBgColor = pageBackground.top;
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
+    const previousHtmlBackground = document.documentElement.style.backgroundColor;
+    const previousBodyBackground = document.body.style.backgroundColor;
     document.body.style.backgroundColor = topBgColor;
+    document.documentElement.style.backgroundColor = topBgColor;
     let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
     if (!meta) {
       meta = document.createElement('meta');
@@ -728,7 +756,8 @@ export default function NuvioFlowPage() {
     }
     meta.content = topBgColor;
     return () => {
-      document.body.style.backgroundColor = '';
+      document.body.style.backgroundColor = previousBodyBackground;
+      document.documentElement.style.backgroundColor = previousHtmlBackground;
       if (meta) meta.content = '#f8f9f2';
     };
   }, [topBgColor]);
@@ -736,14 +765,9 @@ export default function NuvioFlowPage() {
   return (
     <div
       className={cn(
-        'min-h-screen bg-gradient-to-b transition-colors duration-700',
-        statusState === 'kursen' && 'from-teal-50/70 via-emerald-50/30 to-white',
-        statusState === 'tempo' && 'from-emerald-50/70 via-teal-50/25 to-white',
-        statusState === 'warn' && 'from-amber-50/70 via-orange-50/25 to-white',
-        statusState === 'over' && 'from-rose-50/70 via-red-50/25 to-white',
-        statusState === 'flow' && 'from-[#dfe9e7]/90 via-[#edf3f1]/70 to-white',
+        'min-h-screen transition-colors duration-700',
       )}
-      style={{ backgroundColor: topBgColor }}
+      style={{ background: pageBackground.gradient, backgroundColor: topBgColor }}
     >
       <div className="max-w-lg mx-auto px-4 pb-32 sm:pb-16" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}>
 
