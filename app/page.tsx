@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Info, Sparkles } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { OnboardingIntro } from '@/components/onboarding-intro';
 import { WhyWizard } from '@/components/why-wizard';
@@ -182,31 +182,25 @@ export default function HomePage() {
     >
       <div className={cn('min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_28rem),linear-gradient(180deg,#f7fbfb_0%,#eef5f5_100%)] transition-colors duration-700', derived.pageBgClass)}>
         <div
-          className="max-w-xl mx-auto px-4 pb-32 sm:pb-16"
+          className="max-w-lg mx-auto px-4 pb-32 sm:pb-16"
           style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}
         >
-          <div className="mb-5 nuvio-card rounded-[8px] px-4 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="mb-2 inline-flex items-center gap-2 rounded-[8px] nuvio-chip px-2.5 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  <Sparkles className="h-3 w-3 text-emerald-600" />
-                  {currentMonthName} {currentYear}
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
-                  <EditableText textKey="overblik.page.title" fallback="Overblik" as="span" />
-                </h1>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Dit økonomiske kompas for måneden.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowInfoModal(true)}
-                className="h-10 w-10 rounded-[8px] border border-emerald-300/70 bg-white/80 flex items-center justify-center text-emerald-700 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 shadow-sm shrink-0"
-                aria-label="Om Overblik"
-              >
-                <Info className="h-4 w-4" />
-              </button>
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">
+                {currentMonthName} {currentYear}
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+                <EditableText textKey="overblik.page.title" fallback="Overblik" as="span" />
+              </h1>
             </div>
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="h-10 w-10 rounded-full border-2 border-emerald-400/60 bg-white/70 flex items-center justify-center text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 shadow-sm shrink-0"
+              aria-label="Om Overblik"
+            >
+              <Info className="h-4 w-4" />
+            </button>
           </div>
 
           <div className="flex flex-col gap-4">
