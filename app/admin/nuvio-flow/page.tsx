@@ -125,7 +125,7 @@ function StreakPopup({ streak, onClose }: { streak: number; onClose: () => void 
   const tierColor = streak >= 12 ? 'from-amber-400 to-orange-500' : streak >= 6 ? 'from-orange-400 to-red-400' : 'from-orange-300 to-amber-400';
   const tierBg = streak >= 12 ? 'bg-amber-50 border-amber-200/60' : streak >= 6 ? 'bg-orange-50 border-orange-200/60' : 'bg-orange-50/70 border-orange-200/40';
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
         className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"

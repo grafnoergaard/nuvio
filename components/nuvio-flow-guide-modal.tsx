@@ -208,7 +208,7 @@ export default function NuvioFlowGuideModal({ open, onClose, onComplete }: Nuvio
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 px-4',
+        'fixed inset-0 z-[80] flex items-center justify-center transition-all duration-300 px-4',
         visible ? 'opacity-100' : 'opacity-0'
       )}
     >

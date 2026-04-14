@@ -8,7 +8,7 @@ interface OverblikInfoModalProps {
 
 export function OverblikInfoModal({ onClose }: OverblikInfoModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
         className="relative w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
@@ -32,6 +32,12 @@ export function OverblikInfoModal({ onClose }: OverblikInfoModalProps) {
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p>
               <span className="font-semibold text-foreground">Overblik</span> er din samlede finansielle dashboard. Her ser du din indkomst, faste udgifter, variable udgifter, opsparing og investering — alt samlet på ét sted.
+            </p>
+            <p>
+              <span className="font-semibold text-foreground">Streak Count</span> viser hvor mange uger i træk du har holdt dig indenfor dit Nuvio Flow-budget. Månedslinjen viser ugerne i den aktuelle måned, så du hurtigt kan se rytmen uge for uge.
+            </p>
+            <p>
+              <span className="font-semibold text-foreground">Nuvio Score</span> samler din fremdrift i én score. Den belønner gode budgetuger og hjælper dig med at se, om du bevæger dig mod en stærkere økonomisk rutine.
             </p>
             <p>
               Jo mere præcist du udfylder tallene, jo mere præcist kan Nuvio hjælpe dig med at optimere din økonomi og nå dine mål hurtigere.

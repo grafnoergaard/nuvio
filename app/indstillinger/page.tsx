@@ -18,7 +18,15 @@ import {
   type UserHomeCardConfig,
 } from '@/lib/home-card-config';
 import { getUserWeekStartDay, setUserWeekStartDay } from '@/lib/quick-expense-service';
+import { DEFAULT_MOBILE_NAV_OPTIONS, getMobileNavSlots } from '@/lib/nav-config';
+import { DEFAULT_START_SCREEN_HREF, getStartScreenHref, setStartScreenHref as saveStartScreenHref } from '@/lib/start-screen';
 import { VERSION } from '@/lib/version';
+
+type StartScreenOption = {
+  position: number;
+  href: string;
+  label: string;
+};
 
 export default function IndstillingerPage() {
   const { settings, updateSetting, resetSettings } = useSettings();
@@ -29,6 +37,8 @@ export default function IndstillingerPage() {
   const [cardConfigsDirty, setCardConfigsDirty] = useState(false);
   const [savingCards, setSavingCards] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [startScreenHref, setStartScreenHrefState] = useState(DEFAULT_START_SCREEN_HREF);
+  const [startScreenOptions, setStartScreenOptions] = useState<StartScreenOption[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const now = new Date();
   const DANISH_MONTHS_FULL = [
@@ -53,6 +63,32 @@ export default function IndstillingerPage() {
       }),
       getUserWeekStartDay().then(day => {
         setWeekStartDayState(day);
+      }),
+      getMobileNavSlots().then(slots => {
+        const options = slots
+          .filter(slot => !slot.is_burger && slot.nav_item?.href)
+          .slice(0, 4)
+          .map(slot => ({
+            position: slot.position,
+            href: slot.nav_item!.href,
+            label: slot.nav_item!.name,
+          }));
+        const fallbackOptions = DEFAULT_MOBILE_NAV_OPTIONS
+          .filter(option => !option.isBurger && option.href)
+          .slice(0, 4)
+          .map((option, index) => ({
+            position: index + 1,
+            href: option.href,
+            label: option.label,
+          }));
+        const resolvedOptions = options.length > 0 ? options : fallbackOptions;
+        const savedHref = getStartScreenHref();
+        setStartScreenOptions(resolvedOptions);
+        const resolvedHref = resolvedOptions.some(option => option.href === savedHref)
+          ? savedHref
+          : (resolvedOptions[0]?.href ?? DEFAULT_START_SCREEN_HREF);
+        setStartScreenHrefState(resolvedHref);
+        if (resolvedHref !== savedHref) saveStartScreenHref(resolvedHref);
       }),
     ]).catch(() => null);
   }, []);
@@ -107,6 +143,17 @@ export default function IndstillingerPage() {
   function handleReset() {
     resetSettings();
     toast.success('Indstillinger nulstillet');
+  }
+
+  function handleStartScreenChange(href: string) {
+    saveStartScreenHref(href);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('nuvio_initial_redirect_done');
+      window.sessionStorage.removeItem('nuvio_visited_root');
+    }
+    setStartScreenHrefState(href);
+    const option = startScreenOptions.find(item => item.href === href);
+    toast.success(`${option?.label ?? 'Startskærm'} valgt som startskærm`);
   }
 
   return (
@@ -203,6 +250,40 @@ export default function IndstillingerPage() {
                 <RotateCcw className="h-3.5 w-3.5" />
                 Nulstil visningsindstillinger
               </button>
+            </div>
+
+            <div className="border-t border-foreground/5 px-4 py-3.5">
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Startskærm</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    Vælg hvilket bundmenupunkt der åbner først på mobil.
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
+                  Plads 1
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {startScreenOptions.map(option => {
+                  const selected = option.href === startScreenHref;
+                  return (
+                    <button
+                      key={`${option.position}-${option.href}`}
+                      type="button"
+                      onClick={() => handleStartScreenChange(option.href)}
+                      className={`rounded-full border px-3 py-2 text-xs font-semibold transition-all ${
+                        selected
+                          ? 'border-[#0E3B43] bg-[#0E3B43] text-[#2ED3A7] shadow-sm'
+                          : 'border-foreground/10 bg-white text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>
@@ -335,7 +416,7 @@ export default function IndstillingerPage() {
 
 function IndstillingerInfoModal({ onClose }: { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
         className="relative w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"

@@ -675,7 +675,7 @@ export default function BudgetStatusCard() {
       )}
 
       {showBudgetEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}>
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}>
           <div className="bg-card border border-border rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">

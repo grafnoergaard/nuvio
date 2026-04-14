@@ -15,6 +15,7 @@ import BudgetStatusCard from '@/components/budget-status-card';
 import FlowSavingsCard from '@/components/flow-savings-card';
 import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
 import StreakCountCard from '@/components/home-cards/streak-count-card';
+import { QuickExpenseActionCard } from '@/components/home-cards/quick-expense-action-card';
 import type { HomeDerived } from '@/lib/home-derived';
 import type { QuickExpenseStreak, QuickExpenseWeeklyStreak } from '@/lib/quick-expense-service';
 
@@ -34,6 +35,7 @@ interface SectionSlotProps {
   onShowFixedExpensesWizard: () => void;
   onShowVariableWizard: () => void;
   onShowStartBalance: () => void;
+  onShowQuickExpense: () => void;
 }
 
 export function SectionSlot({
@@ -52,6 +54,7 @@ export function SectionSlot({
   onShowFixedExpensesWizard,
   onShowVariableWizard,
   onShowStartBalance,
+  onShowQuickExpense,
 }: SectionSlotProps) {
   const visible = cardVisibility[cardKey];
   const dimmed = !visible && isAdmin;
@@ -154,6 +157,14 @@ export function SectionSlot({
         <div className="relative">
           {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="streak_count" mode="inline" /></div>}
           <StreakCountCard streak={weeklyStreak} dimmed={dimmed} />
+        </div>
+      );
+
+    case 'quick_expense_action':
+      return (
+        <div className="relative">
+          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="quick_expense_action" mode="inline" /></div>}
+          <QuickExpenseActionCard dimmed={dimmed} onClick={onShowQuickExpense} />
         </div>
       );
 

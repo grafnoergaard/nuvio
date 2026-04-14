@@ -106,12 +106,22 @@ export interface QuickExpenseWeeklyStreak {
   current_streak: number;
   longest_streak: number;
   evaluated_weeks: number;
+  current_month_year: number;
+  current_month: number;
   last_completed_week_start: string | null;
   last_completed_week_end: string | null;
   streak_weeks: Array<{
     iso_week_number: number;
     week_start: string;
     week_end: string;
+  }>;
+  current_month_weeks: Array<{
+    iso_week_number: number;
+    week_start: string;
+    week_end: string;
+    kept_budget: boolean | null;
+    is_completed: boolean;
+    is_current: boolean;
   }>;
 }
 
@@ -558,7 +568,10 @@ export async function getWeeklyBudgetStreak(): Promise<QuickExpenseWeeklyStreak>
   if (!user) throw new Error('Not authenticated');
 
   const weekStartDay = await getUserWeekStartDay();
-  const todayStr = toDateString(new Date());
+  const today = new Date();
+  const todayStr = toDateString(today);
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
 
   const { data: monthlyBudgets, error: budgetError } = await supabase
     .from('quick_expense_monthly_budgets')
@@ -573,9 +586,23 @@ export async function getWeeklyBudgetStreak(): Promise<QuickExpenseWeeklyStreak>
       current_streak: 0,
       longest_streak: 0,
       evaluated_weeks: 0,
+      current_month_year: currentYear,
+      current_month: currentMonth,
       last_completed_week_start: null,
       last_completed_week_end: null,
       streak_weeks: [],
+      current_month_weeks: getWeeksInMonth(currentYear, currentMonth, weekStartDay).map(week => {
+        const start = toDateString(week.start);
+        const end = toDateString(week.end);
+        return {
+          iso_week_number: getISOWeekNumber(week.start),
+          week_start: start,
+          week_end: end,
+          kept_budget: null,
+          is_completed: end < todayStr,
+          is_current: start <= todayStr && end >= todayStr,
+        };
+      }),
     };
   }
 
@@ -634,14 +661,53 @@ export async function getWeeklyBudgetStreak(): Promise<QuickExpenseWeeklyStreak>
         week_end: week.end,
       }))
     : [];
+  const currentMonthBudget = monthlyBudgets.find(
+    ({ year, month }) => Number(year) === currentYear && Number(month) === currentMonth
+  );
+  const currentMonthWeeks = currentMonthBudget && Number(currentMonthBudget.budget_amount) > 0
+    ? computeWeeklyCarryOver(
+        Number(currentMonthBudget.budget_amount),
+        currentYear,
+        currentMonth,
+        expenses,
+        today,
+        weekStartDay
+      ).weeks.map(week => {
+        const start = toDateString(week.weekStart);
+        const end = toDateString(week.weekEnd);
+        const isCompleted = end < todayStr;
+        return {
+          iso_week_number: week.isoWeekNumber,
+          week_start: start,
+          week_end: end,
+          kept_budget: isCompleted ? !week.isOver : null,
+          is_completed: isCompleted,
+          is_current: week.isCurrentWeek,
+        };
+      })
+    : getWeeksInMonth(currentYear, currentMonth, weekStartDay).map(week => {
+        const start = toDateString(week.start);
+        const end = toDateString(week.end);
+        return {
+          iso_week_number: getISOWeekNumber(week.start),
+          week_start: start,
+          week_end: end,
+          kept_budget: null,
+          is_completed: end < todayStr,
+          is_current: start <= todayStr && end >= todayStr,
+        };
+      });
 
   return {
     current_streak: current,
     longest_streak: longest,
     evaluated_weeks: completedWeeks.length,
+    current_month_year: currentYear,
+    current_month: currentMonth,
     last_completed_week_start: lastCompletedWeek?.start ?? null,
     last_completed_week_end: lastCompletedWeek?.end ?? null,
     streak_weeks: streakWeeks,
+    current_month_weeks: currentMonthWeeks,
   };
 }
 

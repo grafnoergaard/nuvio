@@ -16,10 +16,12 @@ import { HomeCardProvider } from '@/components/home-cards/home-card-context';
 import { DynamicSections } from '@/components/home-cards/section-slot';
 import { OpeningBalanceModal } from '@/components/opening-balance-modal';
 import { OverblikInfoModal } from '@/components/overblik-info-modal';
+import { QuickExpenseAddModal } from '@/components/quick-expense-add-modal';
 import { useHomeData } from '@/hooks/use-home-data';
 import { useHomeUI } from '@/hooks/use-home-ui';
 import { useHomeCards } from '@/hooks/use-home-cards';
 import { useHomeDerived } from '@/lib/home-derived';
+import { getStartScreenHref } from '@/lib/start-screen';
 
 const DANISH_MONTHS = [
   'januar', 'februar', 'marts', 'april', 'maj', 'juni',
@@ -56,6 +58,7 @@ export default function HomePage() {
 
   const [openingBalanceInput, setOpeningBalanceInput] = useState('0');
   const [editingOpeningBalance, setEditingOpeningBalance] = useState(false);
+  const [showQuickExpenseModal, setShowQuickExpenseModal] = useState(false);
 
   const derived = useHomeDerived({
     budget,
@@ -79,7 +82,7 @@ export default function HomePage() {
       const hasBeenRedirected = sessionStorage.getItem('nuvio_initial_redirect_done');
       if (!hasBeenRedirected) {
         sessionStorage.setItem('nuvio_initial_redirect_done', '1');
-        router.replace('/nuvio-flow');
+        router.replace(getStartScreenHref());
         return;
       }
     }
@@ -188,6 +191,7 @@ export default function HomePage() {
       setOpeningBalanceInput(String(budget?.opening_balance ?? 0));
       setEditingOpeningBalance(true);
     },
+    onShowQuickExpense: () => setShowQuickExpenseModal(true),
   };
 
   return (
@@ -247,6 +251,12 @@ export default function HomePage() {
         <VariableForbrugWizardModal
           onComplete={() => { setShowVariableWizard(false); loadData(); loadHousehold(); }}
           onDismiss={() => setShowVariableWizard(false)}
+        />
+      )}
+      {showQuickExpenseModal && (
+        <QuickExpenseAddModal
+          onComplete={() => { setShowQuickExpenseModal(false); loadAll(); }}
+          onDismiss={() => setShowQuickExpenseModal(false)}
         />
       )}
 

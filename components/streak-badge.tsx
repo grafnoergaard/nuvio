@@ -89,7 +89,7 @@ export default function StreakBadge({ streak, className }: Props) {
       </button>
 
       {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setShowPopup(false)}

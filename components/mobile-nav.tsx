@@ -2,11 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, PiggyBank, Coins, Activity, List, Menu, X, TrendingUp, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, PiggyBank, Activity, Menu, X, TrendingUp, Users, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/lib/settings-context';
 import { useAuth } from '@/lib/auth-context';
-import { getNavGroupsWithItems, getMobileNavSlots, NAV_ICON_MAP } from '@/lib/nav-config';
+import { DEFAULT_MOBILE_NAV_OPTIONS, getNavGroupsWithItems, getMobileNavSlots, NAV_ICON_MAP } from '@/lib/nav-config';
 import { useUIStrings } from '@/lib/ui-strings-context';
 import { VERSION } from '@/lib/version';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from '@/lib/database.types';
@@ -28,13 +28,6 @@ const DEFAULT_BURGER_SECTIONS = [
       { label: 'Indstillinger', href: '/indstillinger', icon: Settings },
     ],
   },
-];
-
-const DEFAULT_SLOT_OPTIONS: { id: string; icon: React.ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
-  { id: 'hjem', icon: Coins, href: '/nuvio-flow', label: 'Flow' },
-  { id: 'investering', icon: TrendingUp, href: '/investering', label: 'Investering' },
-  { id: 'checkup', icon: Activity, href: '/checkup', label: 'Checkup' },
-  { id: 'burger', icon: Menu, href: '', label: 'Menu', isBurger: true },
 ];
 
 type DisplaySlot = {
@@ -120,7 +113,7 @@ export function MobileNav() {
     [dbGroups],
   );
 
-  const DEFAULT_SLOTS = useMemo(() => DEFAULT_SLOT_OPTIONS.slice(0, slotCount), [slotCount]);
+  const DEFAULT_SLOTS = useMemo(() => DEFAULT_MOBILE_NAV_OPTIONS.slice(0, slotCount), [slotCount]);
 
   const displaySlots = useMemo<DisplaySlot[]>(() => {
     const slotsByPosition = new Map(mobileSlots.map((slot) => [slot.position, slot]));
@@ -130,7 +123,7 @@ export function MobileNav() {
       const slot = slotsByPosition.get(position);
 
       if (!slot) {
-        const def = DEFAULT_SLOT_OPTIONS[index] ?? DEFAULT_SLOT_OPTIONS[DEFAULT_SLOT_OPTIONS.length - 1];
+        const def = DEFAULT_MOBILE_NAV_OPTIONS[index] ?? DEFAULT_MOBILE_NAV_OPTIONS[DEFAULT_MOBILE_NAV_OPTIONS.length - 1];
         return {
           key: `default-${def.id}-${position}`,
           isBurger: Boolean(def.isBurger),
@@ -218,9 +211,9 @@ export function MobileNav() {
 
       <div
         className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden"
-        style={{ pointerEvents: 'none', paddingBottom: 'env(safe-area-inset-bottom)' }}
+        style={{ pointerEvents: 'none' }}
       >
-        <div className="px-4 pb-3" style={{ pointerEvents: 'none' }}>
+        <div className="px-4 pb-4" style={{ pointerEvents: 'none' }}>
 
           {burgerOpen && (
             <div

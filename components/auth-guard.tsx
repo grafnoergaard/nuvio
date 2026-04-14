@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { getStartScreenHref } from '@/lib/start-screen';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -21,7 +22,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         const hasVisitedRoot = sessionStorage.getItem('nuvio_visited_root');
         if (!hasVisitedRoot) {
           sessionStorage.setItem('nuvio_visited_root', '1');
-          router.replace('/nuvio-flow');
+          router.replace(getStartScreenHref());
         }
       }
     }

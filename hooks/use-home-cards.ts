@@ -31,7 +31,7 @@ export interface HomeCardsActions {
 const USER_CONFIGURABLE_KEY_SET = new Set<HomeCardKey>(USER_CONFIGURABLE_CARD_KEYS);
 
 const DEFAULT_CARD_ORDER: HomeCardKey[] = [
-  'onboarding', 'nuvio_score', 'nuvio_score_standalone', 'streak_count',
+  'onboarding', 'nuvio_score', 'nuvio_score_standalone', 'quick_expense_action', 'streak_count',
   'budget_status', 'flow_savings', 'finance_grid', 'savings_investment',
   'overview_checkup', 'savings_goals', 'next_step', 'consumption_status',
 ];

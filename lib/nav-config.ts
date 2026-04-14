@@ -24,6 +24,13 @@ export const NAV_ICON_MAP: Record<string, ComponentType<{ className?: string }>>
   Coins,
 };
 
+export const DEFAULT_MOBILE_NAV_OPTIONS: { id: string; icon: ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
+  { id: 'hjem', icon: Coins, href: '/nuvio-flow', label: 'Flow' },
+  { id: 'investering', icon: TrendingUp, href: '/investering', label: 'Investering' },
+  { id: 'checkup', icon: Activity, href: '/checkup', label: 'Checkup' },
+  { id: 'burger', icon: List, href: '', label: 'Menu', isBurger: true },
+];
+
 export interface PlanSubItem {
   id: string;
   name: string;

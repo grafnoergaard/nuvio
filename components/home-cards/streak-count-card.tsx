@@ -13,19 +13,10 @@ interface StreakCountCardProps {
 
 const WEEKS_PER_STREAK_MONTH = 4;
 
-function getIsoWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-}
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
+const DANISH_MONTHS = [
+  'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'December',
+];
 
 function getStreakTone(currentStreak: number) {
   if (currentStreak >= 12) {
@@ -49,10 +40,10 @@ function getStreakTone(currentStreak: number) {
   if (currentStreak >= 1) {
     return {
       label: 'Aktiv',
-      flame: 'from-[#2ED3A7] via-emerald-400 to-teal-300',
-      accent: '#2ED3A7',
-      text: 'text-[#0E3B43]',
-      badge: 'bg-emerald-100 text-emerald-900 border-emerald-200',
+      flame: 'from-orange-500 via-amber-400 to-yellow-300',
+      accent: '#f97316',
+      text: 'text-orange-900',
+      badge: 'bg-orange-100 text-orange-900 border-orange-200',
     };
   }
   return {
@@ -75,31 +66,20 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
   const longestStreak = streak?.longest_streak ?? 0;
   const tone = getStreakTone(currentStreak);
   const completedStreakMonths = Math.floor(currentStreak / WEEKS_PER_STREAK_MONTH);
-  const currentStreakMonthIndex = currentStreak > 0 ? Math.floor((currentStreak - 1) / WEEKS_PER_STREAK_MONTH) : 0;
-  const streakMonthWeeks = streak?.streak_weeks?.slice(
-    currentStreakMonthIndex * WEEKS_PER_STREAK_MONTH,
-    currentStreakMonthIndex * WEEKS_PER_STREAK_MONTH + WEEKS_PER_STREAK_MONTH
-  ) ?? [];
-  const weeksIntoStreakMonth = currentStreak > 0
-    ? currentStreak % WEEKS_PER_STREAK_MONTH || WEEKS_PER_STREAK_MONTH
-    : 0;
-  const filledWeeks = Math.min(weeksIntoStreakMonth, WEEKS_PER_STREAK_MONTH);
   const bestStreak = Math.max(longestStreak, currentStreak);
   const recordProgress = bestStreak > 0 ? Math.min(100, Math.max(12, (currentStreak / bestStreak) * 100)) : 0;
-  const displayWeeks: number[] = [];
-  let nextIsoDate: Date | null = null;
-  for (let index = 0; index < WEEKS_PER_STREAK_MONTH; index += 1) {
-    const week = streakMonthWeeks[index];
-    if (week) {
-      displayWeeks.push(week.iso_week_number);
-      nextIsoDate = addDays(new Date(week.week_end), 1);
-      continue;
-    }
-
-    const fallbackDate = nextIsoDate ?? addDays(new Date(), index * 7);
-    displayWeeks.push(getIsoWeekNumber(fallbackDate));
-    nextIsoDate = addDays(fallbackDate, 7);
-  }
+  const now = new Date();
+  const currentMonthIndex = (streak?.current_month ?? (now.getMonth() + 1)) - 1;
+  const currentMonthLabel = DANISH_MONTHS[currentMonthIndex] ?? 'Denne måned';
+  const streakWeekKeys = new Set((streak?.streak_weeks ?? []).map(week => `${week.week_start}-${week.week_end}`));
+  const monthWeeks = streak?.current_month_weeks?.length
+    ? streak.current_month_weeks
+    : (streak?.streak_weeks ?? []).slice(-WEEKS_PER_STREAK_MONTH).map(week => ({
+        ...week,
+        kept_budget: true,
+        is_completed: true,
+        is_current: false,
+      }));
 
   return (
     <>
@@ -155,7 +135,7 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
         <div className="mt-4 rounded-2xl border border-foreground/6 bg-white/55 px-4 py-3">
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/45">
-              Streak-måned
+              {currentMonthLabel}
             </p>
             {completedStreakMonths > 0 && (
               <span
@@ -167,10 +147,13 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
             )}
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
-            {displayWeeks.map((isoWeekNumber, index) => {
-              const label = `Uge ${isoWeekNumber}`;
-              const isFilled = index < filledWeeks;
+          <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(monthWeeks.length, 1)}, minmax(0, 1fr))` }}>
+            {monthWeeks.map((week, index) => {
+              const label = `Uge ${week.iso_week_number}`;
+              const weekKey = `${week.week_start}-${week.week_end}`;
+              const isFilled = week.kept_budget === true || streakWeekKeys.has(weekKey);
+              const isMissed = week.kept_budget === false;
+              const isCurrent = week.is_current && week.kept_budget !== true;
               return (
                 <div key={`${label}-${index}`} className="flex flex-col items-center gap-1.5">
                   <span
@@ -178,13 +161,17 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
                       'flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-bold transition-all duration-500',
                       isFilled
                         ? 'border-transparent text-white shadow-sm'
+                        : isCurrent
+                          ? 'border-amber-300 bg-amber-50 text-amber-700'
+                          : isMissed
+                            ? 'border-red-100 bg-red-50 text-red-300'
                         : 'border-foreground/10 bg-white text-muted-foreground/40'
                     )}
                     style={isFilled ? { background: tone.accent } : undefined}
                   >
-                    {isFilled ? <Flame className="h-3.5 w-3.5" fill="currentColor" /> : index + 1}
+                    {isFilled ? <Flame className="h-3.5 w-3.5" fill="currentColor" /> : isCurrent ? 'Nu' : index + 1}
                   </span>
-                  <span className={cn('text-[10px] font-semibold', isFilled ? 'text-foreground/70' : 'text-muted-foreground/35')}>
+                  <span className={cn('text-[10px] font-semibold', isFilled || isCurrent ? 'text-foreground/70' : 'text-muted-foreground/35')}>
                     {label}
                   </span>
                 </div>
@@ -193,7 +180,7 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-foreground/6 bg-white/70 px-4 py-3">
+        <div className="mt-4 px-1 py-1">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-amber-500" />

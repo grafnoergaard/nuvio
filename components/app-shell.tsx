@@ -138,7 +138,7 @@ function CheckupModal({ level, onStart, onDismiss, onSnooze, onHardSnooze, allow
   const { design } = useSettings();
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-[80] flex items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
     >
       <div

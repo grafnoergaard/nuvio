@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export const USER_CONFIGURABLE_CARD_KEYS = ['nuvio_score_standalone', 'budget_status', 'flow_savings', 'streak_count'] as const;
+export const USER_CONFIGURABLE_CARD_KEYS = ['nuvio_score_standalone', 'quick_expense_action', 'budget_status', 'flow_savings', 'streak_count'] as const;
 export type UserConfigurableCardKey = typeof USER_CONFIGURABLE_CARD_KEYS[number];
 
 export interface UserHomeCardConfig {
@@ -13,6 +13,7 @@ export interface UserHomeCardConfig {
 
 export const USER_CARD_LABELS: Record<UserConfigurableCardKey, string> = {
   nuvio_score_standalone: 'Nuvio Score',
+  quick_expense_action: 'Tilføj udgift',
   budget_status: 'Nuvio Flow',
   flow_savings: 'Flow Opsparing',
   streak_count: 'Streak Count',
@@ -20,6 +21,7 @@ export const USER_CARD_LABELS: Record<UserConfigurableCardKey, string> = {
 
 export const USER_CARD_DESCRIPTIONS: Record<UserConfigurableCardKey, string> = {
   nuvio_score_standalone: 'Din daglige stræk og finansielle score',
+  quick_expense_action: 'Mini-knap til hurtig registrering af udgifter',
   budget_status: 'Rådighedsbeløb, flow-score og ugebudget',
   flow_savings: 'Opsparing via Flow-systemet',
   streak_count: 'Din aktive Nuvio Flow-streak',
@@ -75,7 +77,8 @@ export type HomeCardKey =
   | 'consumption_status'
   | 'budget_status'
   | 'flow_savings'
-  | 'streak_count';
+  | 'streak_count'
+  | 'quick_expense_action';
 
 export type HomeCardWidth = 'full' | 'half';
 
@@ -158,6 +161,7 @@ export function buildCardVisibilityMap(configs: HomeCardConfig[]): Record<HomeCa
     budget_status: false,
     flow_savings: true,
     streak_count: true,
+    quick_expense_action: true,
   };
   for (const cfg of configs) {
     defaults[cfg.card_key] = cfg.is_visible;
@@ -179,6 +183,7 @@ export function buildCardWidthMap(configs: HomeCardConfig[]): Record<HomeCardKey
     budget_status: 'full',
     flow_savings: 'full',
     streak_count: 'full',
+    quick_expense_action: 'full',
   };
   for (const cfg of configs) {
     defaults[cfg.card_key] = cfg.width ?? 'full';

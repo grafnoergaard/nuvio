@@ -240,7 +240,7 @@ export default function AdminWizardsPage() {
 
   if (active === 'data-reset') {
     return (
-      <div className="fixed inset-0 z-50 bg-gradient-to-b from-emerald-50/60 via-white to-white overflow-y-auto">
+      <div className="fixed inset-0 z-[80] bg-gradient-to-b from-emerald-50/60 via-white to-white overflow-y-auto">
         <div className="max-w-lg mx-auto px-5 py-10">
           <UserDataResetWizard />
         </div>

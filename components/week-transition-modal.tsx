@@ -105,7 +105,7 @@ export default function WeekTransitionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ left: 'var(--sidebar-offset-global, 0px)' }}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4" style={{ left: 'var(--sidebar-offset-global, 0px)' }}>
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onDismiss}

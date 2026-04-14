@@ -1258,7 +1258,7 @@ export default function NuvioFlowPage() {
 
       {/* Budget Editor Overlay */}
       {showBudgetEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setShowBudgetEditor(false)}
@@ -1449,7 +1449,7 @@ function StreakPopup({ streak, onClose }: StreakPopupProps) {
   const milestone = [24, 12, 6, 3].reduce<string | null>((acc, m) => acc ?? (s >= m ? MILESTONE_LABELS[m] : null), null);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
         className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
