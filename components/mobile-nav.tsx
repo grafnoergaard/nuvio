@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, PiggyBank, Coins, Activity, List, Menu, X, TrendingUp, Users, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,32 @@ import { getNavGroupsWithItems, getMobileNavSlots, NAV_ICON_MAP } from '@/lib/na
 import { useUIStrings } from '@/lib/ui-strings-context';
 import { VERSION } from '@/lib/version';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from '@/lib/database.types';
+
+const DEFAULT_BURGER_SECTIONS = [
+  {
+    label: 'Økonomi',
+    items: [
+      { label: 'Oversigt', href: '/', icon: LayoutDashboard },
+      { label: 'Investering', href: '/investering', icon: TrendingUp },
+      { label: 'Opsparing', href: '/maal', icon: PiggyBank },
+      { label: 'Husstand', href: '/husstand', icon: Users },
+    ],
+  },
+  {
+    label: 'Indstillinger',
+    items: [
+      { label: 'Nuvio Checkup', href: '/checkup', icon: Activity },
+      { label: 'Indstillinger', href: '/indstillinger', icon: Settings },
+    ],
+  },
+];
+
+const DEFAULT_SLOT_OPTIONS: { id: string; icon: React.ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
+  { id: 'hjem', icon: Coins, href: '/nuvio-flow', label: 'Flow' },
+  { id: 'investering', icon: TrendingUp, href: '/investering', label: 'Investering' },
+  { id: 'checkup', icon: Activity, href: '/checkup', label: 'Checkup' },
+  { id: 'burger', icon: Menu, href: '', label: 'Menu', isBurger: true },
+];
 
 function NavHighlight({ activeIndex, count }: { activeIndex: number; count: number }) {
   if (count <= 0) return null;
@@ -41,6 +67,7 @@ export function MobileNav() {
   const [dbGroups, setDbGroups] = useState<NavGroupWithItems[]>([]);
   const [mobileSlots, setMobileSlots] = useState<MobileNavSlotWithItem[]>([]);
   const [pendingNav, setPendingNav] = useState<{ mode: 'db' | 'default'; index: number } | null>(null);
+  const prefetchedRoutesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     getNavGroupsWithItems().then((data) => {
@@ -70,27 +97,8 @@ export function MobileNav() {
     return pathname === href || pathname.startsWith(href);
   }
 
-  const DEFAULT_BURGER_SECTIONS = [
-    {
-      label: 'Økonomi',
-      items: [
-        { label: 'Oversigt', href: '/', icon: LayoutDashboard },
-        { label: 'Investering', href: '/investering', icon: TrendingUp },
-        { label: 'Opsparing', href: '/maal', icon: PiggyBank },
-        { label: 'Husstand', href: '/husstand', icon: Users },
-      ],
-    },
-    {
-      label: 'Indstillinger',
-      items: [
-        { label: 'Nuvio Checkup', href: '/checkup', icon: Activity },
-        { label: 'Indstillinger', href: '/indstillinger', icon: Settings },
-      ],
-    },
-  ];
-
-  const burgerSections =
-    dbGroups.length > 0
+  const burgerSections = useMemo(
+    () => dbGroups.length > 0
       ? dbGroups.map((g) => ({
           label: g.name,
           items: g.items.map((item) => ({
@@ -99,16 +107,35 @@ export function MobileNav() {
             icon: NAV_ICON_MAP[item.icon_name] ?? LayoutDashboard,
           })),
         }))
-      : DEFAULT_BURGER_SECTIONS;
+      : DEFAULT_BURGER_SECTIONS,
+    [dbGroups],
+  );
 
-  const activeSlots = mobileSlots.slice(0, slotCount);
+  const activeSlots = useMemo(() => mobileSlots.slice(0, slotCount), [mobileSlots, slotCount]);
 
-  const DEFAULT_SLOTS: { id: string; icon: React.ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
-    { id: 'hjem', icon: Coins, href: '/nuvio-flow', label: 'Flow' },
-    { id: 'investering', icon: TrendingUp, href: '/investering', label: 'Investering' },
-    { id: 'checkup', icon: Activity, href: '/checkup', label: 'Checkup' },
-    { id: 'burger', icon: Menu, href: '', label: 'Menu', isBurger: true },
-  ].slice(0, slotCount);
+  const DEFAULT_SLOTS = useMemo(() => DEFAULT_SLOT_OPTIONS.slice(0, slotCount), [slotCount]);
+
+  const prefetchNavHref = useCallback((href: string) => {
+    if (!href || prefetchedRoutesRef.current.has(href)) return;
+    prefetchedRoutesRef.current.add(href);
+    router.prefetch(href);
+  }, [router]);
+
+  useEffect(() => {
+    const hrefs = new Set<string>();
+    activeSlots.forEach((slot) => {
+      if (!slot.is_burger && slot.nav_item?.href) hrefs.add(slot.nav_item.href);
+    });
+    DEFAULT_SLOTS.forEach((slot) => {
+      if (!slot.isBurger && slot.href) hrefs.add(slot.href);
+    });
+    burgerSections.forEach((section) => {
+      section.items.forEach((item) => {
+        if (item.href) hrefs.add(item.href);
+      });
+    });
+    hrefs.forEach(prefetchNavHref);
+  }, [activeSlots, DEFAULT_SLOTS, burgerSections, prefetchNavHref]);
 
   function getActiveSlotIndex(slots: MobileNavSlotWithItem[]): number {
     if (burgerOpen) {
