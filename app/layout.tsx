@@ -34,6 +34,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Nuvio" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="Nuvio" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/nuvio.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/nuvio.png" />
         <link rel="apple-touch-icon" sizes="167x167" href="/nuvio.png" />

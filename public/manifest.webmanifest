@@ -1,0 +1,26 @@
+{
+  "name": "Nuvio",
+  "short_name": "Nuvio",
+  "description": "Moderne okonomistyring og budgettering",
+  "start_url": "/nuvio-flow",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#ECFDF5",
+  "theme_color": "#ECFDF5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/nuvio.png",
+      "sizes": "653x647",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nuvio.png",
+      "sizes": "653x647",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
