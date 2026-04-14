@@ -11,6 +11,24 @@ import { useUIStrings } from '@/lib/ui-strings-context';
 import { VERSION } from '@/lib/version';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from '@/lib/database.types';
 
+function NavHighlight({ activeIndex, count }: { activeIndex: number; count: number }) {
+  if (count <= 0) return null;
+  return (
+    <div className="absolute inset-y-1 left-2 right-2 pointer-events-none overflow-hidden">
+      <div
+        className="h-full transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+        style={{
+          opacity: activeIndex >= 0 ? 1 : 0,
+          transform: `translate3d(${Math.max(activeIndex, 0) * 100}%, 0, 0)`,
+          width: `${100 / count}%`,
+        }}
+      >
+        <div className="mx-1 h-full rounded-full bg-[#0E3B43] shadow-sm" />
+      </div>
+    </div>
+  );
+}
+
 export function MobileNav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -22,6 +40,7 @@ export function MobileNav() {
   const [burgerOpen, setBurgerOpen] = useState(false);
   const [dbGroups, setDbGroups] = useState<NavGroupWithItems[]>([]);
   const [mobileSlots, setMobileSlots] = useState<MobileNavSlotWithItem[]>([]);
+  const [pendingNav, setPendingNav] = useState<{ mode: 'db' | 'default'; index: number } | null>(null);
 
   useEffect(() => {
     getNavGroupsWithItems().then((data) => {
@@ -36,6 +55,10 @@ export function MobileNav() {
     document.body.style.overflow = burgerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [burgerOpen]);
+
+  useEffect(() => {
+    setPendingNav(null);
+  }, [pathname, burgerOpen]);
 
   function navigate(href: string) {
     setBurgerOpen(false);
@@ -103,26 +126,10 @@ export function MobileNav() {
     return DEFAULT_SLOTS.findIndex((slot) => !slot.isBurger && isActive(slot.href));
   }
 
-  function NavHighlight({ activeIndex, count }: { activeIndex: number; count: number }) {
-    if (count <= 0) return null;
-    return (
-      <div className="absolute inset-y-1 left-2 right-2 pointer-events-none overflow-hidden">
-        <div
-          className="h-full transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{
-            opacity: activeIndex >= 0 ? 1 : 0,
-            transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
-            width: `${100 / count}%`,
-          }}
-        >
-          <div className="mx-1 h-full rounded-full bg-[#0E3B43] shadow-sm" />
-        </div>
-      </div>
-    );
-  }
-
   const dbActiveSlotIndex = getActiveSlotIndex(activeSlots);
   const defaultActiveSlotIndex = getActiveDefaultSlotIndex();
+  const displayedDbActiveSlotIndex = pendingNav?.mode === 'db' ? pendingNav.index : dbActiveSlotIndex;
+  const displayedDefaultActiveSlotIndex = pendingNav?.mode === 'default' ? pendingNav.index : defaultActiveSlotIndex;
 
   return (
     <>
@@ -213,20 +220,20 @@ export function MobileNav() {
             <div className="relative flex items-center justify-around h-full px-2">
               {activeSlots.length > 0 ? (
                 <>
-                  <NavHighlight activeIndex={dbActiveSlotIndex} count={activeSlots.length} />
+                  <NavHighlight activeIndex={displayedDbActiveSlotIndex} count={activeSlots.length} />
                   {activeSlots.map((slot, index) => {
                     if (slot.is_burger) {
-                      const active = dbActiveSlotIndex === index;
+                      const active = displayedDbActiveSlotIndex === index;
                       return (
                         <button
                           key={slot.id}
                           onClick={() => setBurgerOpen((v) => !v)}
                           className={cn(
-                            'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-200',
+                            'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
                             active ? 'text-white' : 'text-muted-foreground'
                           )}
                         >
-                          <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-200">
+                          <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                             {burgerOpen
                               ? <X className="h-[18px] w-[18px] text-white" />
                               : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
@@ -244,17 +251,21 @@ export function MobileNav() {
                     const item = slot.nav_item;
                     if (!item) return <div key={slot.id} className="relative z-10 flex-1" />;
                     const Icon = NAV_ICON_MAP[item.icon_name] ?? LayoutDashboard;
-                    const active = dbActiveSlotIndex === index;
+                    const active = displayedDbActiveSlotIndex === index;
                     return (
                       <button
                         key={slot.id}
-                        onClick={() => { setBurgerOpen(false); router.push(item.href); }}
+                        onClick={() => {
+                          setPendingNav({ mode: 'db', index });
+                          setBurgerOpen(false);
+                          router.push(item.href);
+                        }}
                         className={cn(
-                          'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-200',
+                          'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
                           active ? 'text-white' : 'text-muted-foreground'
                         )}
                       >
-                        <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-200">
+                        <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                           <Icon className={cn('h-[18px] w-[18px]', active ? 'text-white' : 'text-muted-foreground')} />
                         </div>
                         <span className={cn(
@@ -269,20 +280,20 @@ export function MobileNav() {
                 </>
               ) : (
                 <>
-                  <NavHighlight activeIndex={defaultActiveSlotIndex} count={DEFAULT_SLOTS.length} />
+                  <NavHighlight activeIndex={displayedDefaultActiveSlotIndex} count={DEFAULT_SLOTS.length} />
                   {DEFAULT_SLOTS.map((def, index) => {
                     if (def.isBurger) {
-                      const active = defaultActiveSlotIndex === index;
+                      const active = displayedDefaultActiveSlotIndex === index;
                       return (
                         <button
                           key={def.id}
                           onClick={() => setBurgerOpen((v) => !v)}
                           className={cn(
-                            'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-200',
+                            'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
                             active ? 'text-white' : 'text-muted-foreground'
                           )}
                         >
-                          <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-200">
+                          <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                             {burgerOpen
                               ? <X className="h-[18px] w-[18px] text-white" />
                               : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
@@ -298,17 +309,21 @@ export function MobileNav() {
                       );
                     }
                     const Icon = def.icon;
-                    const active = defaultActiveSlotIndex === index;
+                    const active = displayedDefaultActiveSlotIndex === index;
                     return (
                       <button
                         key={def.id}
-                        onClick={() => { setBurgerOpen(false); router.push(def.href); }}
+                        onClick={() => {
+                          setPendingNav({ mode: 'default', index });
+                          setBurgerOpen(false);
+                          router.push(def.href);
+                        }}
                         className={cn(
-                          'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-200',
+                          'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
                           active ? 'text-white' : 'text-muted-foreground'
                         )}
                       >
-                        <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-200">
+                        <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                           <Icon className={cn('h-[18px] w-[18px]', active ? 'text-white' : 'text-muted-foreground')} />
                         </div>
                         <span className={cn(
