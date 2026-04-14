@@ -59,12 +59,12 @@ const FLOW_STATUS_DEFAULTS: FlowStatusConfig = {
   badgeWarn: 'Stram op',
   badgeKursen: 'Hold kursen',
   badgeTempo: 'Godt tempo',
-  badgeFlow: 'Nuvio Flow',
+  badgeFlow: 'Udgifter',
   headlineOver: 'Du har overskredet dit budget',
   headlineWarn: 'Hold igen på forbruget',
   headlineKursen: 'Du er på rette spor',
   headlineTempo: 'Du klarer det fremragende',
-  headlineFlow: 'Du er i Nuvio Flow',
+  headlineFlow: 'Du har styr på udgifterne',
   colorOverBadge: 'bg-red-500',
   colorWarnBadge: 'bg-amber-500',
   colorKursenBadge: 'bg-emerald-500',
@@ -433,7 +433,7 @@ export default function BudgetStatusCard() {
                 cfg.badgeCustom ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold tracking-wide bg-gradient-to-r from-slate-700 to-slate-800 border border-yellow-400/40 shadow-sm">
                     <Crown className="h-2.5 w-2.5 text-yellow-400" />
-                    <span className="text-yellow-300">Nuvio Flow</span>
+                    <span className="text-yellow-300">Udgifter</span>
                   </span>
                 ) : cfg.badgeBg.startsWith('bg-[') ? (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold tracking-wide text-white" style={{ backgroundColor: cfg.badgeBg.slice(4, -1) }}>
@@ -474,7 +474,7 @@ export default function BudgetStatusCard() {
               onClick={() => router.push('/nuvio-flow')}
               className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline"
             >
-              Åbn Nuvio Flow <ChevronRight className="h-3 w-3" />
+              Åbn Udgifter <ChevronRight className="h-3 w-3" />
             </button>
           </div>
         ) : (
@@ -516,7 +516,7 @@ export default function BudgetStatusCard() {
 
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground tracking-wide">Nuvio Flow Score</span>
+                <span className="text-xs font-semibold text-muted-foreground tracking-wide">Din Score</span>
                 <div className="flex items-center gap-2">
                   {streak && streak.current_streak > 0 && (
                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/60">

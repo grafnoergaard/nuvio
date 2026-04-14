@@ -433,7 +433,7 @@ function Step1Overview({
   return (
     <div className="space-y-6 flex-1 flex flex-col justify-center">
       <p className="text-label font-semibold uppercase tracking-widest text-emerald-600/70">
-        Overblik
+        Kuvert
       </p>
       <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight">
         Du brugte {formatDKK(summaryData.totalSpent)} ud af {formatDKK(summaryData.budgetAmount)}
@@ -624,7 +624,7 @@ function Step4Ai({
   return (
     <div className="space-y-5 flex-1 flex flex-col justify-center">
       <p className="text-label font-semibold uppercase tracking-widest text-emerald-600/70">
-        Nuvio AI
+        Kuvert AI
       </p>
 
       {aiLoading && (

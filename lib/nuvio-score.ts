@@ -107,13 +107,13 @@ export function computePrimaryDriver(
   }
   if (!hasInvestmentSettings) {
     return {
-      text: `Sæt din kapital i arbejde via en investeringsprofil og styrk din Nuvio Score.`,
+      text: `Sæt din kapital i arbejde via en investeringsprofil og styrk din Kuvert Score.`,
       cta: 'Se investeringsprofil',
       path: '/investering',
     };
   }
   return {
-    text: `Din finansielle profil er stærk. Fortsæt den nuværende kurs for at fastholde og styrke din Nuvio Score.`,
+    text: `Din finansielle profil er stærk. Fortsæt den nuværende kurs for at fastholde og styrke din Kuvert Score.`,
     cta: 'Se din plan',
     path: '/plan',
   };

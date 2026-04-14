@@ -35,6 +35,7 @@ import { WeekTransitionBottomSheet, WeekTransitionWizard } from '@/components/we
 import { useWeekTransition } from '@/hooks/use-week-transition';
 import { FlowSavingsModal } from '@/components/flow-savings-modal';
 import NuvioFlowGuideModal from '@/components/nuvio-flow-guide-modal';
+import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
 
 const GUIDE_SEEN_KEY = 'nuvio_flow_guide_seen_v1';
 
@@ -73,12 +74,12 @@ const FLOW_STATUS_DEFAULTS: FlowStatusConfig = {
   badgeWarn: 'Stram op',
   badgeKursen: 'Hold kursen',
   badgeTempo: 'Godt tempo',
-  badgeFlow: 'Nuvio Flow',
+  badgeFlow: 'Udgifter',
   headlineOver: 'Du har overskredet dit budget',
   headlineWarn: 'Hold igen på forbruget',
   headlineKursen: 'Du er på rette spor',
   headlineTempo: 'Du klarer det fremragende',
-  headlineFlow: 'Du er i Nuvio Flow',
+  headlineFlow: 'Du har styr på udgifterne',
   colorOverBadge: 'bg-red-500',
   colorWarnBadge: 'bg-amber-500',
   colorKursenBadge: 'bg-emerald-500',
@@ -777,13 +778,13 @@ export default function NuvioFlowPage() {
               {DANISH_MONTHS[now.getMonth()]} {now.getFullYear()}
             </p>
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
-              Nuvio Flow
+              Udgifter
             </h1>
           </div>
           <button
             onClick={() => setShowGuide(true)}
             className="h-10 w-10 rounded-full border-2 border-emerald-400/60 bg-white/70 flex items-center justify-center text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 shadow-sm shrink-0"
-            aria-label="Om Nuvio Flow"
+            aria-label="Om Udgifter"
           >
             <Info className="h-4 w-4" />
           </button>
@@ -820,7 +821,7 @@ export default function NuvioFlowPage() {
                   cfg.badgeCustom ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold tracking-wide bg-gradient-to-r from-slate-700 to-slate-800 border border-yellow-400/40 shadow-sm">
                       <Crown className="h-2.5 w-2.5 text-yellow-400" />
-                      <span className="text-yellow-300">Nuvio Flow</span>
+                      <span className="text-yellow-300">Udgifter</span>
                     </span>
                   ) : cfg.badgeBg.startsWith('bg-[') ? (
                     <span
@@ -1123,6 +1124,8 @@ export default function NuvioFlowPage() {
             </div>
           )}
         </div>
+
+        <NuvioScoreStandaloneCard streak={streak} className="mb-4" />
 
         {/* Entry Form */}
         {isCurrentMonth && (

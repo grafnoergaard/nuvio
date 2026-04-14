@@ -109,7 +109,7 @@ function CardSizePreview({
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Opsparing Status</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Sparet Status</p>
             <p className="text-sm font-bold">🎯 Hus</p>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">
@@ -493,7 +493,7 @@ export default function AdminPage() {
                   </div>
                   <CardDesignPanel
                     title="Medium kort"
-                    subtitle="Bruges til Opsparing Status, Kapital & Fremdrift og tilsvarende indholdsrige kort."
+                    subtitle="Bruges til Sparet Status, Kapital & Fremdrift og tilsvarende indholdsrige kort."
                     size="cardMedium"
                     card={design.cardMedium}
                     gradientFrom={design.gradientFrom}
@@ -534,7 +534,7 @@ export default function AdminPage() {
                 Nuvio Page Design
               </CardTitle>
               <CardDescription>
-                Styr layoutet på Hjem Oversigt — marginer, kolonner og afstande
+                Styr layoutet på Kuvert — marginer, kolonner og afstande
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -107,7 +107,7 @@ export function computeConsumptionStatus(
       label: 'Robust',
       advice: 'Dine udgifter udgør under 50% af indkomsten. Du har god plads til opsparing og fremtidige mål.',
       microText: `${pct}% af din indkomst er disponeret. Du har solid handlefrihed.`,
-      ctaLabel: 'Se Flow Opsparing',
+      ctaLabel: 'Se Sparet',
       ctaHref: '/opsparing',
       pct,
     };
@@ -118,7 +118,7 @@ export function computeConsumptionStatus(
       label: 'Stabil',
       advice: 'Solid økonomi. Overvej at øge din månedlige opsparing for at nå mål hurtigere.',
       microText: `${pct}% af din indkomst er disponeret. En sund forbrugsprofil med plads til forbedring.`,
-      ctaLabel: 'Se Flow Opsparing',
+      ctaLabel: 'Se Sparet',
       ctaHref: '/opsparing',
       pct,
     };

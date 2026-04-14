@@ -22,8 +22,8 @@ const CARD_DESCRIPTIONS: Record<string, string> = {
   savings_goals: '(Ikke i brug)',
   next_step: 'Næste anbefalede handling',
   consumption_status: 'Forbrugsstatus med procentindikator',
-  budget_status: 'Nuvio Flow budgetstatus — rådighedsbeløb, flow-score og ugebudget',
-  streak_count: 'Aktiv Nuvio Flow-streak med månedspulser',
+  budget_status: 'Udgifter budgetstatus — rådighedsbeløb, flow-score og ugebudget',
+  streak_count: 'Aktiv udgifts-streak med månedspulser',
   quick_expense_action: 'Mini-knap til hurtig registrering af udgifter',
 };
 
@@ -110,7 +110,7 @@ export default function HomeLayoutAdminPage() {
         <div className="mb-8">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Oversigt-layout</h1>
+              <h1 className="text-3xl font-semibold tracking-tight">Kuvert-layout</h1>
               <p className="text-muted-foreground mt-1.5 leading-relaxed">
                 Styr hvilke sektioner der vises på forsiden, i hvilken rækkefølge og med hvilken bredde.
               </p>

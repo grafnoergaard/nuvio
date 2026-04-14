@@ -2,9 +2,13 @@ import { Chrome as Home, LayoutDashboard, TrendingUp, Target, Users, Activity, S
 import type { ComponentType } from 'react';
 import { supabase } from './supabase';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from './database.types';
+import { KuvertIcon } from '@/components/icons/kuvert-icon';
 
 export const NAV_ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
-  Home,
+  Home: KuvertIcon,
+  Kuvert: KuvertIcon,
+  EnvelopeCoin: KuvertIcon,
+  House: Home,
   LayoutDashboard,
   TrendingUp,
   Target,
@@ -25,11 +29,26 @@ export const NAV_ICON_MAP: Record<string, ComponentType<{ className?: string }>>
 };
 
 export const DEFAULT_MOBILE_NAV_OPTIONS: { id: string; icon: ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
-  { id: 'hjem', icon: Coins, href: '/nuvio-flow', label: 'Flow' },
+  { id: 'hjem', icon: Coins, href: '/nuvio-flow', label: 'Udgifter' },
   { id: 'investering', icon: TrendingUp, href: '/investering', label: 'Investering' },
   { id: 'checkup', icon: Activity, href: '/checkup', label: 'Checkup' },
   { id: 'burger', icon: List, href: '', label: 'Menu', isBurger: true },
 ];
+
+export function getDisplayNavName(name: string, href?: string | null): string {
+  if (href === '/') return 'Kuvert';
+  if (href === '/nuvio-flow') return 'Udgifter';
+  if (href === '/maal' || href === '/opsparing') return 'Sparet';
+  if (name === 'Oversigt' || name === 'Overblik') return 'Kuvert';
+  if (name === 'Nuvio Flow' || name === 'Flow' || name === 'Kuvert') return 'Udgifter';
+  if (name === 'Opsparing' || name === 'Flow Opsparing' || name === 'Flow-opsparing') return 'Sparet';
+  return name;
+}
+
+export function getDisplayNavIconName(iconName: string, href?: string | null): string {
+  if (href === '/') return 'Kuvert';
+  return iconName;
+}
 
 export interface PlanSubItem {
   id: string;
@@ -132,7 +151,13 @@ export async function getNavGroupsWithItems(includeHidden = false): Promise<NavG
 
   return groups.map((g) => ({
     ...g,
-    items: (items ?? []).filter((item) => item.group_id === g.id),
+    items: (items ?? [])
+      .filter((item) => item.group_id === g.id)
+      .map((item) => ({
+        ...item,
+        name: getDisplayNavName(item.name, item.href),
+        icon_name: getDisplayNavIconName(item.icon_name, item.href),
+      })),
   }));
 }
 
@@ -226,7 +251,11 @@ export async function getMobileNavSlots(): Promise<MobileNavSlotWithItem[]> {
       .in('id', navItemIds);
     if (navError) throw navError;
     (navItems ?? []).forEach((item) => {
-      navItemsMap[item.id] = item;
+      navItemsMap[item.id] = {
+        ...item,
+        name: getDisplayNavName(item.name, item.href),
+        icon_name: getDisplayNavIconName(item.icon_name, item.href),
+      };
     });
   }
 

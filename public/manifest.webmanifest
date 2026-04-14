@@ -1,8 +1,8 @@
 {
-  "name": "Nuvio",
-  "short_name": "Nuvio",
-  "description": "Moderne okonomistyring og budgettering",
-  "start_url": "/nuvio-flow",
+  "name": "Kuvert",
+  "short_name": "Kuvert",
+  "description": "Budgetstyring med kuvert-metoden",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],

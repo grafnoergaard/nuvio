@@ -78,7 +78,7 @@ export default function FlowSavingsCard() {
           </div>
           <div>
             <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/50 leading-none mb-0.5">
-              Flow-opsparing
+              Sparet
             </p>
             {hasData && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold tracking-wide text-white bg-emerald-500">
@@ -107,15 +107,15 @@ export default function FlowSavingsCard() {
 
       {!hasData ? (
         <div className="px-5 pb-6 text-center">
-          <p className="text-sm font-semibold text-foreground mb-1">Ingen flow-opsparing endnu</p>
+          <p className="text-sm font-semibold text-foreground mb-1">Intet sparet endnu</p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Penge du sparer via Nuvio Flow akkumuleres automatisk her.
+            Penge du sparer via Udgifter akkumuleres automatisk her.
           </p>
           <button
             onClick={() => router.push('/opsparing')}
             className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline"
           >
-            Gå til Opsparing <ChevronRight className="h-3 w-3" />
+            Gå til Sparet <ChevronRight className="h-3 w-3" />
           </button>
         </div>
       ) : (
@@ -149,7 +149,7 @@ export default function FlowSavingsCard() {
 
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground tracking-wide">Flow opsparing</span>
+              <span className="text-xs font-semibold text-muted-foreground tracking-wide">Sparet</span>
               <span className="text-xs font-bold tabular-nums text-emerald-700">{weekCount} uger</span>
             </div>
             <div className="relative h-2 rounded-full bg-black/[0.06] overflow-hidden">

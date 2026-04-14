@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Info } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { OnboardingIntro } from '@/components/onboarding-intro';
 import { WhyWizard } from '@/components/why-wizard';
@@ -11,22 +10,15 @@ import { IncomeWizard } from '@/components/income-wizard';
 import { FixedExpensesWizard } from '@/components/fixed-expenses-wizard';
 import { VariableForbrugWizardModal } from '@/components/variable-forbrug-wizard-modal';
 import { toast } from 'sonner';
-import { EditableText } from '@/components/editable-text';
 import { HomeCardProvider } from '@/components/home-cards/home-card-context';
 import { DynamicSections } from '@/components/home-cards/section-slot';
 import { OpeningBalanceModal } from '@/components/opening-balance-modal';
-import { OverblikInfoModal } from '@/components/overblik-info-modal';
 import { QuickExpenseAddModal } from '@/components/quick-expense-add-modal';
 import { useHomeData } from '@/hooks/use-home-data';
 import { useHomeUI } from '@/hooks/use-home-ui';
 import { useHomeCards } from '@/hooks/use-home-cards';
 import { useHomeDerived } from '@/lib/home-derived';
 import { getStartScreenHref } from '@/lib/start-screen';
-
-const DANISH_MONTHS = [
-  'januar', 'februar', 'marts', 'april', 'maj', 'juni',
-  'juli', 'august', 'september', 'oktober', 'november', 'december',
-];
 
 export default function HomePage() {
   const router = useRouter();
@@ -39,15 +31,16 @@ export default function HomePage() {
   const {
     budget, expenses, income, recipientCount, loading,
     householdMonthlyIncome, variableExpenseEstimate, investmentSettings,
-    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, quickStreak, weeklyStreak,
+    flowMonthlyBudget, flowMonthlySpent, flowScoreThreshold, flowStatusConfig, flowWeeklyStatus,
+    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, weeklyStreak,
     loadData, loadHousehold, setBudget, setUserRef, loadAll,
   } = data;
 
   const {
     showIncomeWizard, showFixedExpensesWizard, showVariableWizard,
-    showWhyWizard, whyWizardChecked, showInfoModal,
+    showWhyWizard,
     setShowIncomeWizard, setShowFixedExpensesWizard, setShowVariableWizard,
-    setShowWhyWizard, setShowInfoModal,
+    setShowWhyWizard,
     checkWhyWizard, markWhyWizardChecked, wizardEnabled,
   } = ui;
 
@@ -128,10 +121,6 @@ export default function HomePage() {
     setBudget(prev => prev ? { ...prev, onboarding_dismissed: true } : prev);
   }
 
-  const now = new Date();
-  const currentMonthName = DANISH_MONTHS[now.getMonth()];
-  const currentYear = now.getFullYear();
-
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const color = 'rgb(236,253,245)';
@@ -157,14 +146,6 @@ export default function HomePage() {
     );
   }
 
-  if (!whyWizardChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Indlæser...</p>
-      </div>
-    );
-  }
-
   if (showWhyWizard && wizardEnabled('wizard_enabled_why')) {
     return <WhyWizard onComplete={() => setShowWhyWizard(false)} />;
   }
@@ -179,8 +160,12 @@ export default function HomePage() {
     derived,
     categoryGroupTypes,
     recipientCount,
-    quickStreak,
     weeklyStreak,
+    flowMonthlyBudget,
+    flowMonthlySpent,
+    flowScoreThreshold,
+    flowStatusConfig,
+    flowWeeklyStatus,
     openingBalance: budget?.opening_balance ?? 0,
     wizardEnabled,
     onDismissOnboarding: handleDismissOnboarding,
@@ -209,24 +194,6 @@ export default function HomePage() {
           className="max-w-lg mx-auto px-4 pb-32 sm:pb-16"
           style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}
         >
-          <div className="mb-6 flex items-end justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">
-                {currentMonthName} {currentYear}
-              </p>
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
-                <EditableText textKey="overblik.page.title" fallback="Overblik" as="span" />
-              </h1>
-            </div>
-            <button
-              onClick={() => setShowInfoModal(true)}
-              className="h-10 w-10 rounded-full border-2 border-emerald-400/60 bg-white/70 flex items-center justify-center text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 shadow-sm shrink-0"
-              aria-label="Om Overblik"
-            >
-              <Info className="h-4 w-4" />
-            </button>
-          </div>
-
           <div className="flex flex-col gap-4">
             <DynamicSections {...slotProps} sortedCardKeys={sortedCardKeys} cardWidth={cardWidth} />
           </div>
@@ -259,9 +226,6 @@ export default function HomePage() {
           onDismiss={() => setShowQuickExpenseModal(false)}
         />
       )}
-
-      {showInfoModal && <OverblikInfoModal onClose={() => setShowInfoModal(false)} />}
-
       {editingOpeningBalance && budget && (
         <OpeningBalanceModal
           value={openingBalanceInput}

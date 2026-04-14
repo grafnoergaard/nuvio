@@ -55,6 +55,15 @@ function getStreakTone(currentStreak: number) {
   };
 }
 
+function getWeekProgressPct(weekStart: string, weekEnd: string, now: Date): number {
+  const start = new Date(`${weekStart}T00:00:00`);
+  const end = new Date(`${weekEnd}T23:59:59.999`);
+  const total = end.getTime() - start.getTime();
+  if (!Number.isFinite(total) || total <= 0) return 0;
+  const elapsed = now.getTime() - start.getTime();
+  return Math.min(100, Math.max(0, (elapsed / total) * 100));
+}
+
 export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps) {
   const { design } = useSettings();
   const [showInfo, setShowInfo] = useState(false);
@@ -127,7 +136,7 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
             </span>
           </div>
 
-          <p className="-mt-1 text-lg font-semibold tracking-tight text-foreground">
+          <p className="-mt-1 text-lg font-semibold tracking-normal text-foreground">
             {currentStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
           </p>
         </div>
@@ -154,22 +163,37 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
               const isFilled = week.kept_budget === true || streakWeekKeys.has(weekKey);
               const isMissed = week.kept_budget === false;
               const isCurrent = week.is_current && week.kept_budget !== true;
+              const currentProgress = isCurrent ? getWeekProgressPct(week.week_start, week.week_end, now) : 0;
               return (
                 <div key={`${label}-${index}`} className="flex flex-col items-center gap-1.5">
                   <span
                     className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-bold transition-all duration-500',
+                      'flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-500',
                       isFilled
-                        ? 'border-transparent text-[#0E3B43] shadow-sm'
+                        ? 'border border-transparent text-[#0E3B43] shadow-sm'
                         : isCurrent
-                          ? 'border-[#2ED3A7]/35 bg-[#2ED3A7]/10 text-[#0E3B43]'
+                          ? 'p-[2px] text-[#0E3B43] shadow-sm'
                           : isMissed
-                            ? 'border-red-100 bg-red-50 text-red-300'
-                        : 'border-foreground/10 bg-white text-muted-foreground/40'
+                            ? 'border border-red-100 bg-red-50 text-red-300'
+                        : 'border border-foreground/10 bg-white text-muted-foreground/40'
                     )}
-                    style={isFilled ? { background: tone.accent } : undefined}
+                    style={
+                      isFilled
+                        ? { background: tone.accent }
+                        : isCurrent
+                          ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, rgba(46, 211, 167, 0.16) 0)` }
+                          : undefined
+                    }
                   >
-                    {isFilled ? <Flame className="h-3.5 w-3.5" fill="currentColor" /> : isCurrent ? 'Nu' : index + 1}
+                    {isCurrent && !isFilled ? (
+                      <span className="flex h-full w-full items-center justify-center rounded-full bg-[#ecfdf5]">
+                        Nu
+                      </span>
+                    ) : isFilled ? (
+                      <Flame className="h-3.5 w-3.5" fill="currentColor" />
+                    ) : (
+                      index + 1
+                    )}
                   </span>
                   <span className={cn('text-[10px] font-semibold', isFilled || isCurrent ? 'text-foreground/70' : 'text-muted-foreground/35')}>
                     {label}

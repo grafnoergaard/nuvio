@@ -226,18 +226,18 @@ export function VariableExpenseWizard({ budgetId, monthlyIncome, fixedExpenses, 
                   Hurtigt estimat
                 </p>
                 <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight mb-3">
-                  {nuvioFlowBudget ? 'Dit Nuvio Flow budget.' : 'Juster til dig.'}
+                  {nuvioFlowBudget ? 'Dit Udgifter-budget.' : 'Juster til dig.'}
                 </h2>
                 <p className="text-foreground/60 text-base leading-relaxed mb-4">
                   {nuvioFlowBudget
-                    ? 'Vi har brugt dit månedlige budget fra Nuvio Flow — juster hvis du vil ændre det.'
+                    ? 'Vi har brugt dit månedlige budget fra Udgifter — juster hvis du vil ændre det.'
                     : 'Vi har forberegnet ud fra din husstand — juster til det passer.'}
                 </p>
                 {nuvioFlowBudget && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50/60 border border-emerald-200/60 mb-6">
                     <Check className="h-4 w-4 text-emerald-600 shrink-0" />
                     <p className="text-sm text-emerald-700">
-                      Hentet fra dit Nuvio Flow budget
+                      Hentet fra dit Udgifter-budget
                     </p>
                   </div>
                 )}
@@ -322,7 +322,7 @@ export function VariableExpenseWizard({ budgetId, monthlyIncome, fixedExpenses, 
                       <div className="px-4 pb-2">
                         <div className="flex items-center gap-1.5 text-xs text-emerald-600">
                           <Check className="h-3 w-3" />
-                          <span>Fra Nuvio Flow</span>
+                          <span>Fra Udgifter</span>
                         </div>
                       </div>
                     )}
@@ -384,7 +384,7 @@ export function VariableExpenseWizard({ budgetId, monthlyIncome, fixedExpenses, 
                   {saving ? 'Gemmer...' : (
                     <>
                       <Check className="h-4 w-4" />
-                      Gå til overblik
+                      Gå til Kuvert
                     </>
                   )}
                 </button>

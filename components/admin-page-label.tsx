@@ -73,7 +73,7 @@ export function useAdminLabel() {
 }
 
 const PAGE_NAMES: Record<string, string> = {
-  '/': 'Oversigt',
+  '/': 'Kuvert',
   '/budgets': 'Budgetter',
   '/plan': 'Plan',
   '/variable-forbrug': 'Variable forbrug',
@@ -101,7 +101,7 @@ function resolvePageName(pathname: string): string {
     if (sub === 'transactions') return 'Budget · Transaktioner';
     if (sub === 'import') return 'Budget · Importer';
     if (sub === 'details') return 'Budget · Detaljer';
-    return 'Budget · Oversigt';
+    return 'Budget · Kuvert';
   }
   return pathname;
 }

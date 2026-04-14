@@ -250,10 +250,10 @@ function BudgetStatusCardPreview({ cfg: config }: { cfg: PreviewConfig }) {
       badgeEl: (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold tracking-wide bg-gradient-to-r from-slate-700 to-slate-800 border border-yellow-400/40 shadow-sm">
           <Crown className="h-2.5 w-2.5 text-yellow-400" />
-          <span className="text-yellow-300">Nuvio Flow</span>
+          <span className="text-yellow-300">Udgifter</span>
         </span>
       ),
-      headline: 'Du er i Nuvio Flow',
+      headline: 'Du har styr på udgifterne',
       headlineColor: 'text-slate-800',
       amountColor: 'text-slate-700',
       ringColor: 'ring-yellow-300/60',
@@ -321,7 +321,7 @@ function BudgetStatusCardPreview({ cfg: config }: { cfg: PreviewConfig }) {
 
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground tracking-wide">Nuvio Flow Score</span>
+            <span className="text-xs font-semibold text-muted-foreground tracking-wide">Din Score</span>
             <div className="flex items-center gap-2">
               {streak > 0 && (
                 <button
@@ -498,7 +498,7 @@ function WeekTransitionSection() {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      toast.success('Alle ugeskifte-records er slettet — åbn Nuvio Flow for at se modalen igen.');
+      toast.success('Alle ugeskifte-records er slettet — åbn Udgifter for at se modalen igen.');
     } catch {
       toast.error('Kunne ikke nulstille ugeskifter');
     } finally {
@@ -512,7 +512,7 @@ function WeekTransitionSection() {
         <h2 className="text-lg font-semibold tracking-tight">Test: Ugeskifte-modal</h2>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
           Forhåndsvisning og test af WeekTransitionModal under forskellige brugerscenarier.
-          Modalen vises normalt automatisk ved starten af en ny uge på Nuvio Flow.
+          Modalen vises normalt automatisk ved starten af en ny uge på Udgifter.
         </p>
       </div>
 
@@ -523,7 +523,7 @@ function WeekTransitionSection() {
             Nulstil ugeskifter
           </CardTitle>
           <CardDescription>
-            Slet alle dine ugeskifte-records, så modalen vises igen næste gang du åbner Nuvio Flow.
+            Slet alle dine ugeskifte-records, så modalen vises igen næste gang du åbner Udgifter.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -675,7 +675,7 @@ function MonthTransitionSection() {
         .eq('month', curMonth);
 
       if (error) throw error;
-      toast.success(`Transition for ${DANISH_MONTHS[curMonth - 1]} ${curYear} er nulstillet — genindlæs Nuvio Flow siden for at se modalen igen.`);
+      toast.success(`Transition for ${DANISH_MONTHS[curMonth - 1]} ${curYear} er nulstillet — genindlæs Udgifter-siden for at se modalen igen.`);
     } catch {
       toast.error('Kunne ikke nulstille');
     } finally {
@@ -700,7 +700,7 @@ function MonthTransitionSection() {
             Nulstil overgang for indeværende måned
           </CardTitle>
           <CardDescription>
-            Slet din transition-markering for {DANISH_MONTHS[curMonth - 1]} {curYear}, så modalen vises igen næste gang du åbner Nuvio Flow.
+            Slet din transition-markering for {DANISH_MONTHS[curMonth - 1]} {curYear}, så modalen vises igen næste gang du åbner Udgifter.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -953,7 +953,7 @@ export default function AdminNuvioFlowPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 space-y-16">
       <div>
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight mb-1">Nuvio Flow — Budget Status Card</h1>
+          <h1 className="text-2xl font-semibold tracking-tight mb-1">Udgifter — Budget Status Card</h1>
           <p className="text-sm text-muted-foreground">Forhåndsvisning af kortet med justerbare parametre.</p>
         </div>
 

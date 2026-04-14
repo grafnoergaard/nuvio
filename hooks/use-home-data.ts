@@ -6,11 +6,68 @@ import { getBudgetStructure } from '@/lib/db-helpers';
 import { fetchActiveSdsData, type SdsData } from '@/lib/standard-data-service';
 import {
   getStreak,
+  getMonthlyBudget,
+  getQuickExpensesForMonth,
   getWeeklyBudgetStreak,
+  computeWeeklyCarryOver,
+  getUserWeekStartDay,
   type QuickExpenseStreak,
   type QuickExpenseWeeklyStreak,
+  type WeeklyCarryOverSummary,
 } from '@/lib/quick-expense-service';
 import type { InvestmentSettings } from '@/lib/home-calculations';
+
+export interface FlowStatusConfig {
+  warnHealthMin: number;
+  kursenHealthMin: number;
+  tempoHealthMin: number;
+  flowHealthMin: number;
+  badgeOver: string;
+  badgeWarn: string;
+  badgeKursen: string;
+  badgeTempo: string;
+  badgeFlow: string;
+  headlineOver: string;
+  headlineWarn: string;
+  headlineKursen: string;
+  headlineTempo: string;
+  headlineFlow: string;
+  colorOverBadge: string;
+  colorWarnBadge: string;
+  colorKursenBadge: string;
+  colorTempoBadge: string;
+  colorFlowBadge: string;
+  colorOverCard: string;
+  colorWarnCard: string;
+  colorGoodCard: string;
+  colorFlowCard: string;
+}
+
+export const FLOW_STATUS_DEFAULTS: FlowStatusConfig = {
+  warnHealthMin: 30,
+  kursenHealthMin: 0,
+  tempoHealthMin: 60,
+  flowHealthMin: 80,
+  badgeOver: 'Over budget',
+  badgeWarn: 'Stram op',
+  badgeKursen: 'Hold kursen',
+  badgeTempo: 'Godt tempo',
+  badgeFlow: 'Udgifter',
+  headlineOver: 'Du har overskredet dit budget',
+  headlineWarn: 'Hold igen på forbruget',
+  headlineKursen: 'Du er på rette spor',
+  headlineTempo: 'Du klarer det fremragende',
+  headlineFlow: 'Du har styr på udgifterne',
+  colorOverBadge: 'bg-red-500',
+  colorWarnBadge: 'bg-amber-500',
+  colorKursenBadge: 'bg-emerald-500',
+  colorTempoBadge: 'bg-emerald-500',
+  colorFlowBadge: 'bg-amber-500',
+  colorOverCard: 'bg-gradient-to-br from-red-50 via-rose-50/60 to-white border-red-200/60',
+  colorWarnCard: 'bg-gradient-to-br from-amber-50 via-orange-50/40 to-white border-amber-200/60',
+  colorGoodCard: 'bg-gradient-to-br from-emerald-50/80 via-teal-50/30 to-white border-emerald-200/50',
+  colorFlowCard: 'bg-gradient-to-br from-slate-50 via-gray-50/80 to-white border-yellow-300/40',
+};
 
 export interface HomeBudget {
   id: string;
@@ -36,6 +93,11 @@ export interface HomeDataState {
   categoryGroupTypes: Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>;
   quickStreak: QuickExpenseStreak | null;
   weeklyStreak: QuickExpenseWeeklyStreak | null;
+  flowMonthlyBudget: number;
+  flowMonthlySpent: number;
+  flowScoreThreshold: number;
+  flowStatusConfig: FlowStatusConfig;
+  flowWeeklyStatus: WeeklyCarryOverSummary | null;
 }
 
 export interface HomeDataActions {
@@ -74,6 +136,11 @@ export function useHomeData(): HomeDataState & HomeDataActions {
   const [categoryGroupTypes, setCategoryGroupTypes] = useState<Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>>(initialCache?.categoryGroupTypes ?? []);
   const [quickStreak, setQuickStreak] = useState<QuickExpenseStreak | null>(initialCache?.quickStreak ?? null);
   const [weeklyStreak, setWeeklyStreak] = useState<QuickExpenseWeeklyStreak | null>(initialCache?.weeklyStreak ?? null);
+  const [flowMonthlyBudget, setFlowMonthlyBudget] = useState(initialCache?.flowMonthlyBudget ?? 0);
+  const [flowMonthlySpent, setFlowMonthlySpent] = useState(initialCache?.flowMonthlySpent ?? 0);
+  const [flowScoreThreshold, setFlowScoreThreshold] = useState(initialCache?.flowScoreThreshold ?? 0.15);
+  const [flowStatusConfig, setFlowStatusConfig] = useState<FlowStatusConfig>(initialCache?.flowStatusConfig ?? FLOW_STATUS_DEFAULTS);
+  const [flowWeeklyStatus, setFlowWeeklyStatus] = useState<WeeklyCarryOverSummary | null>(initialCache?.flowWeeklyStatus ?? null);
 
   const userIdRef = useRef<string | undefined>(undefined);
 
@@ -99,6 +166,11 @@ export function useHomeData(): HomeDataState & HomeDataActions {
         categoryGroupTypes,
         quickStreak,
         weeklyStreak,
+        flowMonthlyBudget,
+        flowMonthlySpent,
+        flowScoreThreshold,
+        flowStatusConfig,
+        flowWeeklyStatus,
       },
     };
   }, [
@@ -116,6 +188,11 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     categoryGroupTypes,
     quickStreak,
     weeklyStreak,
+    flowMonthlyBudget,
+    flowMonthlySpent,
+    flowScoreThreshold,
+    flowStatusConfig,
+    flowWeeklyStatus,
   ]);
 
   async function loadHousehold() {
@@ -174,9 +251,10 @@ export function useHomeData(): HomeDataState & HomeDataActions {
         currentBudget = fallbackBudgets[0] as HomeBudget;
       }
       setBudget(currentBudget);
+      setLoading(false);
 
       const structure = await getBudgetStructure(currentBudget.id);
-      if (!structure) { setLoading(false); return; }
+      if (!structure) return;
 
       let totalExpenses = 0;
       const recipientSet = new Set<string>();
@@ -208,12 +286,68 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     }
   }
 
+  async function loadFlowSnapshot() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const [monthlyBudget, quickExpenses, flowConfigEntries, userWeekStartDay] = await Promise.all([
+      getMonthlyBudget(year, month),
+      getQuickExpensesForMonth(year, month),
+      supabase
+        .from('standard_data_entries')
+        .select('key, value_numeric, value_text')
+        .eq('section', 'nuvio_flow'),
+      getUserWeekStartDay(),
+    ]);
+    const budgetAmount = monthlyBudget?.budget_amount ?? 0;
+    setFlowMonthlyBudget(budgetAmount);
+    setFlowMonthlySpent(quickExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0));
+
+    if (flowConfigEntries.data && flowConfigEntries.data.length > 0) {
+      const m = new Map(flowConfigEntries.data.map((entry: any) => [entry.key, entry]));
+      const n = (key: string, fallback: number) => (m.get(key) as any)?.value_numeric ?? fallback;
+      const t = (key: string, fallback: string) => (m.get(key) as any)?.value_text ?? fallback;
+      const d = FLOW_STATUS_DEFAULTS;
+      setFlowScoreThreshold(n('NUVIO_FLOW_SCORE_PERFECT_THRESHOLD', 0.15));
+      setFlowStatusConfig({
+        warnHealthMin: n('FLOW_STATUS_WARN_HEALTH_MIN', d.warnHealthMin),
+        kursenHealthMin: n('FLOW_STATUS_KURSEN_HEALTH_MIN', d.kursenHealthMin),
+        tempoHealthMin: n('FLOW_STATUS_TEMPO_HEALTH_MIN', d.tempoHealthMin),
+        flowHealthMin: n('FLOW_STATUS_FLOW_HEALTH_MIN', d.flowHealthMin),
+        badgeOver: t('FLOW_BADGE_OVER', d.badgeOver),
+        badgeWarn: t('FLOW_BADGE_WARN', d.badgeWarn),
+        badgeKursen: t('FLOW_BADGE_KURSEN', d.badgeKursen),
+        badgeTempo: t('FLOW_BADGE_TEMPO', d.badgeTempo),
+        badgeFlow: t('FLOW_BADGE_FLOW', d.badgeFlow),
+        headlineOver: t('FLOW_HEADLINE_OVER', d.headlineOver),
+        headlineWarn: t('FLOW_HEADLINE_WARN', d.headlineWarn),
+        headlineKursen: t('FLOW_HEADLINE_KURSEN', d.headlineKursen),
+        headlineTempo: t('FLOW_HEADLINE_TEMPO', d.headlineTempo),
+        headlineFlow: t('FLOW_HEADLINE_FLOW', d.headlineFlow),
+        colorOverBadge: t('FLOW_COLOR_OVER_BADGE', d.colorOverBadge),
+        colorWarnBadge: t('FLOW_COLOR_WARN_BADGE', d.colorWarnBadge),
+        colorKursenBadge: t('FLOW_COLOR_KURSEN_BADGE', d.colorKursenBadge),
+        colorTempoBadge: t('FLOW_COLOR_TEMPO_BADGE', d.colorTempoBadge),
+        colorFlowBadge: t('FLOW_COLOR_FLOW_BADGE', d.colorFlowBadge),
+        colorOverCard: t('FLOW_COLOR_OVER_CARD', d.colorOverCard),
+        colorWarnCard: t('FLOW_COLOR_WARN_CARD', d.colorWarnCard),
+        colorGoodCard: t('FLOW_COLOR_GOOD_CARD', d.colorGoodCard),
+        colorFlowCard: t('FLOW_COLOR_FLOW_CARD', d.colorFlowCard),
+      });
+    }
+
+    setFlowWeeklyStatus(
+      budgetAmount > 0 ? computeWeeklyCarryOver(budgetAmount, year, month, quickExpenses, now, userWeekStartDay) : null
+    );
+  }
+
   function loadAll() {
     loadData();
     loadInvestmentSettings();
     fetchActiveSdsData().then(setSdsData);
     getStreak().then(setQuickStreak).catch(() => {});
     getWeeklyBudgetStreak().then(setWeeklyStreak).catch(() => {});
+    loadFlowSnapshot().catch(() => {});
     if (userIdRef.current) loadHousehold();
   }
 
@@ -232,6 +366,11 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     categoryGroupTypes,
     quickStreak,
     weeklyStreak,
+    flowMonthlyBudget,
+    flowMonthlySpent,
+    flowScoreThreshold,
+    flowStatusConfig,
+    flowWeeklyStatus,
     loadData,
     loadHousehold,
     loadInvestmentSettings,

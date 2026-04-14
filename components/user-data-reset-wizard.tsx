@@ -75,7 +75,7 @@ const SECTION_CONFIG = [
   {
     key: 'nuvioFlow' as keyof ResetSections,
     icon: Zap,
-    label: 'Nuvio Flow',
+    label: 'Udgifter',
     description: 'Hurtige udgifter, månedlige budgetter og streaks',
     color: 'text-teal-600',
     bg: 'bg-teal-50',

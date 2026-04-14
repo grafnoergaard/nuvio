@@ -11,13 +11,12 @@ import { SavingsInvestmentCard } from '@/components/home-cards/savings-investmen
 import { OverviewCheckupCard } from '@/components/home-cards/overview-checkup-card';
 import { NextStepCard } from '@/components/home-cards/next-step-card';
 import { ConsumptionStatusCard } from '@/components/home-cards/consumption-status-card';
-import BudgetStatusCard from '@/components/budget-status-card';
-import FlowSavingsCard from '@/components/flow-savings-card';
-import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
-import StreakCountCard from '@/components/home-cards/streak-count-card';
-import { QuickExpenseActionCard } from '@/components/home-cards/quick-expense-action-card';
+import { KuvertHeroCard } from '@/components/home-cards/kuvert-hero-card';
 import type { HomeDerived } from '@/lib/home-derived';
-import type { QuickExpenseStreak, QuickExpenseWeeklyStreak } from '@/lib/quick-expense-service';
+import type { QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
+import type { FlowStatusConfig } from '@/hooks/use-home-data';
+
+const HERO_CARD_KEYS = new Set<HomeCardKey>(['streak_count', 'quick_expense_action']);
 
 interface SectionSlotProps {
   cardKey: HomeCardKey;
@@ -26,8 +25,12 @@ interface SectionSlotProps {
   derived: HomeDerived;
   categoryGroupTypes: Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>;
   recipientCount: number;
-  quickStreak: QuickExpenseStreak | null;
   weeklyStreak: QuickExpenseWeeklyStreak | null;
+  flowMonthlyBudget: number;
+  flowMonthlySpent: number;
+  flowScoreThreshold: number;
+  flowStatusConfig: FlowStatusConfig;
+  flowWeeklyStatus: WeeklyCarryOverSummary | null;
   openingBalance: number;
   wizardEnabled: (key: string) => boolean;
   onDismissOnboarding: () => void;
@@ -45,8 +48,12 @@ export function SectionSlot({
   derived,
   categoryGroupTypes,
   recipientCount,
-  quickStreak,
   weeklyStreak,
+  flowMonthlyBudget,
+  flowMonthlySpent,
+  flowScoreThreshold,
+  flowStatusConfig,
+  flowWeeklyStatus,
   openingBalance,
   wizardEnabled,
   onDismissOnboarding,
@@ -56,7 +63,11 @@ export function SectionSlot({
   onShowStartBalance,
   onShowQuickExpense,
 }: SectionSlotProps) {
-  const visible = cardVisibility[cardKey];
+  const isHeroCard = cardKey === 'streak_count' && (
+    cardVisibility.streak_count || cardVisibility.quick_expense_action
+  );
+  const visible = isHeroCard || cardVisibility[cardKey];
+  if (!visible) return null;
   const dimmed = !visible && isAdmin;
 
   const {
@@ -119,54 +130,31 @@ export function SectionSlot({
       return <ConsumptionStatusCard status={consumptionStatus} dimmed={dimmed} />;
 
     case 'budget_status':
-      return (
-        <div className={cn(dimmed && 'opacity-50')}>
-          {isAdmin && (
-            <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Budget status</span>
-              <CardVisibilityToggle cardKey="budget_status" mode="inline" />
-            </div>
-          )}
-          <BudgetStatusCard />
-        </div>
-      );
+      return null;
 
     case 'nuvio_score_standalone':
-      return (
-        <div className={cn('relative', dimmed && 'opacity-50')}>
-          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="nuvio_score_standalone" mode="inline" /></div>}
-          <NuvioScoreStandaloneCard
-            streak={quickStreak}
-            score={nuvioScore?.score ?? null}
-            scoreLabel={nuvioScore?.label ?? ''}
-            scoreColor={nuvioScore?.color.bar ?? '#10b981'}
-          />
-        </div>
-      );
+      return null;
 
     case 'flow_savings':
-      return (
-        <div className={cn('relative', dimmed && 'opacity-50')}>
-          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="flow_savings" mode="inline" /></div>}
-          <FlowSavingsCard />
-        </div>
-      );
+      return null;
 
     case 'streak_count':
       return (
-        <div className="relative">
-          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="streak_count" mode="inline" /></div>}
-          <StreakCountCard streak={weeklyStreak} dimmed={dimmed} />
-        </div>
+        <KuvertHeroCard
+          weeklyStreak={weeklyStreak}
+          flowMonthlyBudget={flowMonthlyBudget}
+          flowMonthlySpent={flowMonthlySpent}
+          flowScoreThreshold={flowScoreThreshold}
+          flowStatusConfig={flowStatusConfig}
+          flowWeeklyStatus={flowWeeklyStatus}
+          showStreak={cardVisibility.streak_count}
+          showQuickExpense={cardVisibility.quick_expense_action}
+          onShowQuickExpense={onShowQuickExpense}
+        />
       );
 
     case 'quick_expense_action':
-      return (
-        <div className="relative">
-          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="quick_expense_action" mode="inline" /></div>}
-          <QuickExpenseActionCard dimmed={dimmed} onClick={onShowQuickExpense} />
-        </div>
-      );
+      return null;
 
     default:
       return null;
@@ -181,8 +169,17 @@ interface DynamicSectionsProps extends SlotSharedProps {
 }
 
 export function DynamicSections(props: DynamicSectionsProps) {
-  const { sortedCardKeys, cardWidth, isAdmin, cardVisibility } = props;
-  const keysToRender = sortedCardKeys.filter(key => isAdmin || cardVisibility[key]);
+  const { sortedCardKeys, cardWidth, cardVisibility } = props;
+  const hasHeroCard = sortedCardKeys.some(key => HERO_CARD_KEYS.has(key) && cardVisibility[key]);
+  const keysToRender = sortedCardKeys.reduce<HomeCardKey[]>((keys, key) => {
+    if (!cardVisibility[key]) return keys;
+    if (HERO_CARD_KEYS.has(key)) {
+      if (hasHeroCard && !keys.includes('streak_count')) keys.push('streak_count');
+      return keys;
+    }
+    keys.push(key);
+    return keys;
+  }, []);
   const result: React.ReactNode[] = [];
   let i = 0;
   while (i < keysToRender.length) {

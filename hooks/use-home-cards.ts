@@ -53,7 +53,7 @@ export function useHomeCards(): HomeCardsState & HomeCardsActions {
   const cardVisibility = useMemo(() => {
     const visibility = buildCardVisibilityMap(cardConfigs);
     for (const cfg of userCardConfigs) {
-      visibility[cfg.card_key] = cfg.is_visible;
+      visibility[cfg.card_key] = visibility[cfg.card_key] !== false && cfg.is_visible;
     }
     return visibility;
   }, [cardConfigs, userCardConfigs]);

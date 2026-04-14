@@ -89,7 +89,7 @@ export default function NuvioScoreCard({ streak, className, title, onInfoClick }
               <button
                 onClick={onInfoClick}
                 className="h-9 w-9 rounded-full border-2 border-emerald-400/60 bg-white/70 flex items-center justify-center text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 shadow-sm"
-                aria-label="Om Nuvio Flow"
+                aria-label="Om Udgifter"
               >
                 <Info className="h-4 w-4" />
               </button>
@@ -103,7 +103,7 @@ export default function NuvioScoreCard({ streak, className, title, onInfoClick }
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 leading-none mb-1">
-              Nuvio Score
+              Kuvert Score
             </p>
             <div className="flex items-baseline gap-2">
               <span className={cn('text-2xl font-black tabular-nums tracking-tight leading-none', tier.textColor)}>
@@ -168,7 +168,7 @@ export default function NuvioScoreCard({ streak, className, title, onInfoClick }
               <div className="flex items-center gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 mb-0.5">
-                    Nuvio Score
+                    Kuvert Score
                   </p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-4xl font-black tabular-nums tracking-tight">
@@ -187,9 +187,9 @@ export default function NuvioScoreCard({ streak, className, title, onInfoClick }
 
             <div className="overflow-y-auto overscroll-contain flex-1 px-5 py-4 space-y-4 min-h-0">
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1.5">Hvad er Nuvio Score?</p>
+                <p className="text-sm font-semibold text-foreground mb-1.5">Hvad er Kuvert Score?</p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Din Nuvio Score er et akkumulerende pointsystem der vokser for hver måned du holder dit budget. Jo bedre du klarer dig, og jo længere din streak er, jo hurtigere stiger den.
+                  Din Kuvert Score er et akkumulerende pointsystem der vokser for hver måned du holder dit budget. Jo bedre du klarer dig, og jo længere din streak er, jo hurtigere stiger den.
                 </p>
               </div>
 

@@ -377,7 +377,7 @@ function Step1Overview({
         'text-label font-semibold uppercase tracking-widest',
         isOver ? 'text-amber-600/70' : 'text-emerald-600/70'
       )}>
-        Overblik
+        Kuvert
       </p>
       <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight">
         Du brugte {formatDKK(prevSummary.totalSpent)} ud af {formatDKK(prevSummary.budgetAmount)}
@@ -461,7 +461,7 @@ function Step2Streak({
         </p>
         {scoreDelta !== 0 && (
           <div className="bg-red-50/80 border border-red-200/50 rounded-2xl px-5 py-4">
-            <p className="text-xs font-semibold text-red-600/70 uppercase tracking-widest mb-1">Nuvio Score</p>
+            <p className="text-xs font-semibold text-red-600/70 uppercase tracking-widest mb-1">Kuvert Score</p>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-black text-red-700 tabular-nums">{cumulativeScore.toLocaleString('da-DK')}</span>
               <span className="text-sm font-semibold text-red-500">{scoreDelta.toLocaleString('da-DK')} point</span>
@@ -554,7 +554,7 @@ function Step2Streak({
       </div>
 
       <div className="bg-emerald-50/80 border border-emerald-200/50 rounded-2xl px-5 py-4">
-        <p className="text-xs font-semibold text-emerald-700/70 uppercase tracking-widest mb-1">Nuvio Score</p>
+        <p className="text-xs font-semibold text-emerald-700/70 uppercase tracking-widest mb-1">Kuvert Score</p>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-black text-emerald-800 tabular-nums">{cumulativeScore.toLocaleString('da-DK')}</span>
           {scoreDelta > 0 && (
@@ -692,7 +692,7 @@ function Step4Ai({
   return (
     <div className="space-y-5 flex-1 flex flex-col justify-center">
       <p className="text-label font-semibold uppercase tracking-widest text-emerald-600/70">
-        Nuvio AI
+        Kuvert AI
       </p>
 
       {aiLoading && (

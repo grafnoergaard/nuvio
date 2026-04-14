@@ -138,7 +138,7 @@ function AiModal({ onClose, context }: { onClose: () => void; context?: AiContex
     ? [
         {
           icon: TrendingUp,
-          title: 'Analyser min Nuvio Score',
+          title: 'Analyser min Kuvert Score',
           desc: 'Hvad driver min score og hvordan forbedrer jeg den?',
         },
         {
@@ -191,13 +191,13 @@ function AiModal({ onClose, context }: { onClose: () => void; context?: AiContex
                 style={{ background: `linear-gradient(135deg, ${design.gradientFrom}, ${design.gradientTo})` }}
               >
                 {design.logoUrl ? (
-                  <img src={design.logoUrl} alt="Nuvio" className="object-contain" style={{ width: 36, height: 36 }} />
+                  <img src={design.logoUrl} alt="Kuvert" className="object-contain" style={{ width: 36, height: 36 }} />
                 ) : (
                   <Sparkles className="h-5 w-5 text-white" />
                 )}
               </div>
               <div>
-                <p className="text-sm font-semibold tracking-tight">Nuvio AI</p>
+                <p className="text-sm font-semibold tracking-tight">Kuvert AI</p>
                 <p className="text-xs text-muted-foreground">Din finansielle rådgiver</p>
               </div>
             </div>
@@ -299,7 +299,7 @@ function AiModal({ onClose, context }: { onClose: () => void; context?: AiContex
             <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
               <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
               <p className="text-xs text-amber-700 leading-relaxed">
-                Gå til Oversigt eller Nuvio Flow for at aktivere personlige indsigter.
+                Gå til Kuvert eller Udgifter for at aktivere personlige indsigter.
               </p>
             </div>
           </div>
@@ -337,14 +337,14 @@ export function AiAssistantButton({ context }: { context?: AiContext }) {
         onClick={() => setOpen(true)}
         className="fixed bottom-[80px] right-4 md:bottom-6 md:right-6 z-50 group"
         style={{ bottom: 'max(88px, calc(64px + env(safe-area-inset-bottom, 0px) + 28px))' }}
-        aria-label="Åbn Nuvio AI"
+        aria-label="Åbn Kuvert AI"
       >
         <div
           className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 overflow-hidden"
           style={{ background: `linear-gradient(135deg, ${design.gradientFrom}, ${design.gradientTo})` }}
         >
           {design.logoUrl ? (
-            <img src={design.logoUrl} alt="Nuvio" className="object-contain" style={{ width: 52, height: 52 }} />
+            <img src={design.logoUrl} alt="Kuvert" className="object-contain" style={{ width: 52, height: 52 }} />
           ) : (
             <Sparkles className="h-7 w-7 text-white" />
           )}

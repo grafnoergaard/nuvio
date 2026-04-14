@@ -220,7 +220,7 @@ export default function BrugerePage() {
               Backfill scores
             </CardTitle>
             <CardDescription>
-              Genberegn Nuvio Flow score og streak for alle brugere baseret på deres historik
+              Genberegn udgiftsscore og streak for alle brugere baseret på deres historik
             </CardDescription>
           </CardHeader>
           <CardContent>

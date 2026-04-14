@@ -297,7 +297,7 @@ export function WhyWizard({ onComplete }: { onComplete: () => void }) {
             className="w-full h-14 rounded-2xl font-semibold text-base text-white shadow-md active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(to right, #0d9488, #10b981)' }}
           >
-            Gå til overblik
+            Gå til Kuvert
             <ArrowRight className="h-4 w-4" />
           </button>
         )}

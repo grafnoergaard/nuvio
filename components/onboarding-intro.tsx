@@ -213,7 +213,7 @@ export function OnboardingIntro({ onComplete, onDismiss }: { onComplete: () => v
                   Men fordi det <span className="font-semibold text-foreground">føles uoverskueligt</span>.
                 </p>
                 <p className="text-foreground/60 text-base leading-relaxed">
-                  Nuvio hjælper dig med at komme i gang — uden at taste 100 ting fra start.
+                  Kuvert hjælper dig med at komme i gang — uden at taste 100 ting fra start.
                 </p>
               </div>
             )}
@@ -451,7 +451,7 @@ export function OnboardingIntro({ onComplete, onDismiss }: { onComplete: () => v
 
                 <p className="text-sm text-foreground/50 leading-relaxed">
                   Dette er baseret på gennemsnit for en husstand som din.
-                  Med dine <span className="font-semibold text-foreground/70">rigtige tal</span> kan Nuvio give dig et præcist billede.
+                  Med dine <span className="font-semibold text-foreground/70">rigtige tal</span> kan Kuvert give dig et præcist billede.
                 </p>
               </div>
             )}

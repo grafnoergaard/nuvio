@@ -13,7 +13,7 @@ interface NuvioFlowGuideModalProps {
 const SLIDES = [
   {
     icon: <TrendingUp className="h-8 w-8 text-emerald-600" />,
-    tag: 'Overblik',
+    tag: 'Kuvert',
     title: 'Få styr på dine penge — hver dag',
     body: 'Se præcis hvad du har tilbage. Ikke bare sidst på måneden — men lige nu. Du undgår at løbe tør, fordi du altid ved, hvor du står.',
     visual: (
@@ -58,7 +58,7 @@ const SLIDES = [
     icon: <Receipt className="h-8 w-8 text-emerald-600" />,
     tag: 'Hurtig handling',
     title: 'Track dine penge på 5 sekunder',
-    body: 'Indtast beløbet og gem. Så er du opdateret — med det samme. Det opdaterer dit daglige beløb og din Flow Score automatisk.',
+    body: 'Indtast beløbet og gem. Så er du opdateret — med det samme. Det opdaterer dit daglige beløb og din Score automatisk.',
     visual: (
       <div className="mt-5 space-y-3">
         <div className="rounded-2xl bg-white/70 border border-emerald-100 px-4 py-3 flex items-center gap-3">
@@ -103,7 +103,7 @@ const SLIDES = [
   },
   {
     icon: <CalendarDays className="h-8 w-8 text-emerald-600" />,
-    tag: 'Overblik',
+    tag: 'Kuvert',
     title: 'Din måned — delt op for dig',
     body: 'Dit beløb fordeles automatisk ud på uger. Bruger du mere én uge, justeres resten. Du kan altid se, om du er foran eller bagud.',
     visual: (
@@ -126,13 +126,13 @@ const SLIDES = [
   },
   {
     icon: <Gauge className="h-8 w-8 text-emerald-600" />,
-    tag: 'Flow Score',
+    tag: 'Din Score',
     title: 'Se om du er på rette vej',
     body: 'Din score viser, hvor godt du holder dig inden for dit budget. Jo tættere du følger din plan, jo stærkere står din økonomi.',
     visual: (
       <div className="mt-5 rounded-2xl bg-white/70 border border-emerald-100 px-4 py-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium text-muted-foreground/60">Nuvio Flow Score</p>
+          <p className="text-xs font-medium text-muted-foreground/60">Din Score</p>
           <p className="text-sm font-bold text-emerald-700">87</p>
         </div>
         <div className="h-2 rounded-full bg-black/5 overflow-hidden">
@@ -140,7 +140,7 @@ const SLIDES = [
         </div>
         <div className="flex justify-between mt-2">
           <p className="text-xs text-muted-foreground/50">Under budget</p>
-          <p className="text-xs font-semibold text-emerald-600">Nuvio Flow ved 80+</p>
+          <p className="text-xs font-semibold text-emerald-600">Din Score er stærk ved 80+</p>
         </div>
       </div>
     ),

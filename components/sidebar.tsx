@@ -35,15 +35,15 @@ interface SidebarProps {
 const BACKEND_ITEMS: FlatNavItem[] = [
   { name: 'Design & farver', href: '/admin', icon: ShieldCheck },
   { name: 'Brugere', href: '/admin/brugere', icon: ShieldCheck },
-  { name: 'Nuvio Checkup', href: '/admin/mini-checkup', icon: ClipboardCheck },
+  { name: 'Kuvert Checkup', href: '/admin/mini-checkup', icon: ClipboardCheck },
   { name: 'Onboarding standardværdier', href: '/admin/checkup', icon: Calculator },
-  { name: 'Nuvio AI', href: '/admin/ai-assistant', icon: Bot },
+  { name: 'Kuvert AI', href: '/admin/ai-assistant', icon: Bot },
   { name: 'Advisory Engine', href: '/admin/advisory-engine', icon: Zap },
   { name: 'Navigation', href: '/admin/navigation', icon: Navigation },
   { name: 'Why Wizard', href: '/admin/why', icon: ShieldCheck },
   { name: 'StandardDataService', href: '/admin/standard-data', icon: Database },
-  { name: 'Nuvio Flow', href: '/admin/nuvio-flow', icon: Activity },
-  { name: 'Oversigt-layout', href: '/admin/home-layout', icon: LayoutDashboard },
+  { name: 'Udgifter', href: '/admin/nuvio-flow', icon: Activity },
+  { name: 'Kuvert-layout', href: '/admin/home-layout', icon: LayoutDashboard },
   { name: 'Typografi', href: '/admin/design', icon: Type },
   { name: 'Wizards', href: '/admin/wizards', icon: Wand2 },
 ];
@@ -147,17 +147,17 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
           {
             label: 'Økonomi',
             items: [
-              { name: 'Oversigt', href: '/', icon: NAV_ICON_MAP['Home'] },
+              { name: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Home'] },
               { name: 'Plan', href: '/plan', icon: NAV_ICON_MAP['LayoutDashboard'] },
               { name: 'Investering', href: '/investering', icon: NAV_ICON_MAP['TrendingUp'] },
-              { name: 'Opsparing', href: '/maal', icon: NAV_ICON_MAP['Target'] },
+              { name: 'Sparet', href: '/maal', icon: NAV_ICON_MAP['Target'] },
               { name: 'Husstand', href: '/husstand', icon: NAV_ICON_MAP['Users'] },
             ],
           },
           {
             label: 'Indstillinger',
             items: [
-              { name: 'Nuvio Checkup', href: '/checkup', icon: NAV_ICON_MAP['Activity'] },
+              { name: 'Kuvert Checkup', href: '/checkup', icon: NAV_ICON_MAP['Activity'] },
               { name: 'Indstillinger', href: '/indstillinger', icon: NAV_ICON_MAP['Settings'] },
             ],
           },
@@ -194,11 +194,11 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
           <div className="flex flex-col gap-4 w-full items-center">
             <img
               src={design.logoUrl}
-              alt="Nuvio Logo"
+              alt="Kuvert Logo"
               className="w-28 h-28 rounded-3xl shadow-lg object-contain"
             />
             <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-bold text-center text-foreground">Nuvio</h1>
+              <h1 className="text-3xl font-bold text-center text-foreground">Kuvert</h1>
               <p className="text-xs text-muted-foreground text-center">
                 Økonomisk rådgivning – uden bank.
               </p>
@@ -265,7 +265,7 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
           )}
           <div className="flex justify-center pt-1">
             <span className="text-label text-muted-foreground/40 tracking-wide select-none">
-              Nuvio {VERSION}
+              Kuvert {VERSION}
             </span>
           </div>
         </div>

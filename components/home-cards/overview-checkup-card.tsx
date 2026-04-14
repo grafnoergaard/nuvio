@@ -23,7 +23,7 @@ export function OverviewCheckupCard({ dimmed }: OverviewCheckupCardProps) {
         </div>
       )}
       <div className="rounded-[8px] nuvio-card overflow-hidden p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">Nuvio Checkup</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">Kuvert Checkup</p>
         <p className="text-base font-bold tracking-tight mb-2">Er din plan stadig præcis?</p>
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
           Har din løn, dine udgifter eller dine mål ændret sig? Et 2-minutters check sikrer at din plan afspejler virkeligheden.

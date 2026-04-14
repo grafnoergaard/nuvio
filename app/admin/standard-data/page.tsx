@@ -19,7 +19,7 @@ const SECTION_LABELS: Record<string, string> = {
   BIL: 'Bilbudget (FDM)',
   FASTE_UDGIFTER: 'Faste udgifter',
   BEREGNING: 'Beregningssatser (variabelt forbrug)',
-  nuvio_flow: 'Nuvio Flow — statustærskler og tekster',
+  nuvio_flow: 'Udgifter — statustærskler og tekster',
   OEVRIGE_FASTE_UDGIFTER: 'Øvrige faste udgifter (multiplikatorer)',
   VARIABELT_FORBRUG: 'Variabelt forbrug — kategoridefaults',
 };
@@ -29,7 +29,7 @@ const FLOW_TIER_LABELS: { prefix: string; min: number; max: number; color: strin
   { prefix: '2. Stram op',     min: 200, max: 299, color: 'text-amber-600 bg-amber-50 border-amber-200' },
   { prefix: '3. Hold kursen',  min: 300, max: 399, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
   { prefix: '4. Godt tempo',   min: 400, max: 499, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-  { prefix: '5. Nuvio Flow',   min: 500, max: 599, color: 'text-yellow-700 bg-yellow-50 border-yellow-300' },
+  { prefix: '5. Udgifter',   min: 500, max: 599, color: 'text-yellow-700 bg-yellow-50 border-yellow-300' },
 ];
 
 function getFlowTierLabel(sortOrder: number) {

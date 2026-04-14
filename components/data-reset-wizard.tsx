@@ -91,7 +91,7 @@ const SECTION_CONFIG = [
   {
     key: 'nuvioFlow' as keyof ResetSections,
     icon: Zap,
-    label: 'Nuvio Flow',
+    label: 'Udgifter',
     description: 'Hurtige udgifter, månedlige budgetter, streaks og månedsovergange',
     countKeys: ['quick_expenses', 'quick_expense_monthly_budgets', 'quick_expense_month_transitions', 'quick_expense_streaks'] as (keyof ResetCounts)[],
     color: 'text-teal-600',

@@ -14,8 +14,8 @@ export interface UserHomeCardConfig {
 export const USER_CARD_LABELS: Record<UserConfigurableCardKey, string> = {
   nuvio_score_standalone: 'Nuvio Score',
   quick_expense_action: 'Tilføj udgift',
-  budget_status: 'Nuvio Flow',
-  flow_savings: 'Flow Opsparing',
+  budget_status: 'Udgifter',
+  flow_savings: 'Sparet',
   streak_count: 'Streak Count',
 };
 
@@ -23,8 +23,8 @@ export const USER_CARD_DESCRIPTIONS: Record<UserConfigurableCardKey, string> = {
   nuvio_score_standalone: 'Din daglige stræk og finansielle score',
   quick_expense_action: 'Mini-knap til hurtig registrering af udgifter',
   budget_status: 'Rådighedsbeløb, flow-score og ugebudget',
-  flow_savings: 'Opsparing via Flow-systemet',
-  streak_count: 'Din aktive Nuvio Flow-streak',
+  flow_savings: 'Penge sparet via Udgifter',
+  streak_count: 'Din aktive udgifts-streak',
 };
 
 export async function fetchUserHomeCardConfig(): Promise<UserHomeCardConfig[]> {

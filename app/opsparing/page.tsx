@@ -131,13 +131,13 @@ export default function OpsparingPage() {
                 {DANISH_MONTHS_FULL[now.getMonth()]} {now.getFullYear()}
               </p>
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
-                Flow Opsparing
+                Sparet
               </h1>
             </div>
             <button
               onClick={() => setShowInfoModal(true)}
               className="h-10 w-10 rounded-full border-2 border-emerald-400/60 bg-white/70 flex items-center justify-center text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 transition-all duration-200 shadow-sm shrink-0"
-              aria-label="Om Flow Opsparing"
+              aria-label="Om Sparet"
             >
               <Info className="h-4 w-4" />
             </button>
@@ -175,11 +175,11 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <h2 className="text-xl font-bold tracking-tight mb-1">Flow Opsparing</h2>
+          <h2 className="text-xl font-bold tracking-tight mb-1">Sparet</h2>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600/70 mb-4">Hvordan fungerer det?</p>
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p>
-              <span className="font-semibold text-foreground">Flow Opsparing</span> er penge du automatisk sparer, hver gang du afslutter en uge under dit Nuvio Flow-budget. Overskuddet overføres direkte til din Flow-saldo.
+              <span className="font-semibold text-foreground">Sparet</span> er penge du automatisk sparer, hver gang du afslutter en uge under dit Udgifter-budget. Overskuddet overføres direkte til din saldo i Sparet.
             </p>
             <p>
               Jo mere præcist du holder dit ugentlige Flow-budget, jo mere akkumulerer du over tid — uden at tænke over det.
@@ -250,7 +250,7 @@ function FlowSavingsTab() {
     try {
       await resetFlowSavings();
       flowSavingsCache = null;
-      toast.success('Flow-opsparing nulstillet');
+      toast.success('Sparet nulstillet');
       setShowResetConfirm(false);
       load();
     } catch {
@@ -302,7 +302,7 @@ function FlowSavingsTab() {
             </div>
             <div>
               <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/50 leading-none mb-0.5">
-                Flow-opsparing
+                Sparet
               </p>
               {hasData && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold tracking-wide text-white bg-emerald-500">
@@ -327,9 +327,9 @@ function FlowSavingsTab() {
 
         {!hasData ? (
           <div className="px-5 pb-6 text-center">
-            <p className="text-sm font-semibold text-foreground mb-1">Ingen flow-opsparing endnu</p>
+            <p className="text-sm font-semibold text-foreground mb-1">Intet sparet endnu</p>
             <p className="text-sm text-muted-foreground/60 leading-relaxed">
-              Penge du sparer via Nuvio Flow-budgettet akkumuleres her automatisk efter hvert ugeskift.
+              Penge du sparer via Udgifter-budgettet akkumuleres her automatisk efter hvert ugeskift.
             </p>
           </div>
         ) : (
@@ -363,7 +363,7 @@ function FlowSavingsTab() {
 
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground tracking-wide">Flow opsparing</span>
+                <span className="text-xs font-semibold text-muted-foreground tracking-wide">Sparet</span>
                 <span className="text-xs font-bold tabular-nums text-emerald-700">{weekCount} uger</span>
               </div>
               <div className="relative h-2 rounded-full bg-black/[0.06] overflow-hidden">

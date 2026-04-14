@@ -15,16 +15,16 @@ const DEFAULT_BURGER_SECTIONS = [
   {
     label: 'Økonomi',
     items: [
-      { label: 'Oversigt', href: '/', icon: LayoutDashboard },
+      { label: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Kuvert'] },
       { label: 'Investering', href: '/investering', icon: TrendingUp },
-      { label: 'Opsparing', href: '/maal', icon: PiggyBank },
+      { label: 'Sparet', href: '/maal', icon: PiggyBank },
       { label: 'Husstand', href: '/husstand', icon: Users },
     ],
   },
   {
     label: 'Indstillinger',
     items: [
-      { label: 'Nuvio Checkup', href: '/checkup', icon: Activity },
+      { label: 'Kuvert Checkup', href: '/checkup', icon: Activity },
       { label: 'Indstillinger', href: '/indstillinger', icon: Settings },
     ],
   },
@@ -266,7 +266,7 @@ export function MobileNav() {
                         </div>
                         <div className="flex flex-col flex-1 min-w-0">
                           <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                          <span className="text-xs text-muted-foreground/40 tracking-wide select-none">Nuvio {VERSION}</span>
+                          <span className="text-xs text-muted-foreground/40 tracking-wide select-none">Kuvert {VERSION}</span>
                         </div>
                         <button
                           onClick={() => signOut()}

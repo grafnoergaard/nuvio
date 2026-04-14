@@ -27,7 +27,7 @@ export function NuvioScoreCard({ nuvioScore, categoryGroupTypes, dimmed }: Nuvio
       <div className="p-5 pt-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">Nuvio Score</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">Kuvert Score</p>
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">{nuvioScore.primaryDriver.text}</p>
             <div className="w-full h-2 rounded-[8px] bg-black/[0.06] overflow-hidden">
               <div

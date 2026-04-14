@@ -15,8 +15,8 @@ import { TypographyInspector } from '@/components/typography-inspector';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Nuvio',
-  description: 'Moderne økonomistyring og budgettering',
+  title: 'Kuvert',
+  description: 'Budgetstyring med kuvert-metoden',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
 };
 
@@ -33,9 +33,9 @@ export default function RootLayout({
         <meta name="theme-color" content="rgb(236,253,245)" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Nuvio" />
+        <meta name="apple-mobile-web-app-title" content="Kuvert" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="application-name" content="Nuvio" />
+        <meta name="application-name" content="Kuvert" />
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/nuvio.png" />

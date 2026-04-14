@@ -128,14 +128,14 @@ export function FinanceGridCard({
             addLabel={monthlyVariable <= 0 ? 'Tilføj estimat' : undefined}
           />
           <FinanceRow
-            label="Flow Opsparing"
+            label="Sparet"
             value={0}
-            sub="Se Flow Opsparing"
+            sub="Se Sparet"
             color="#f59e0b"
             negative={false}
             dimmed={true}
             onTap={() => router.push('/opsparing')}
-            addLabel="Se Flow Opsparing"
+            addLabel="Se Sparet"
           />
           {monthlyInvestment > 0 && (
             <FinanceRow

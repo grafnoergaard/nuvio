@@ -190,7 +190,7 @@ function StepResult({
             Du sparede {formatDKK(savedThisWeek)} denne uge
           </h2>
           <p className="text-foreground/60 text-base leading-relaxed">
-            Det er penge, du ikke brugte af dit budget. De lægges til din Flow-opsparing.
+            Det er penge, du ikke brugte af dit budget. De lægges til Sparet.
           </p>
 
           <div className="grid grid-cols-2 gap-3">
@@ -227,7 +227,7 @@ function StepConfirm({
   return (
     <div className="space-y-5 flex-1 flex flex-col justify-center">
       <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600/70">
-        Din Flow-opsparing
+        Sparet
       </p>
 
       <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight">

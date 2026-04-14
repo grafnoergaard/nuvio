@@ -1,16 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Flame, Zap, Award, ChevronRight } from 'lucide-react';
+import { X, Flame, Zap, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
 import type { QuickExpenseStreak } from '@/lib/quick-expense-service';
 
 interface Props {
   streak: QuickExpenseStreak | null;
-  score: number | null;
-  scoreLabel: string;
-  scoreColor: string;
   className?: string;
 }
 
@@ -21,12 +18,6 @@ const TIERS = [
   { label: 'Mester', min: 900 },
   { label: 'Legendarisk', min: 2000 },
 ];
-
-function getStreakTierColor(n: number) {
-  if (n >= 12) return 'from-amber-400 to-orange-500';
-  if (n >= 6) return 'from-orange-400 to-red-400';
-  return 'from-orange-300 to-amber-400';
-}
 
 function getScoreTier(score: number) {
   if (score >= 2000) return { label: 'Legendarisk', color: 'from-amber-400 to-yellow-500', bg: 'bg-gradient-to-br from-amber-50 to-yellow-50/60', border: 'border-amber-200/70', textColor: 'text-amber-900', barColor: '#f59e0b' };
@@ -84,18 +75,12 @@ function TierProgressBar({ score }: { score: number }) {
   );
 }
 
-export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, scoreColor, className }: Props) {
+export default function NuvioScoreStandaloneCard({ streak, className }: Props) {
   const { design } = useSettings();
   const [showInfo, setShowInfo] = useState(false);
 
   const cumulativeScore = streak?.cumulative_score ?? 0;
-  const currentStreak = streak?.current_streak ?? 0;
-  const longestStreak = streak?.longest_streak ?? 0;
   const tier = getScoreTier(cumulativeScore);
-  const isRecord = currentStreak > 0 && currentStreak >= longestStreak && currentStreak > 1;
-  const hasStreak = currentStreak > 0;
-
-  const displayScore = score ?? 0;
   const nextTierIndex = TIERS.findIndex(t => cumulativeScore < t.min);
   const nextTier = nextTierIndex > 0 ? TIERS[nextTierIndex] : null;
   const pointsToNext = nextTier ? nextTier.min - cumulativeScore : null;
@@ -124,7 +109,7 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 leading-none mb-0.5">
-                Nuvio Score
+                Kuvert Score
               </p>
               <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold tracking-wide text-white', `bg-gradient-to-r ${tier.color}`)}>
                 {tier.label}
@@ -146,20 +131,6 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
                   : 'Maksimalt niveau nået'}
               </p>
             </div>
-
-            {hasStreak && (
-              <div className="flex items-center gap-2 shrink-0">
-                <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0', getStreakTierColor(currentStreak))}>
-                  {isRecord ? <Award className="h-5 w-5 text-white" /> : <Flame className="h-5 w-5 text-white" />}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold tracking-tight text-orange-800 tabular-nums leading-none">{currentStreak} mdr.</p>
-                  <p className="text-[10px] text-orange-600/70 leading-none mt-0.5">
-                    {isRecord ? 'Rekord!' : `Rekord: ${longestStreak}`}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           <TierProgressBar score={cumulativeScore} />
@@ -188,7 +159,7 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
               <div className="flex items-center gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 mb-0.5">
-                    Nuvio Score
+                    Kuvert Score
                   </p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-4xl font-black tabular-nums tracking-tight">
@@ -204,9 +175,9 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
 
             <div className="overflow-y-auto overscroll-contain flex-1 px-5 py-4 space-y-4 min-h-0">
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1.5">Hvad er Nuvio Score?</p>
+                <p className="text-sm font-semibold text-foreground mb-1.5">Hvad er Kuvert Score?</p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Din Nuvio Score er et akkumulerende pointsystem der vokser for hver måned du holder dit budget. Jo bedre du klarer dig, og jo længere din streak er, jo hurtigere stiger den.
+                  Din Kuvert Score er et akkumulerende pointsystem der vokser for hver måned du holder dit budget. Jo bedre du klarer dig, og jo længere din streak er, jo hurtigere stiger den.
                 </p>
               </div>
 

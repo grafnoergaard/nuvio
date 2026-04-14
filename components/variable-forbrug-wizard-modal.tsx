@@ -155,7 +155,7 @@ export function VariableForbrugWizardModal({ onComplete, onDismiss }: Props) {
       }
 
       if (!hasEstimate && hasNuvioFlowBudget) {
-        toast.info('Vi foreslår dit rådighedsbeløb fra Nuvio Flow som udgangspunkt');
+        toast.info('Vi foreslår dit rådighedsbeløb fra Udgifter som udgangspunkt');
       }
     } catch {
       toast.error('Kunne ikke indlæse husstandsdata');
@@ -598,13 +598,13 @@ function ResultScreen({ state, rates, postalRanges, nuvioFlowBudget, onBack, onS
         <div className="rounded-2xl bg-blue-50/80 border border-blue-200/60 px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <p className="text-xs font-semibold text-blue-800 mb-1">Dit aktuelle rådighedsbeløb i Nuvio Flow</p>
+              <p className="text-xs font-semibold text-blue-800 mb-1">Dit aktuelle rådighedsbeløb i Udgifter</p>
               <p className="text-sm text-blue-700/80">
                 {nuvioFlowBudget.toLocaleString('da-DK')} kr./måned
               </p>
               {Math.abs(adjustedTotal - nuvioFlowBudget) > 500 && (
                 <p className="text-xs text-blue-600/70 mt-2 leading-relaxed">
-                  Dit rådighedsbeløb i Nuvio Flow er anderledes end dette estimat.
+                  Dit rådighedsbeløb i Udgifter er anderledes end dette estimat.
                 </p>
               )}
             </div>

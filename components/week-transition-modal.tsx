@@ -288,7 +288,7 @@ export default function WeekTransitionModal({
                     : 'text-blue-600'
                 )} />
               </div>
-              <p className="text-sm font-semibold text-foreground/80">Nuvio AI — Ugeanalyse</p>
+              <p className="text-sm font-semibold text-foreground/80">Kuvert AI — Ugeanalyse</p>
             </div>
 
             {aiLoading && (
