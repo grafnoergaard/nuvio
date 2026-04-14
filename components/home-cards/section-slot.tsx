@@ -1,0 +1,184 @@
+'use client';
+
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { type HomeCardKey } from '@/lib/home-card-config';
+import { CardVisibilityToggle } from '@/components/home-cards/card-visibility-toggle';
+import { OnboardingCard } from '@/components/home-cards/onboarding-card';
+import { NuvioScoreCard } from '@/components/home-cards/nuvio-score-card';
+import { FinanceGridCard } from '@/components/home-cards/finance-grid-card';
+import { SavingsInvestmentCard } from '@/components/home-cards/savings-investment-card';
+import { OverviewCheckupCard } from '@/components/home-cards/overview-checkup-card';
+import { NextStepCard } from '@/components/home-cards/next-step-card';
+import { ConsumptionStatusCard } from '@/components/home-cards/consumption-status-card';
+import BudgetStatusCard from '@/components/budget-status-card';
+import FlowSavingsCard from '@/components/flow-savings-card';
+import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
+import type { HomeDerived } from '@/lib/home-derived';
+import type { QuickExpenseStreak } from '@/lib/quick-expense-service';
+
+interface SectionSlotProps {
+  cardKey: HomeCardKey;
+  isAdmin: boolean;
+  cardVisibility: Record<string, boolean>;
+  derived: HomeDerived;
+  categoryGroupTypes: Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>;
+  recipientCount: number;
+  quickStreak: QuickExpenseStreak | null;
+  openingBalance: number;
+  wizardEnabled: (key: string) => boolean;
+  onDismissOnboarding: () => void;
+  onShowIncomeWizard: () => void;
+  onShowFixedExpensesWizard: () => void;
+  onShowVariableWizard: () => void;
+  onShowStartBalance: () => void;
+}
+
+export function SectionSlot({
+  cardKey,
+  isAdmin,
+  cardVisibility,
+  derived,
+  categoryGroupTypes,
+  recipientCount,
+  quickStreak,
+  openingBalance,
+  wizardEnabled,
+  onDismissOnboarding,
+  onShowIncomeWizard,
+  onShowFixedExpensesWizard,
+  onShowVariableWizard,
+  onShowStartBalance,
+}: SectionSlotProps) {
+  const visible = cardVisibility[cardKey];
+  const dimmed = !visible && isAdmin;
+
+  const {
+    financials, nuvioScore, consumptionStatus, nextBestActionItem,
+    investmentProjection, scenarioLabel, isFullySetup, onboardingDismissed,
+    setupSteps, setupProgress, completedSteps, nextStep,
+  } = derived;
+
+  switch (cardKey) {
+    case 'onboarding':
+      if (isFullySetup || onboardingDismissed) return null;
+      return (
+        <OnboardingCard
+          setupSteps={setupSteps}
+          setupProgress={setupProgress}
+          completedSteps={completedSteps}
+          nextStep={nextStep ?? null}
+          openingBalance={openingBalance}
+          wizardEnabled={wizardEnabled}
+          onDismiss={onDismissOnboarding}
+          onShowIncomeWizard={onShowIncomeWizard}
+          onShowFixedExpensesWizard={onShowFixedExpensesWizard}
+          onShowVariableWizard={onShowVariableWizard}
+          onShowStartBalance={onShowStartBalance}
+        />
+      );
+
+    case 'nuvio_score':
+      if (!nuvioScore) return null;
+      return <NuvioScoreCard nuvioScore={nuvioScore} categoryGroupTypes={categoryGroupTypes} dimmed={dimmed} />;
+
+    case 'finance_grid':
+      return (
+        <FinanceGridCard
+          financials={financials}
+          recipientCount={recipientCount}
+          scenarioLabel={scenarioLabel}
+          dimmed={dimmed}
+          onShowIncomeWizard={onShowIncomeWizard}
+          onShowVariableWizard={onShowVariableWizard}
+        />
+      );
+
+    case 'savings_investment':
+      if (!investmentProjection) return null;
+      return <SavingsInvestmentCard projection={investmentProjection} dimmed={dimmed} />;
+
+    case 'overview_checkup':
+      return <OverviewCheckupCard dimmed={dimmed} />;
+
+    case 'savings_goals':
+      return null;
+
+    case 'next_step':
+      if (!nextBestActionItem) return null;
+      return <NextStepCard item={nextBestActionItem} dimmed={dimmed} />;
+
+    case 'consumption_status':
+      if (!consumptionStatus) return null;
+      return <ConsumptionStatusCard status={consumptionStatus} dimmed={dimmed} />;
+
+    case 'budget_status':
+      return (
+        <div className={cn(dimmed && 'opacity-50')}>
+          {isAdmin && (
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Budget status</span>
+              <CardVisibilityToggle cardKey="budget_status" mode="inline" />
+            </div>
+          )}
+          <BudgetStatusCard />
+        </div>
+      );
+
+    case 'nuvio_score_standalone':
+      return (
+        <div className={cn('relative', dimmed && 'opacity-50')}>
+          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="nuvio_score_standalone" mode="inline" /></div>}
+          <NuvioScoreStandaloneCard
+            streak={quickStreak}
+            score={nuvioScore?.score ?? null}
+            scoreLabel={nuvioScore?.label ?? ''}
+            scoreColor={nuvioScore?.color.bar ?? '#10b981'}
+          />
+        </div>
+      );
+
+    case 'flow_savings':
+      return (
+        <div className={cn('relative', dimmed && 'opacity-50')}>
+          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="flow_savings" mode="inline" /></div>}
+          <FlowSavingsCard />
+        </div>
+      );
+
+    default:
+      return null;
+  }
+}
+
+type SlotSharedProps = Omit<SectionSlotProps, 'cardKey'>;
+
+interface DynamicSectionsProps extends SlotSharedProps {
+  sortedCardKeys: HomeCardKey[];
+  cardWidth: Record<string, 'full' | 'half'>;
+}
+
+export function DynamicSections(props: DynamicSectionsProps) {
+  const { sortedCardKeys, cardWidth, isAdmin, cardVisibility } = props;
+  const keysToRender = sortedCardKeys.filter(key => isAdmin || cardVisibility[key]);
+  const result: React.ReactNode[] = [];
+  let i = 0;
+  while (i < keysToRender.length) {
+    const key = keysToRender[i];
+    const w = cardWidth[key] ?? 'full';
+    if (w === 'half' && i + 1 < keysToRender.length && (cardWidth[keysToRender[i + 1]] ?? 'full') === 'half') {
+      const nextKey = keysToRender[i + 1];
+      result.push(
+        <div key={`pair-${key}-${nextKey}`} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <SectionSlot {...props} cardKey={key} />
+          <SectionSlot {...props} cardKey={nextKey} />
+        </div>
+      );
+      i += 2;
+    } else {
+      result.push(<SectionSlot key={key} {...props} cardKey={key} />);
+      i += 1;
+    }
+  }
+  return <>{result}</>;
+}

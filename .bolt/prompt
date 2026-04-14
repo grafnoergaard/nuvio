@@ -1,0 +1,220 @@
+NUVIO WIZARD DESIGN PRINCIPLES (MANDATORY)
+
+All wizards in Nuvio MUST use the WizardShell component and follow these principles without exception.
+
+---
+
+## THE WIZARDSHELL RULE
+
+Every full-screen wizard MUST use:
+  import { WizardShell, useWizardAnimation } from '@/components/wizard-shell';
+
+NEVER build a wizard with raw `fixed inset-0 z-50\` divs, local StepDots, or inline animation state.
+
+WizardShell handles all of:
+- Full-screen overlay with correct sidebar offset (`left: var(--sidebar-offset-global, 0px)`)
+- Gradient background with smooth transition between steps
+- Fade-in on mount (via `visible\` state)
+- Step dots in top bar
+- Back button (ChevronLeft, bordered white pill)
+- Close/skip button (X icon, bordered white pill)
+- Content fade + slide animation between steps (220ms)
+- Safe area insets (iOS notch, mobile nav bar)
+
+Usage pattern:
+```tsx
+const { animating, direction, animate } = useWizardAnimation();
+const [step, setStep] = useState(0);
+const [visible, setVisible] = useState(false);
+
+useEffect(() => {
+  const t = setTimeout(() => setVisible(true), 30);
+  return () => clearTimeout(t);
+}, []);
+
+function next() { animate('forward', () => setStep(s => s + 1)); }
+function back() { animate('back', () => setStep(s => s - 1)); }
+
+return (
+  <WizardShell
+    gradient={STEP_GRADIENTS[step]}
+    visible={visible}
+    step={step}
+    totalSteps={TOTAL_STEPS}
+    showBack={step > 0}
+    showClose={true}
+    onBack={back}
+    onClose={onDismiss}
+    animating={animating}
+    direction={direction}
+  >
+    {step === 0 && <StepZero />}
+    {step === 1 && <StepOne />}
+    <div className="pt-6">
+      <button onClick={next}>Fortsæt</button>
+    </div>
+  </WizardShell>
+);
+```
+
+---
+
+## STEP GRADIENT PALETTE (MANDATORY)
+
+All wizard step gradients MUST use the Nuvio teal/emerald family:
+
+```ts
+const STEP_GRADIENTS = [
+  'linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 40%, #ffffff 100%)',
+  'linear-gradient(160deg, #f0fdfa 0%, #ecfdf5 50%, #ffffff 100%)',
+  'linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 30%, #ffffff 100%)',
+  'linear-gradient(160deg, #f0fdf4 0%, #ecfdf5 40%, #ffffff 100%)',
+  'linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 50%, #ffffff 100%)',
+];
+```
+
+NEVER use purple, blue, or non-teal gradients in wizards.
+NEVER use solid colors as wizard backgrounds.
+
+---
+
+## WIZARD UX PRINCIPLES
+
+### Structure
+Every wizard MUST follow this step structure:
+1. **Intro / Context step** — WHY is this wizard needed? What will the user get from it?
+2. **Input steps** — One topic per step. Never combine multiple inputs on one step.
+3. **Confirmation step** — Show what will be saved. Let user verify before committing.
+
+### Progressive Disclosure
+- Reveal only what the user needs NOW
+- Never show all inputs at once
+- Use the step count (max 6 steps) as a forcing function for simplicity
+
+### Honest Tone
+- Explain WHY before asking for input
+- Reinforce that accuracy matters
+- Use microcopy that builds trust: "Jo mere præcist, jo bedre"
+- Avoid demanding language — invite, don't interrogate
+
+### Microcopy Standards
+Step label (above headline):
+```tsx
+<p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600/70">
+  Kategori
+</p>
+```
+
+Headline:
+```tsx
+<h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight mb-3">
+  Hvad vil du opnå?
+</h2>
+```
+
+Body/description:
+```tsx
+<p className="text-foreground/60 text-base leading-relaxed mb-6">
+  Brug det som en guide, ikke en dom.
+</p>
+```
+
+---
+
+## CTA BUTTON (MANDATORY)
+
+Every wizard step CTA MUST use this exact pattern:
+```tsx
+<div className="pt-6">
+  <button
+    onClick={next}
+    disabled={!isValid}
+    className="w-full h-14 rounded-2xl font-semibold text-base text-white shadow-md active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40"
+    style={{ background: isValid ? 'linear-gradient(to right, #0d9488, #10b981)' : '#9ca3af' }}
+  >
+    Fortsæt
+    <ArrowRight className="h-4 w-4" />
+  </button>
+</div>
+```
+
+Rules:
+- Height: `h-14` (56px — large touch target)
+- Radius: `rounded-2xl`
+- Color: teal gradient (`#0d9488\` → `#10b981`) when enabled, neutral (`#9ca3af`) when disabled
+- Always `disabled:opacity-40\` not `disabled:hidden`
+- Always show ArrowRight icon on continue buttons
+- Use Check icon on final save buttons
+
+---
+
+## INPUT CARDS
+
+Option cards (radio-style selections) MUST use:
+```tsx
+<button
+  onClick={() => setAnswer('yes')}
+  className={\`w-full text-left rounded-2xl border-2 px-5 py-4 transition-all ${
+    answer === 'yes'
+      ? 'border-emerald-400 bg-emerald-50/60'
+      : 'border-foreground/10 bg-white/50 hover:border-foreground/20'
+  }`}
+>
+  <div className="font-semibold">Ja</div>
+  <div className="text-sm text-muted-foreground mt-0.5">Kort forklaring</div>
+</button>
+```
+
+Number inputs MUST use:
+```tsx
+<Input
+  type="number"
+  inputMode="numeric"
+  className="h-11 rounded-xl text-right text-lg font-semibold"
+  placeholder="0"
+/>
+```
+
+---
+
+## WIZARD vs. MODAL — WHEN TO USE WHAT
+
+Use WizardShell (full-screen wizard) when:
+- The user is setting up something for the first time
+- Multiple related inputs are needed (2+ steps)
+- The task requires focused attention away from the app
+- Onboarding, checkups, periodic reviews
+
+Use a Dialog/Sheet (modal) when:
+- Quick single-action: edit one value, confirm one thing
+- The user does not need to leave their current context
+- The action is reversible and low-stakes
+
+NEVER use a full-screen wizard for a single input.
+NEVER use a modal for a multi-step configuration flow.
+
+---
+
+## ANIMATION RULES
+
+Step transitions: 220ms fade + 16px slide (handled by WizardShell)
+Mount animation: 30ms delay then opacity fade-in (handled by WizardShell)
+Gradient transition: 700ms ease (handled by WizardShell)
+
+NEVER add extra animation wrappers inside wizard step content.
+NEVER use `framer-motion\` or other animation libraries in wizards.
+Keep transitions subtle — Nuvio is calm, not flashy.
+
+---
+
+## ANTI-PATTERNS (FORBIDDEN)
+
+- Local `StepDots\` function in wizard files — use wizard-shell.tsx
+- `const [animating, setAnimating] = useState(false)` in wizard files — use useWizardAnimation
+- `const [direction, setDirection] = useState` in wizard files — use useWizardAnimation
+- `const contentStyle: React.CSSProperties = { opacity: animating ... }\` — use WizardShell
+- `<div className="fixed inset-0 z-50" style={{ left: 'var(--sidebar-offset-global...' }}>` as wizard wrapper — use WizardShell
+- Hardcoded financial values inside wizard components — fetch from standard_data_entries
+- Business logic inside wizard render functions — extract to service functions
+- Wizards without loading, error and empty states
+- Steps that ask for more than one distinct concept at a time
