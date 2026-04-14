@@ -230,18 +230,18 @@ export function MobileNav() {
                           onClick={() => setBurgerOpen((v) => !v)}
                           className={cn(
                             'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                            active ? 'text-white' : 'text-muted-foreground'
+                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                           )}
                         >
                           <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                             {burgerOpen
-                              ? <X className="h-[18px] w-[18px] text-white" />
+                              ? <X className="h-[18px] w-[18px] text-[#2ED3A7]" />
                               : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
                             }
                           </div>
                           <span className={cn(
                             'text-[10px] font-semibold leading-none tracking-wide',
-                            active ? 'text-white' : 'text-muted-foreground/70'
+                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
                           )}>
                             Menu
                           </span>
@@ -262,15 +262,15 @@ export function MobileNav() {
                         }}
                         className={cn(
                           'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                          active ? 'text-white' : 'text-muted-foreground'
+                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                         )}
                       >
                         <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
-                          <Icon className={cn('h-[18px] w-[18px]', active ? 'text-white' : 'text-muted-foreground')} />
+                          <Icon className={cn('h-[18px] w-[18px]', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
                         </div>
                         <span className={cn(
                           'text-[10px] font-semibold leading-none tracking-wide',
-                          active ? 'text-white' : 'text-muted-foreground/70'
+                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
                         )}>
                           {item.name}
                         </span>
@@ -290,18 +290,18 @@ export function MobileNav() {
                           onClick={() => setBurgerOpen((v) => !v)}
                           className={cn(
                             'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                            active ? 'text-white' : 'text-muted-foreground'
+                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                           )}
                         >
                           <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                             {burgerOpen
-                              ? <X className="h-[18px] w-[18px] text-white" />
+                              ? <X className="h-[18px] w-[18px] text-[#2ED3A7]" />
                               : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
                             }
                           </div>
                           <span className={cn(
                             'text-[10px] font-semibold leading-none tracking-wide',
-                            active ? 'text-white' : 'text-muted-foreground/70'
+                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
                           )}>
                             Menu
                           </span>
@@ -320,15 +320,15 @@ export function MobileNav() {
                         }}
                         className={cn(
                           'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                          active ? 'text-white' : 'text-muted-foreground'
+                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                         )}
                       >
                         <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
-                          <Icon className={cn('h-[18px] w-[18px]', active ? 'text-white' : 'text-muted-foreground')} />
+                          <Icon className={cn('h-[18px] w-[18px]', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
                         </div>
                         <span className={cn(
                           'text-[10px] font-semibold leading-none tracking-wide',
-                          active ? 'text-white' : 'text-muted-foreground/70'
+                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
                         )}>
                           {def.label}
                         </span>
