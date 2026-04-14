@@ -22,28 +22,28 @@ function getStreakTone(currentStreak: number) {
   if (currentStreak >= 12) {
     return {
       label: 'Legendarisk',
-      flame: 'from-orange-400 via-amber-300 to-yellow-200',
-      accent: '#f59e0b',
-      text: 'text-amber-900',
-      badge: 'bg-amber-100 text-amber-900 border-amber-200',
+      flame: 'from-[#2ED3A7] via-[#8FF1D7] to-[#BFF8EA]',
+      accent: '#5FE7C2',
+      text: 'text-[#0E3B43]',
+      badge: 'bg-[#2ED3A7]/16 text-[#0E3B43] border-[#2ED3A7]/35',
     };
   }
   if (currentStreak >= 6) {
     return {
       label: 'Stærk rytme',
-      flame: 'from-orange-500 via-amber-400 to-yellow-300',
-      accent: '#f97316',
-      text: 'text-orange-900',
-      badge: 'bg-orange-100 text-orange-900 border-orange-200',
+      flame: 'from-[#2ED3A7] via-[#8FF1D7] to-[#BFF8EA]',
+      accent: '#5FE7C2',
+      text: 'text-[#0E3B43]',
+      badge: 'bg-[#2ED3A7]/16 text-[#0E3B43] border-[#2ED3A7]/35',
     };
   }
   if (currentStreak >= 1) {
     return {
       label: 'Aktiv',
-      flame: 'from-orange-500 via-amber-400 to-yellow-300',
-      accent: '#f97316',
-      text: 'text-orange-900',
-      badge: 'bg-orange-100 text-orange-900 border-orange-200',
+      flame: 'from-[#2ED3A7] via-[#8FF1D7] to-[#BFF8EA]',
+      accent: '#5FE7C2',
+      text: 'text-[#0E3B43]',
+      badge: 'bg-[#2ED3A7]/16 text-[#0E3B43] border-[#2ED3A7]/35',
     };
   }
   return {
@@ -110,9 +110,9 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
             <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
               <defs>
                 <linearGradient id="streak-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#F97316" />
-                  <stop offset="55%" stopColor="#F59E0B" />
-                  <stop offset="100%" stopColor="#FDE047" />
+                  <stop offset="0%" stopColor="#2ED3A7" />
+                  <stop offset="58%" stopColor="#8FF1D7" />
+                  <stop offset="100%" stopColor="#BFF8EA" />
                 </linearGradient>
               </defs>
             </svg>
@@ -122,7 +122,7 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
               stroke="url(#streak-flame-gradient)"
               strokeWidth={1.5}
             />
-            <span className="absolute inset-0 flex items-center justify-center pt-9 text-5xl font-semibold tabular-nums leading-none tracking-normal text-white drop-shadow-[0_2px_5px_rgba(124,45,18,0.45)]">
+            <span className="absolute inset-0 flex items-center justify-center pt-9 text-5xl font-semibold tabular-nums leading-none tracking-normal text-[#0E3B43] drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]">
               {currentStreak}
             </span>
           </div>
@@ -139,7 +139,7 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
             </p>
             {completedStreakMonths > 0 && (
               <span
-                className="rounded-full px-2.5 py-1 text-xs font-bold tabular-nums text-white shadow-sm"
+                className="rounded-full px-2.5 py-1 text-xs font-bold tabular-nums text-[#0E3B43] shadow-sm"
                 style={{ background: tone.accent }}
               >
                 x{completedStreakMonths}
@@ -160,9 +160,9 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
                     className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-bold transition-all duration-500',
                       isFilled
-                        ? 'border-transparent text-white shadow-sm'
+                        ? 'border-transparent text-[#0E3B43] shadow-sm'
                         : isCurrent
-                          ? 'border-amber-300 bg-amber-50 text-amber-700'
+                          ? 'border-[#2ED3A7]/35 bg-[#2ED3A7]/10 text-[#0E3B43]'
                           : isMissed
                             ? 'border-red-100 bg-red-50 text-red-300'
                         : 'border-foreground/10 bg-white text-muted-foreground/40'
