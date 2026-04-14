@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getBudgetStructure } from '@/lib/db-helpers';
 import { fetchActiveSdsData, type SdsData } from '@/lib/standard-data-service';
@@ -41,26 +41,73 @@ export interface HomeDataActions {
   setUserRef: (userId: string | undefined) => void;
 }
 
+type HomeDataSnapshot = Omit<HomeDataState, 'loading'>;
+
+const HOME_DATA_CACHE_TTL = 60_000;
+let homeDataCache: { at: number; data: HomeDataSnapshot } | null = null;
+
+function getHomeDataCache(): HomeDataSnapshot | null {
+  if (!homeDataCache) return null;
+  if (Date.now() - homeDataCache.at > HOME_DATA_CACHE_TTL) return null;
+  return homeDataCache.data;
+}
+
 export function useHomeData(): HomeDataState & HomeDataActions {
-  const [budget, setBudget] = useState<HomeBudget | null>(null);
-  const [expenses, setExpenses] = useState(0);
-  const [income, setIncome] = useState(0);
-  const [recipientCount, setRecipientCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [householdMonthlyIncome, setHouseholdMonthlyIncome] = useState(0);
-  const [variableExpenseEstimate, setVariableExpenseEstimate] = useState<number | null>(null);
-  const [investmentSettings, setInvestmentSettings] = useState<InvestmentSettings | null>(null);
-  const [sdsData, setSdsData] = useState<SdsData | null>(null);
-  const [householdAdultCount, setHouseholdAdultCount] = useState(1);
-  const [householdChildBirthYears, setHouseholdChildBirthYears] = useState<(number | null)[]>([]);
-  const [categoryGroupTypes, setCategoryGroupTypes] = useState<Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>>([]);
-  const [quickStreak, setQuickStreak] = useState<QuickExpenseStreak | null>(null);
+  const initialCache = getHomeDataCache();
+  const [budget, setBudget] = useState<HomeBudget | null>(initialCache?.budget ?? null);
+  const [expenses, setExpenses] = useState(initialCache?.expenses ?? 0);
+  const [income, setIncome] = useState(initialCache?.income ?? 0);
+  const [recipientCount, setRecipientCount] = useState(initialCache?.recipientCount ?? 0);
+  const [loading, setLoading] = useState(!initialCache);
+  const [householdMonthlyIncome, setHouseholdMonthlyIncome] = useState(initialCache?.householdMonthlyIncome ?? 0);
+  const [variableExpenseEstimate, setVariableExpenseEstimate] = useState<number | null>(initialCache?.variableExpenseEstimate ?? null);
+  const [investmentSettings, setInvestmentSettings] = useState<InvestmentSettings | null>(initialCache?.investmentSettings ?? null);
+  const [sdsData, setSdsData] = useState<SdsData | null>(initialCache?.sdsData ?? null);
+  const [householdAdultCount, setHouseholdAdultCount] = useState(initialCache?.householdAdultCount ?? 1);
+  const [householdChildBirthYears, setHouseholdChildBirthYears] = useState<(number | null)[]>(initialCache?.householdChildBirthYears ?? []);
+  const [categoryGroupTypes, setCategoryGroupTypes] = useState<Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>>(initialCache?.categoryGroupTypes ?? []);
+  const [quickStreak, setQuickStreak] = useState<QuickExpenseStreak | null>(initialCache?.quickStreak ?? null);
 
   const userIdRef = useRef<string | undefined>(undefined);
 
   function setUserRef(userId: string | undefined) {
     userIdRef.current = userId;
   }
+
+  useEffect(() => {
+    if (loading) return;
+    homeDataCache = {
+      at: Date.now(),
+      data: {
+        budget,
+        expenses,
+        income,
+        recipientCount,
+        householdMonthlyIncome,
+        variableExpenseEstimate,
+        investmentSettings,
+        sdsData,
+        householdAdultCount,
+        householdChildBirthYears,
+        categoryGroupTypes,
+        quickStreak,
+      },
+    };
+  }, [
+    loading,
+    budget,
+    expenses,
+    income,
+    recipientCount,
+    householdMonthlyIncome,
+    variableExpenseEstimate,
+    investmentSettings,
+    sdsData,
+    householdAdultCount,
+    householdChildBirthYears,
+    categoryGroupTypes,
+    quickStreak,
+  ]);
 
   async function loadHousehold() {
     if (!userIdRef.current) return;

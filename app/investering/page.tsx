@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useSettings } from '@/lib/settings-context';
@@ -27,6 +27,20 @@ interface InvestmentSettings {
   time_horizon: string;
   market_reaction: string;
   scenario: ScenarioKey;
+}
+
+const INVESTMENT_SETTINGS_CACHE_TTL = 60_000;
+const investmentSettingsCache = new Map<string, { at: number; data: InvestmentSettings | null }>();
+
+function getInvestmentSettingsCache(userId: string | undefined): InvestmentSettings | null | undefined {
+  if (!userId) return undefined;
+  const cached = investmentSettingsCache.get(userId);
+  if (!cached) return undefined;
+  if (Date.now() - cached.at > INVESTMENT_SETTINGS_CACHE_TTL) {
+    investmentSettingsCache.delete(userId);
+    return undefined;
+  }
+  return cached.data;
 }
 
 type StatusLevel = 'ready' | 'ready_with_caution' | 'wait';
@@ -102,9 +116,28 @@ export default function InvesteringPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (user) loadSettings();
+  const loadSettings = useCallback(async ({ showLoader = true }: { showLoader?: boolean } = {}) => {
+    if (!user) return;
+    if (showLoader) setLoading(true);
+    const { data } = await supabase
+      .from('investment_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    investmentSettingsCache.set(user.id, { at: Date.now(), data: data ?? null });
+    setSettings(data ?? null);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const cached = getInvestmentSettingsCache(user.id);
+    if (cached !== undefined) {
+      setSettings(cached);
+      setLoading(false);
+    }
+    loadSettings({ showLoader: cached === undefined });
+  }, [user, loadSettings]);
 
   async function handleDelete() {
     if (!deleteConfirm) {
@@ -114,23 +147,13 @@ export default function InvesteringPage() {
     setDeleting(true);
     try {
       await supabase.from('investment_settings').delete().eq('user_id', user!.id);
+      investmentSettingsCache.set(user!.id, { at: Date.now(), data: null });
       setSettings(null);
       setDeleteConfirm(false);
     } catch {
     } finally {
       setDeleting(false);
     }
-  }
-
-  async function loadSettings() {
-    setLoading(true);
-    const { data } = await supabase
-      .from('investment_settings')
-      .select('*')
-      .eq('user_id', user!.id)
-      .maybeSingle();
-    setSettings(data ?? null);
-    setLoading(false);
   }
 
   const projections = useMemo(() => {

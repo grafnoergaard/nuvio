@@ -74,6 +74,23 @@ function formatDKK(value: number): string {
   });
 }
 
+const FLOW_SAVINGS_CACHE_TTL = 60_000;
+let flowSavingsCache: {
+  at: number;
+  totals: FlowSavingsTotals | null;
+  entries: FlowSavingsEntry[];
+  milestonesResult: SavingsMilestonesResult | null;
+} | null = null;
+
+function getFlowSavingsCache() {
+  if (!flowSavingsCache) return null;
+  if (Date.now() - flowSavingsCache.at > FLOW_SAVINGS_CACHE_TTL) {
+    flowSavingsCache = null;
+    return null;
+  }
+  return flowSavingsCache;
+}
+
 export default function OpsparingPage() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const now = new Date();
@@ -185,16 +202,17 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
 }
 
 function FlowSavingsTab() {
-  const [totals, setTotals] = useState<FlowSavingsTotals | null>(null);
-  const [entries, setEntries] = useState<FlowSavingsEntry[]>([]);
-  const [milestonesResult, setMilestonesResult] = useState<SavingsMilestonesResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = getFlowSavingsCache();
+  const [totals, setTotals] = useState<FlowSavingsTotals | null>(cached?.totals ?? null);
+  const [entries, setEntries] = useState<FlowSavingsEntry[]>(cached?.entries ?? []);
+  const [milestonesResult, setMilestonesResult] = useState<SavingsMilestonesResult | null>(cached?.milestonesResult ?? null);
+  const [loading, setLoading] = useState(!cached);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (!flowSavingsCache) setLoading(true);
     try {
       const [backfillResult, t, e] = await Promise.all([
         backfillMissedFlowSavings(),
@@ -206,6 +224,10 @@ function FlowSavingsTab() {
       if (t && e.length > 0) {
         const result = await computeSavingsMilestones(t.current_balance, e);
         setMilestonesResult(result);
+        flowSavingsCache = { at: Date.now(), totals: t, entries: e, milestonesResult: result };
+      } else {
+        setMilestonesResult(null);
+        flowSavingsCache = { at: Date.now(), totals: t, entries: e, milestonesResult: null };
       }
       if (backfillResult.backfilledCount > 0) {
         toast.success(`${backfillResult.backfilledCount} ${backfillResult.backfilledCount === 1 ? 'uge' : 'uger'} med opsparing gendannet`);
@@ -223,6 +245,7 @@ function FlowSavingsTab() {
     setResetting(true);
     try {
       await resetFlowSavings();
+      flowSavingsCache = null;
       toast.success('Flow-opsparing nulstillet');
       setShowResetConfirm(false);
       load();

@@ -90,6 +90,33 @@ const FLOW_STATUS_DEFAULTS: FlowStatusConfig = {
   colorFlowCard: 'bg-gradient-to-br from-slate-50 via-gray-50/80 to-white border-yellow-300/40',
 };
 
+interface NuvioFlowCacheData {
+  expenses: QuickExpense[];
+  monthlyBudget: number;
+  variableEstimate: number | null;
+  prevSummary: MonthSummary | null;
+  streak: QuickExpenseStreak | null;
+  lastKnownBudget: number;
+  flowScoreThreshold: number;
+  flowStatusConfig: FlowStatusConfig;
+  weeklyStatus: WeeklyCarryOverSummary | null;
+  weekStartDay: number;
+}
+
+const NUVIO_FLOW_CACHE_TTL = 60_000;
+const nuvioFlowCache = new Map<string, { at: number; data: NuvioFlowCacheData }>();
+
+function getNuvioFlowCache(key: string | null): NuvioFlowCacheData | null {
+  if (!key) return null;
+  const cached = nuvioFlowCache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.at > NUVIO_FLOW_CACHE_TTL) {
+    nuvioFlowCache.delete(key);
+    return null;
+  }
+  return cached.data;
+}
+
 const DANISH_MONTHS = [
   'januar', 'februar', 'marts', 'april', 'maj', 'juni',
   'juli', 'august', 'september', 'oktober', 'november', 'december',
@@ -159,7 +186,7 @@ export default function NuvioFlowPage() {
   const { user } = useAuth();
   const { design } = useSettings();
   const { setAiContext, setWizardActive } = useAiContext();
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
   const [expenses, setExpenses] = useState<QuickExpense[]>([]);
@@ -190,6 +217,7 @@ export default function NuvioFlowPage() {
   const [showGuide, setShowGuide] = useState(false);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState<number>(1);
+  const flowCacheKey = user ? `${user.id}:${viewYear}-${viewMonth}` : null;
 
   useEffect(() => {
     setWizardActive(showGuide);
@@ -200,7 +228,22 @@ export default function NuvioFlowPage() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    const cached = getNuvioFlowCache(flowCacheKey);
+    if (cached) {
+      setExpenses(cached.expenses);
+      setMonthlyBudget(cached.monthlyBudget);
+      setVariableEstimate(cached.variableEstimate);
+      setPrevSummary(cached.prevSummary);
+      setStreak(cached.streak);
+      setLastKnownBudget(cached.lastKnownBudget);
+      setFlowScoreThreshold(cached.flowScoreThreshold);
+      setFlowStatusConfig(cached.flowStatusConfig);
+      setWeeklyStatus(cached.weeklyStatus);
+      setWeekStartDay(cached.weekStartDay);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
       const curYear = now.getFullYear();
@@ -303,9 +346,41 @@ export default function NuvioFlowPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, viewYear, viewMonth, isCurrentMonth]);
+  }, [user, viewYear, viewMonth, isCurrentMonth, flowCacheKey, now]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (loading || !flowCacheKey) return;
+    nuvioFlowCache.set(flowCacheKey, {
+      at: Date.now(),
+      data: {
+        expenses,
+        monthlyBudget,
+        variableEstimate,
+        prevSummary,
+        streak,
+        lastKnownBudget,
+        flowScoreThreshold,
+        flowStatusConfig,
+        weeklyStatus,
+        weekStartDay,
+      },
+    });
+  }, [
+    loading,
+    flowCacheKey,
+    expenses,
+    monthlyBudget,
+    variableEstimate,
+    prevSummary,
+    streak,
+    lastKnownBudget,
+    flowScoreThreshold,
+    flowStatusConfig,
+    weeklyStatus,
+    weekStartDay,
+  ]);
 
   useEffect(() => {
     const seen = localStorage.getItem(GUIDE_SEEN_KEY);
@@ -329,7 +404,7 @@ export default function NuvioFlowPage() {
       remainingDays: remDays,
       dailyAvailable: remDays > 0 && rem > 0 ? rem / remDays : 0,
     };
-  }, [expenses, monthlyBudget]);
+  }, [expenses, monthlyBudget, now]);
 
   function prevMonth() {
     if (viewMonth === 1) { setViewYear(y => y - 1); setViewMonth(12); }
@@ -609,7 +684,7 @@ export default function NuvioFlowPage() {
     weekStart.setHours(0, 0, 0, 0);
     const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
     return expenses.filter(e => e.expense_date >= weekStartStr).length;
-  }, [isCurrentMonth, expenses]);
+  }, [isCurrentMonth, expenses, now]);
 
   useEffect(() => {
     if (isCurrentMonth && monthlyBudget > 0) {
@@ -632,7 +707,7 @@ export default function NuvioFlowPage() {
       setAiContext(undefined);
     }
     return () => setAiContext(undefined);
-  }, [isCurrentMonth, monthlyBudget, healthPct, statusState, remaining, totalSpent, remainingDays, dailyAvailable, streak, carryOverPenalty, viewMonth, viewYear, weeklyTransactionCount]);
+  }, [isCurrentMonth, monthlyBudget, healthPct, statusState, cfg.badgeText, remaining, totalSpent, remainingDays, dailyAvailable, streak, carryOverPenalty, viewMonth, viewYear, weeklyTransactionCount, setAiContext]);
 
   const topBgColor = useMemo(() =>
     (statusState === 'tempo' || statusState === 'kursen') ? 'rgb(236,253,245)' :
