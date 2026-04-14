@@ -37,6 +37,15 @@ const DEFAULT_SLOT_OPTIONS: { id: string; icon: React.ComponentType<{ className?
   { id: 'burger', icon: Menu, href: '', label: 'Menu', isBurger: true },
 ];
 
+type DisplaySlot = {
+  key: string;
+  isBurger: boolean;
+  isEmpty: boolean;
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
 function NavHighlight({ activeIndex, count }: { activeIndex: number; count: number }) {
   if (count <= 0) return null;
   return (
@@ -62,7 +71,7 @@ export function MobileNav() {
   const { user, signOut } = useAuth();
   const { getString } = useUIStrings();
   const navHeight = parseInt(getString('mobile_nav_height', '68'), 10) || 68;
-  const slotCount = Math.min(4, Math.max(2, parseInt(getString('mobile_nav_slot_count', '3'), 10) || 3));
+  const slotCount = Math.min(4, Math.max(2, parseInt(getString('mobile_nav_slot_count', '4'), 10) || 4));
   const [burgerOpen, setBurgerOpen] = useState(false);
   const [dbGroups, setDbGroups] = useState<NavGroupWithItems[]>([]);
   const [mobileSlots, setMobileSlots] = useState<MobileNavSlotWithItem[]>([]);
@@ -111,9 +120,59 @@ export function MobileNav() {
     [dbGroups],
   );
 
-  const activeSlots = useMemo(() => mobileSlots.slice(0, slotCount), [mobileSlots, slotCount]);
-
   const DEFAULT_SLOTS = useMemo(() => DEFAULT_SLOT_OPTIONS.slice(0, slotCount), [slotCount]);
+
+  const displaySlots = useMemo<DisplaySlot[]>(() => {
+    const slotsByPosition = new Map(mobileSlots.map((slot) => [slot.position, slot]));
+
+    return Array.from({ length: slotCount }, (_, index) => {
+      const position = index + 1;
+      const slot = slotsByPosition.get(position);
+
+      if (!slot) {
+        const def = DEFAULT_SLOT_OPTIONS[index] ?? DEFAULT_SLOT_OPTIONS[DEFAULT_SLOT_OPTIONS.length - 1];
+        return {
+          key: `default-${def.id}-${position}`,
+          isBurger: Boolean(def.isBurger),
+          isEmpty: false,
+          href: def.href,
+          label: def.label,
+          icon: def.icon,
+        };
+      }
+
+      if (slot.is_burger) {
+        return {
+          key: slot.id,
+          isBurger: true,
+          isEmpty: false,
+          href: '',
+          label: 'Menu',
+          icon: Menu,
+        };
+      }
+
+      if (!slot.nav_item) {
+        return {
+          key: slot.id,
+          isBurger: false,
+          isEmpty: true,
+          href: '',
+          label: '',
+          icon: LayoutDashboard,
+        };
+      }
+
+      return {
+        key: slot.id,
+        isBurger: false,
+        isEmpty: false,
+        href: slot.nav_item.href,
+        label: slot.nav_item.name,
+        icon: NAV_ICON_MAP[slot.nav_item.icon_name] ?? LayoutDashboard,
+      };
+    });
+  }, [mobileSlots, slotCount]);
 
   const prefetchNavHref = useCallback((href: string) => {
     if (!href || prefetchedRoutesRef.current.has(href)) return;
@@ -123,8 +182,8 @@ export function MobileNav() {
 
   useEffect(() => {
     const hrefs = new Set<string>();
-    activeSlots.forEach((slot) => {
-      if (!slot.is_burger && slot.nav_item?.href) hrefs.add(slot.nav_item.href);
+    displaySlots.forEach((slot) => {
+      if (!slot.isBurger && slot.href) hrefs.add(slot.href);
     });
     DEFAULT_SLOTS.forEach((slot) => {
       if (!slot.isBurger && slot.href) hrefs.add(slot.href);
@@ -135,28 +194,18 @@ export function MobileNav() {
       });
     });
     hrefs.forEach(prefetchNavHref);
-  }, [activeSlots, DEFAULT_SLOTS, burgerSections, prefetchNavHref]);
+  }, [displaySlots, DEFAULT_SLOTS, burgerSections, prefetchNavHref]);
 
-  function getActiveSlotIndex(slots: MobileNavSlotWithItem[]): number {
+  function getActiveSlotIndex(slots: DisplaySlot[]): number {
     if (burgerOpen) {
-      const burgerIndex = slots.findIndex((slot) => slot.is_burger);
+      const burgerIndex = slots.findIndex((slot) => slot.isBurger);
       if (burgerIndex >= 0) return burgerIndex;
     }
-    return slots.findIndex((slot) => !slot.is_burger && slot.nav_item && isActive(slot.nav_item.href));
+    return slots.findIndex((slot) => !slot.isBurger && !slot.isEmpty && isActive(slot.href));
   }
 
-  function getActiveDefaultSlotIndex(): number {
-    if (burgerOpen) {
-      const burgerIndex = DEFAULT_SLOTS.findIndex((slot) => slot.isBurger);
-      if (burgerIndex >= 0) return burgerIndex;
-    }
-    return DEFAULT_SLOTS.findIndex((slot) => !slot.isBurger && isActive(slot.href));
-  }
-
-  const dbActiveSlotIndex = getActiveSlotIndex(activeSlots);
-  const defaultActiveSlotIndex = getActiveDefaultSlotIndex();
-  const displayedDbActiveSlotIndex = pendingNav?.mode === 'db' ? pendingNav.index : dbActiveSlotIndex;
-  const displayedDefaultActiveSlotIndex = pendingNav?.mode === 'default' ? pendingNav.index : defaultActiveSlotIndex;
+  const activeSlotIndex = getActiveSlotIndex(displaySlots);
+  const displayedActiveSlotIndex = pendingNav ? pendingNav.index : activeSlotIndex;
 
   return (
     <>
@@ -245,125 +294,64 @@ export function MobileNav() {
             style={{ pointerEvents: 'auto', height: navHeight }}
           >
             <div className="relative flex items-center justify-around h-full px-2">
-              {activeSlots.length > 0 ? (
-                <>
-                  <NavHighlight activeIndex={displayedDbActiveSlotIndex} count={activeSlots.length} />
-                  {activeSlots.map((slot, index) => {
-                    if (slot.is_burger) {
-                      const active = displayedDbActiveSlotIndex === index;
-                      return (
-                        <button
-                          key={slot.id}
-                          onClick={() => setBurgerOpen((v) => !v)}
-                          className={cn(
-                            'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
-                          )}
-                        >
-                          <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
-                            {burgerOpen
-                              ? <X className="h-[18px] w-[18px] text-[#2ED3A7]" />
-                              : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
-                            }
-                          </div>
-                          <span className={cn(
-                            'text-[10px] font-semibold leading-none tracking-wide',
-                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
-                          )}>
-                            Menu
-                          </span>
-                        </button>
-                      );
-                    }
-                    const item = slot.nav_item;
-                    if (!item) return <div key={slot.id} className="relative z-10 flex-1" />;
-                    const Icon = NAV_ICON_MAP[item.icon_name] ?? LayoutDashboard;
-                    const active = displayedDbActiveSlotIndex === index;
-                    return (
-                      <button
-                        key={slot.id}
-                        onClick={() => {
-                          setPendingNav({ mode: 'db', index });
-                          setBurgerOpen(false);
-                          router.push(item.href);
-                        }}
-                        className={cn(
-                          'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
-                        )}
-                      >
-                        <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
-                          <Icon className={cn('h-[18px] w-[18px]', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
-                        </div>
-                        <span className={cn(
-                          'text-[10px] font-semibold leading-none tracking-wide',
-                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
-                        )}>
-                          {item.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </>
-              ) : (
-                <>
-                  <NavHighlight activeIndex={displayedDefaultActiveSlotIndex} count={DEFAULT_SLOTS.length} />
-                  {DEFAULT_SLOTS.map((def, index) => {
-                    if (def.isBurger) {
-                      const active = displayedDefaultActiveSlotIndex === index;
-                      return (
-                        <button
-                          key={def.id}
-                          onClick={() => setBurgerOpen((v) => !v)}
-                          className={cn(
-                            'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
-                          )}
-                        >
-                          <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
-                            {burgerOpen
-                              ? <X className="h-[18px] w-[18px] text-[#2ED3A7]" />
-                              : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
-                            }
-                          </div>
-                          <span className={cn(
-                            'text-[10px] font-semibold leading-none tracking-wide',
-                            active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
-                          )}>
-                            Menu
-                          </span>
-                        </button>
-                      );
-                    }
-                    const Icon = def.icon;
-                    const active = displayedDefaultActiveSlotIndex === index;
-                    return (
-                      <button
-                        key={def.id}
-                        onClick={() => {
-                          setPendingNav({ mode: 'default', index });
-                          setBurgerOpen(false);
-                          router.push(def.href);
-                        }}
-                        className={cn(
-                          'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
-                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
-                        )}
-                      >
-                        <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
-                          <Icon className={cn('h-[18px] w-[18px]', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
-                        </div>
-                        <span className={cn(
-                          'text-[10px] font-semibold leading-none tracking-wide',
-                          active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
-                        )}>
-                          {def.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </>
-              )}
+              <NavHighlight activeIndex={displayedActiveSlotIndex} count={displaySlots.length} />
+              {displaySlots.map((slot, index) => {
+                if (slot.isEmpty) return <div key={slot.key} className="relative z-10 flex-1" />;
+
+                if (slot.isBurger) {
+                  const active = displayedActiveSlotIndex === index;
+                  return (
+                    <button
+                      key={slot.key}
+                      onClick={() => setBurgerOpen((v) => !v)}
+                      className={cn(
+                        'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
+                        active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
+                      )}
+                    >
+                      <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
+                        {burgerOpen
+                          ? <X className="h-[18px] w-[18px] text-[#2ED3A7]" />
+                          : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
+                        }
+                      </div>
+                      <span className={cn(
+                        'text-[10px] font-semibold leading-none tracking-wide',
+                        active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
+                      )}>
+                        Menu
+                      </span>
+                    </button>
+                  );
+                }
+
+                const Icon = slot.icon;
+                const active = displayedActiveSlotIndex === index;
+                return (
+                  <button
+                    key={slot.key}
+                    onClick={() => {
+                      setPendingNav({ mode: 'db', index });
+                      setBurgerOpen(false);
+                      router.push(slot.href);
+                    }}
+                    className={cn(
+                      'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
+                      active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
+                    )}
+                  >
+                    <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
+                      <Icon className={cn('h-[18px] w-[18px]', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
+                    </div>
+                    <span className={cn(
+                      'text-[10px] font-semibold leading-none tracking-wide',
+                      active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
+                    )}>
+                      {slot.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
