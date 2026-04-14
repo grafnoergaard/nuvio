@@ -213,7 +213,7 @@ export function MobileNav() {
         className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden"
         style={{ pointerEvents: 'none' }}
       >
-        <div className="px-4 pb-4" style={{ pointerEvents: 'none' }}>
+        <div className="px-4 pb-5" style={{ pointerEvents: 'none' }}>
 
           {burgerOpen && (
             <div

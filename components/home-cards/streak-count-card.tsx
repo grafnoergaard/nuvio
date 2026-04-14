@@ -105,8 +105,8 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
           </span>
         </div>
 
-        <div className="mt-4 flex flex-col items-center text-center">
-          <div className="relative flex h-44 w-44 items-center justify-center">
+        <div className="mt-0 flex flex-col items-center text-center">
+          <div className="relative flex h-40 w-44 items-start justify-center">
             <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
               <defs>
                 <linearGradient id="streak-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">

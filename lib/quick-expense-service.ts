@@ -322,7 +322,7 @@ export function computeWeeklyCarryOver(
 
     return {
       weekNumber: i + 1,
-      isoWeekNumber: getISOWeekNumber(start),
+      isoWeekNumber: getISOWeekNumber(end),
       weekStart: start,
       weekEnd: end,
       weeklyBase: baseForThisWeek,
@@ -595,7 +595,7 @@ export async function getWeeklyBudgetStreak(): Promise<QuickExpenseWeeklyStreak>
         const start = toDateString(week.start);
         const end = toDateString(week.end);
         return {
-          iso_week_number: getISOWeekNumber(week.start),
+          iso_week_number: getISOWeekNumber(week.end),
           week_start: start,
           week_end: end,
           kept_budget: null,
@@ -689,7 +689,7 @@ export async function getWeeklyBudgetStreak(): Promise<QuickExpenseWeeklyStreak>
         const start = toDateString(week.start);
         const end = toDateString(week.end);
         return {
-          iso_week_number: getISOWeekNumber(week.start),
+          iso_week_number: getISOWeekNumber(week.end),
           week_start: start,
           week_end: end,
           kept_budget: null,
