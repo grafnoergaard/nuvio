@@ -9,10 +9,13 @@ import {
   X,
   Info,
   ChevronDown,
+  ChevronRight,
+  Settings2,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
 
 import {
   getFlowSavingsTotals,
@@ -202,6 +205,7 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
 }
 
 function FlowSavingsTab() {
+  const { design } = useSettings();
   const cached = getFlowSavingsCache();
   const [totals, setTotals] = useState<FlowSavingsTotals | null>(cached?.totals ?? null);
   const [entries, setEntries] = useState<FlowSavingsEntry[]>(cached?.entries ?? []);
@@ -260,6 +264,9 @@ function FlowSavingsTab() {
   const lifetimeTotal = totals?.lifetime_total ?? 0;
   const weekCount = totals?.week_count ?? 0;
   const hasData = balance > 0 || weekCount > 0;
+  const cardMedium = design.cardMedium;
+  const cardStyleBase = getCardStyle(cardMedium, design.gradientFrom, design.gradientTo);
+  const topBarStyleOverride = getTopBarStyle(cardMedium, design.gradientFrom, design.gradientTo);
 
   if (loading) {
     return (
@@ -272,60 +279,115 @@ function FlowSavingsTab() {
 
   return (
     <div>
-      <div className="mx-4 rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/80 via-teal-50/30 to-white shadow-sm mb-6">
-        <div className="px-5 pt-5 pb-5">
-          <div className="flex items-start justify-between mb-4">
+      <div
+        className={cn(
+          'mx-4 rounded-2xl border shadow-sm mb-6 transition-all duration-500',
+          hasData
+            ? 'bg-gradient-to-br from-emerald-50/80 via-teal-50/30 to-white border-emerald-200/50'
+            : 'bg-white/80 border-white/30'
+        )}
+        style={cardStyleBase}
+      >
+        {topBarStyleOverride && hasData && (
+          <div style={topBarStyleOverride} />
+        )}
+
+        <div className="flex items-center justify-between px-5 pt-5 pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className={cn(
+              'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ring-2 transition-all duration-500',
+              hasData ? 'bg-emerald-100 ring-emerald-200' : 'bg-muted/20 ring-muted/10'
+            )}>
+              <Wallet className={cn('h-4 w-4', hasData ? 'text-emerald-600' : 'text-muted-foreground/40')} />
+            </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600/70 mb-1">
+              <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/50 leading-none mb-0.5">
                 Flow-opsparing
               </p>
-              {hasData ? (
-                <>
-                  <p className="text-4xl sm:text-5xl font-bold tabular-nums tracking-tight text-emerald-700 leading-none">
-                    {formatDKK(balance)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Samlet beløb sparet siden du startede med Nuvio Flow
-                  </p>
-                </>
-              ) : (
-                <p className="text-2xl font-bold text-foreground/40 leading-none">
-                  0 kr.
-                </p>
+              {hasData && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold tracking-wide text-white bg-emerald-500">
+                  Aktiv
+                </span>
               )}
-            </div>
-            <div className="h-11 w-11 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
-              <Wallet className="h-5 w-5 text-emerald-600" />
             </div>
           </div>
 
-          {hasData && (
-            <div className="flex gap-3 pt-1">
-              <div className="flex-1 bg-white/60 border border-foreground/8 rounded-xl px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-0.5">Uger med opsparing</p>
-                <p className="text-lg font-bold tabular-nums text-foreground">{weekCount}</p>
-              </div>
-              {lifetimeTotal > balance && (
-                <div className="flex-1 bg-white/60 border border-foreground/8 rounded-xl px-3 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-0.5">Livstids-total</p>
-                  <p className="text-lg font-bold tabular-nums text-foreground">{formatDKK(lifetimeTotal)}</p>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => document.getElementById('flow-opsparing-detaljer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-black/5 transition-all duration-200"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Se detaljer
+            </button>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+          </div>
+        </div>
 
-          {!hasData && (
+        {!hasData ? (
+          <div className="px-5 pb-6 text-center">
+            <p className="text-sm font-semibold text-foreground mb-1">Ingen flow-opsparing endnu</p>
             <p className="text-sm text-muted-foreground/60 leading-relaxed">
               Penge du sparer via Nuvio Flow-budgettet akkumuleres her automatisk efter hvert ugeskift.
             </p>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="px-5 pb-5 space-y-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium leading-snug mb-1 text-emerald-800">
+                  {weekCount === 1
+                    ? 'Sparet over 1 uge'
+                    : `Sparet over ${weekCount} uger`}
+                </p>
+                <p className="text-3xl font-semibold tracking-tight tabular-nums leading-none text-emerald-700">
+                  {formatDKK(balance)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  nuværende saldo
+                </p>
+              </div>
+
+              {lifetimeTotal > balance && (
+                <div className="flex gap-2 shrink-0">
+                  <div className="rounded-xl bg-white/60 border border-black/5 px-3 py-2 text-center min-w-[64px]">
+                    <p className="text-xs font-medium text-muted-foreground/70 leading-snug mb-0.5">Livstid</p>
+                    <p className="text-sm font-semibold tracking-tight tabular-nums text-foreground">
+                      {formatDKK(lifetimeTotal)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground tracking-wide">Flow opsparing</span>
+                <span className="text-xs font-bold tabular-nums text-emerald-700">{weekCount} uger</span>
+              </div>
+              <div className="relative h-2 rounded-full bg-black/[0.06] overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-emerald-400 to-teal-400"
+                  style={{ width: lifetimeTotal > 0 ? `${Math.min(100, Math.max(8, (balance / lifetimeTotal) * 100))}%` : '100%' }}
+                />
+              </div>
+              <p className="text-label text-muted-foreground/60 leading-snug">
+                {lifetimeTotal > balance
+                  ? `${formatDKK(balance)} af ${formatDKK(lifetimeTotal)} i alt`
+                  : `${weekCount} ${weekCount === 1 ? 'uge' : 'uger'} med positiv opsparing`}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
 
-      {milestonesResult && (
-        <FlowMilestonesSection result={milestonesResult} />
-      )}
+      <div id="flow-opsparing-detaljer">
+        {milestonesResult && (
+          <FlowMilestonesSection result={milestonesResult} />
+        )}
+      </div>
 
       {entries.length > 0 && (
         <div className="mb-5">

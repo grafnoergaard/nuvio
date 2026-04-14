@@ -15,6 +15,8 @@ export interface CardDesignSettings {
   topBarHeight: number;
   topBarStyle: 'gradient' | 'solid' | 'none';
   topBarColor: string;
+  topBarGradientFrom: string;
+  topBarGradientTo: string;
   bgOpacity: number;
 }
 
@@ -33,6 +35,12 @@ export interface DesignSettings {
   backgroundColor: string;
   textColor: string;
   minusColor: string;
+  buttonActiveColor: string;
+  buttonActiveTextColor: string;
+  buttonHoverColor: string;
+  buttonHoverTextColor: string;
+  buttonDisabledColor: string;
+  buttonDisabledTextColor: string;
   gradientFrom: string;
   gradientTo: string;
   card1GradientFrom: string;
@@ -73,6 +81,8 @@ export const DEFAULT_CARD_SMALL: CardDesignSettings = {
   topBarHeight: 0,
   topBarStyle: 'none',
   topBarColor: '#2ED3A7',
+  topBarGradientFrom: '#0E3B43',
+  topBarGradientTo: '#2ED3A7',
   bgOpacity: 100,
 };
 
@@ -83,6 +93,8 @@ export const DEFAULT_CARD_MEDIUM: CardDesignSettings = {
   topBarHeight: 4,
   topBarStyle: 'gradient',
   topBarColor: '#2ED3A7',
+  topBarGradientFrom: '#0E3B43',
+  topBarGradientTo: '#2ED3A7',
   bgOpacity: 100,
 };
 
@@ -93,6 +105,8 @@ export const DEFAULT_CARD_LARGE: CardDesignSettings = {
   topBarHeight: 4,
   topBarStyle: 'gradient',
   topBarColor: '#2ED3A7',
+  topBarGradientFrom: '#0E3B43',
+  topBarGradientTo: '#2ED3A7',
   bgOpacity: 100,
 };
 
@@ -111,6 +125,12 @@ export const DEFAULT_DESIGN: DesignSettings = {
   backgroundColor: '#F6F4EF',
   textColor: '#1E1E1E',
   minusColor: '#E45C5C',
+  buttonActiveColor: '#0d9488',
+  buttonActiveTextColor: '#FFFFFF',
+  buttonHoverColor: '#0E3B43',
+  buttonHoverTextColor: '#FFFFFF',
+  buttonDisabledColor: '#9BCFBE',
+  buttonDisabledTextColor: '#FFFFFF',
   gradientFrom: '#0E3B43',
   gradientTo: '#2ED3A7',
   card1GradientFrom: '#E45C5C',
@@ -310,7 +330,7 @@ export function getTopBarStyle(card: CardDesignSettings, gradientFrom: string, g
   if (card.topBarStyle === 'gradient') {
     return {
       height: `${card.topBarHeight}px`,
-      background: `linear-gradient(to right, ${gradientFrom}, ${gradientTo})`,
+      background: `linear-gradient(to right, ${card.topBarGradientFrom ?? gradientFrom}, ${card.topBarGradientTo ?? gradientTo})`,
       flexShrink: 0,
     };
   }

@@ -12,7 +12,6 @@ import { FixedExpensesWizard } from '@/components/fixed-expenses-wizard';
 import { VariableForbrugWizardModal } from '@/components/variable-forbrug-wizard-modal';
 import { toast } from 'sonner';
 import { EditableText } from '@/components/editable-text';
-import { cn } from '@/lib/utils';
 import { HomeCardProvider } from '@/components/home-cards/home-card-context';
 import { DynamicSections } from '@/components/home-cards/section-slot';
 import { OpeningBalanceModal } from '@/components/opening-balance-modal';
@@ -38,7 +37,7 @@ export default function HomePage() {
   const {
     budget, expenses, income, recipientCount, loading,
     householdMonthlyIncome, variableExpenseEstimate, investmentSettings,
-    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, quickStreak,
+    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, quickStreak, weeklyStreak,
     loadData, loadHousehold, setBudget, setUserRef, loadAll,
   } = data;
 
@@ -130,6 +129,23 @@ export default function HomePage() {
   const currentMonthName = DANISH_MONTHS[now.getMonth()];
   const currentYear = now.getFullYear();
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const color = 'rgb(236,253,245)';
+    document.body.style.backgroundColor = color;
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.content = color;
+    return () => {
+      document.body.style.backgroundColor = '';
+      if (meta) meta.content = '#f8f9f2';
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -161,6 +177,7 @@ export default function HomePage() {
     categoryGroupTypes,
     recipientCount,
     quickStreak,
+    weeklyStreak,
     openingBalance: budget?.opening_balance ?? 0,
     wizardEnabled,
     onDismissOnboarding: handleDismissOnboarding,
@@ -180,7 +197,10 @@ export default function HomePage() {
       togglingCard={togglingCard}
       onToggleCard={handleToggleCard}
     >
-      <div className={cn('min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_28rem),linear-gradient(180deg,#f7fbfb_0%,#eef5f5_100%)] transition-colors duration-700', derived.pageBgClass)}>
+      <div
+        className="min-h-screen bg-gradient-to-b from-emerald-50/60 via-white to-white"
+        style={{ backgroundColor: 'rgb(236,253,245)' }}
+      >
         <div
           className="max-w-lg mx-auto px-4 pb-32 sm:pb-16"
           style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}

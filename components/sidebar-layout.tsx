@@ -24,7 +24,7 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     function updateSidebarOffset() {
-      const isMobile = window.innerWidth < 768;
+      const isMobile = window.innerWidth < 1024;
       const offset = isMobile ? '0px' : (pinned ? '280px' : '0px');
       document.documentElement.style.setProperty('--sidebar-offset-global', offset);
     }
@@ -47,7 +47,7 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
       <div
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="relative z-[60] shrink-0 transition-all duration-300 hidden md:block"
+        className="relative z-[60] shrink-0 transition-all duration-300 hidden lg:block"
         style={{ width: pinned ? 280 : 0 }}
       >
         <Sidebar pinned={pinned} onTogglePin={() => setPinned((p) => !p)} visible={visible} />
@@ -57,7 +57,7 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
         <div
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className="fixed left-0 top-0 h-screen w-4 z-40 hidden md:block"
+          className="fixed left-0 top-0 h-screen w-4 z-40 hidden lg:block"
         >
           <div
             className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-16 rounded-r-full transition-all duration-300 ${

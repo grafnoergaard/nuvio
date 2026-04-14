@@ -102,6 +102,19 @@ export interface QuickExpenseStreak {
   updated_at: string;
 }
 
+export interface QuickExpenseWeeklyStreak {
+  current_streak: number;
+  longest_streak: number;
+  evaluated_weeks: number;
+  last_completed_week_start: string | null;
+  last_completed_week_end: string | null;
+  streak_weeks: Array<{
+    iso_week_number: number;
+    week_start: string;
+    week_end: string;
+  }>;
+}
+
 const FLOW_SCORE_BASE_MONTHLY_REWARD = 100;
 const FLOW_SCORE_STREAK_BONUS_PER_MONTH = 0.15;
 const FLOW_SCORE_PENALTY_MIN = 50;
@@ -538,6 +551,98 @@ export async function getStreak(): Promise<QuickExpenseStreak | null> {
 
   if (error) throw error;
   return data as QuickExpenseStreak | null;
+}
+
+export async function getWeeklyBudgetStreak(): Promise<QuickExpenseWeeklyStreak> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const weekStartDay = await getUserWeekStartDay();
+  const todayStr = toDateString(new Date());
+
+  const { data: monthlyBudgets, error: budgetError } = await supabase
+    .from('quick_expense_monthly_budgets')
+    .select('year, month, budget_amount')
+    .eq('user_id', user.id)
+    .order('year', { ascending: true })
+    .order('month', { ascending: true });
+
+  if (budgetError) throw budgetError;
+  if (!monthlyBudgets || monthlyBudgets.length === 0) {
+    return {
+      current_streak: 0,
+      longest_streak: 0,
+      evaluated_weeks: 0,
+      last_completed_week_start: null,
+      last_completed_week_end: null,
+      streak_weeks: [],
+    };
+  }
+
+  const firstBudget = monthlyBudgets[0];
+  const lastBudget = monthlyBudgets[monthlyBudgets.length - 1];
+  const start = `${firstBudget.year}-${String(firstBudget.month).padStart(2, '0')}-01`;
+  const lastDay = new Date(lastBudget.year, lastBudget.month, 0).getDate();
+  const end = `${lastBudget.year}-${String(lastBudget.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  const { data: allExpenses, error: expensesError } = await supabase
+    .from('quick_expenses')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('expense_date', start)
+    .lte('expense_date', end);
+
+  if (expensesError) throw expensesError;
+  const expenses = (allExpenses ?? []) as QuickExpense[];
+
+  const completedWeeksRaw = monthlyBudgets
+    .flatMap(({ year, month, budget_amount }) => {
+      const budgetAmount = Number(budget_amount);
+      if (budgetAmount <= 0) return [];
+      const summary = computeWeeklyCarryOver(budgetAmount, Number(year), Number(month), expenses, new Date(), weekStartDay);
+      return summary.weeks
+        .filter(week => toDateString(week.weekEnd) < todayStr)
+        .map(week => ({
+          start: toDateString(week.weekStart),
+          end: toDateString(week.weekEnd),
+          isoWeekNumber: week.isoWeekNumber,
+          keptBudget: !week.isOver,
+        }));
+    })
+    .sort((a, b) => a.start.localeCompare(b.start));
+
+  const completedWeeks = completedWeeksRaw.filter((week, index, weeks) => (
+    index === 0 || week.start !== weeks[index - 1].start || week.end !== weeks[index - 1].end
+  ));
+
+  let current = 0;
+  let longest = 0;
+  for (const week of completedWeeks) {
+    if (week.keptBudget) {
+      current += 1;
+      longest = Math.max(longest, current);
+    } else {
+      current = 0;
+    }
+  }
+
+  const lastCompletedWeek = completedWeeks[completedWeeks.length - 1];
+  const streakWeeks = current > 0
+    ? completedWeeks.slice(-current).map(week => ({
+        iso_week_number: week.isoWeekNumber,
+        week_start: week.start,
+        week_end: week.end,
+      }))
+    : [];
+
+  return {
+    current_streak: current,
+    longest_streak: longest,
+    evaluated_weeks: completedWeeks.length,
+    last_completed_week_start: lastCompletedWeek?.start ?? null,
+    last_completed_week_end: lastCompletedWeek?.end ?? null,
+    streak_weeks: streakWeeks,
+  };
 }
 
 export async function evaluateAndUpdateStreak(

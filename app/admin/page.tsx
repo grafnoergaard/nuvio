@@ -88,7 +88,7 @@ function CardSizePreview({
   };
 
   const topBarBg = card.topBarStyle === 'gradient'
-    ? `linear-gradient(to right, ${gradientFrom}, ${gradientTo})`
+    ? `linear-gradient(to right, ${card.topBarGradientFrom ?? gradientFrom}, ${card.topBarGradientTo ?? gradientTo})`
     : card.topBarStyle === 'solid'
     ? card.topBarColor
     : 'transparent';
@@ -324,6 +324,50 @@ function CardDesignPanel({
                         className="font-mono text-sm h-8"
                         placeholder="#2ED3A7"
                       />
+                    </div>
+                  </div>
+                )}
+
+                {card.topBarStyle === 'gradient' && (
+                  <div className="space-y-3">
+                    <Label className="text-xs text-muted-foreground">Gradientfarver</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Fra</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="color"
+                            value={card.topBarGradientFrom}
+                            onChange={(e) => onChange('topBarGradientFrom', e.target.value)}
+                            className="w-10 h-8 p-0.5 cursor-pointer rounded-lg border border-border"
+                          />
+                          <Input
+                            type="text"
+                            value={card.topBarGradientFrom}
+                            onChange={(e) => onChange('topBarGradientFrom', e.target.value)}
+                            className="font-mono text-sm h-8"
+                            placeholder="#0E3B43"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Til</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="color"
+                            value={card.topBarGradientTo}
+                            onChange={(e) => onChange('topBarGradientTo', e.target.value)}
+                            className="w-10 h-8 p-0.5 cursor-pointer rounded-lg border border-border"
+                          />
+                          <Input
+                            type="text"
+                            value={card.topBarGradientTo}
+                            onChange={(e) => onChange('topBarGradientTo', e.target.value)}
+                            className="font-mono text-sm h-8"
+                            placeholder="#2ED3A7"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -725,6 +769,42 @@ export default function AdminPage() {
                 description="Farve på negative beløb og udgifter"
                 value={design.minusColor}
                 onChange={(v) => updateDesign('minusColor', v)}
+              />
+              <ColorField
+                label="Button aktiv"
+                description="Primær farve på action-knapper"
+                value={design.buttonActiveColor}
+                onChange={(v) => updateDesign('buttonActiveColor', v)}
+              />
+              <ColorField
+                label="Button aktiv tekst"
+                description="Tekstfarve på aktive action-knapper"
+                value={design.buttonActiveTextColor}
+                onChange={(v) => updateDesign('buttonActiveTextColor', v)}
+              />
+              <ColorField
+                label="Button hover"
+                description="Farve når action-knapper holdes over"
+                value={design.buttonHoverColor}
+                onChange={(v) => updateDesign('buttonHoverColor', v)}
+              />
+              <ColorField
+                label="Button hover tekst"
+                description="Tekstfarve når action-knapper holdes over"
+                value={design.buttonHoverTextColor}
+                onChange={(v) => updateDesign('buttonHoverTextColor', v)}
+              />
+              <ColorField
+                label="Button disabled"
+                description="Farve når action-knapper er deaktiveret"
+                value={design.buttonDisabledColor}
+                onChange={(v) => updateDesign('buttonDisabledColor', v)}
+              />
+              <ColorField
+                label="Button disabled tekst"
+                description="Tekstfarve når action-knapper er deaktiveret"
+                value={design.buttonDisabledTextColor}
+                onChange={(v) => updateDesign('buttonDisabledTextColor', v)}
               />
             </CardContent>
           </Card>

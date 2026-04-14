@@ -2,6 +2,7 @@
 
 import { CircleCheck as CheckCircle2, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
 import type { SavingsMilestone, SavingsMilestonesResult } from '@/lib/flow-savings-service';
 
 function formatDKK(value: number): string {
@@ -23,27 +24,45 @@ interface Props {
 }
 
 export function FlowMilestonesSection({ result }: Props) {
+  const { design } = useSettings();
   const { weeklyRate, milestones } = result;
   const hasRate = weeklyRate > 0;
   const pendingMilestones = milestones.filter(m => !m.alreadyReached);
   const reachedMilestones = milestones.filter(m => m.alreadyReached);
+  const cardMedium = design.cardMedium;
+  const cardStyleBase = getCardStyle(cardMedium, design.gradientFrom, design.gradientTo);
+  const topBarStyleOverride = getTopBarStyle(cardMedium, design.gradientFrom, design.gradientTo);
 
   if (milestones.every(m => m.alreadyReached)) {
     return (
-      <div className="mx-4 mb-5 rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/80 via-teal-50/20 to-white px-5 py-5">
-        <div className="flex items-center gap-2 mb-1">
-          <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-          <p className="text-sm font-semibold text-emerald-700">Alle milestones nået!</p>
+      <div
+        className="mx-4 mb-5 rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/80 via-teal-50/20 to-white transition-all duration-500"
+        style={cardStyleBase}
+      >
+        {topBarStyleOverride && (
+          <div style={topBarStyleOverride} />
+        )}
+        <div className="px-5 py-5">
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+            <p className="text-sm font-semibold text-emerald-700">Alle milestones nået!</p>
+          </div>
+          <p className="text-xs text-muted-foreground/70 leading-relaxed">
+            Du har nået 100.000 kr. — et imponerende resultat.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground/70 leading-relaxed">
-          Du har nået 100.000 kr. — et imponerende resultat.
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="mx-4 mb-5 rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/60 via-white to-white shadow-sm overflow-hidden">
+    <div
+      className="mx-4 mb-5 rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/60 via-white to-white shadow-sm overflow-hidden transition-all duration-500"
+      style={cardStyleBase}
+    >
+      {topBarStyleOverride && (
+        <div style={topBarStyleOverride} />
+      )}
       <div className="px-5 pt-5 pb-1">
         <div className="flex items-center gap-2 mb-1">
           <Target className="h-4 w-4 text-emerald-600 shrink-0" />

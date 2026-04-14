@@ -21,6 +21,7 @@ import {
 } from '@/lib/checkup-trigger';
 import { AiAssistantButton } from '@/components/ai-assistant-button';
 import { AiContextProvider, useAiContext } from '@/lib/ai-context';
+import { useGlobalModalThemeColor } from '@/lib/use-modal-theme-color';
 
 function daysSince(dateStr: string | null): number | null {
   if (!dateStr) return null;
@@ -479,6 +480,7 @@ function AiAssistantButtonWithContext() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
+  useGlobalModalThemeColor();
 
   const isLoginPage = pathname === '/login';
 

@@ -710,10 +710,11 @@ export default function NuvioFlowPage() {
   }, [isCurrentMonth, monthlyBudget, healthPct, statusState, cfg.badgeText, remaining, totalSpent, remainingDays, dailyAvailable, streak, carryOverPenalty, viewMonth, viewYear, weeklyTransactionCount, setAiContext]);
 
   const topBgColor = useMemo(() =>
-    (statusState === 'tempo' || statusState === 'kursen') ? 'rgb(236,253,245)' :
+    statusState === 'kursen' ? 'rgb(240,253,250)' :
+    statusState === 'tempo' ? 'rgb(236,253,245)' :
     statusState === 'warn' ? 'rgb(255,251,235)' :
     statusState === 'over' ? 'rgb(254,242,242)' :
-    'rgb(248,250,252)',
+    'rgb(232,239,237)',
   [statusState]);
 
   useEffect(() => {
@@ -736,10 +737,11 @@ export default function NuvioFlowPage() {
     <div
       className={cn(
         'min-h-screen bg-gradient-to-b transition-colors duration-700',
-        (statusState === 'tempo' || statusState === 'kursen') && 'from-emerald-50/60 via-white to-white',
-        statusState === 'warn' && 'from-amber-50/60 via-orange-50/20 to-white',
-        statusState === 'over' && 'from-red-50/60 via-rose-50/20 to-white',
-        statusState === 'flow' && 'from-slate-100/60 via-gray-50/30 to-white',
+        statusState === 'kursen' && 'from-teal-50/70 via-emerald-50/30 to-white',
+        statusState === 'tempo' && 'from-emerald-50/70 via-teal-50/25 to-white',
+        statusState === 'warn' && 'from-amber-50/70 via-orange-50/25 to-white',
+        statusState === 'over' && 'from-rose-50/70 via-red-50/25 to-white',
+        statusState === 'flow' && 'from-[#dfe9e7]/90 via-[#edf3f1]/70 to-white',
       )}
       style={{ backgroundColor: topBgColor }}
     >
@@ -1150,11 +1152,10 @@ export default function NuvioFlowPage() {
                 onClick={handleAdd}
                 disabled={saving || !amountRaw}
                 className={cn(
-                  'w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2',
+                  'nuvio-action-button w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2',
                   saved
                     ? 'bg-emerald-500 text-white scale-[0.98]'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-md active:scale-[0.97]',
-                  (saving || !amountRaw) && 'opacity-50 cursor-not-allowed'
+                    : 'hover:shadow-md active:scale-[0.97]'
                 )}
               >
                 {saved ? (

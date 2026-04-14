@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Flame, Zap, Award, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
 import type { QuickExpenseStreak } from '@/lib/quick-expense-service';
 
 interface Props {
@@ -84,6 +85,7 @@ function TierProgressBar({ score }: { score: number }) {
 }
 
 export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, scoreColor, className }: Props) {
+  const { design } = useSettings();
   const [showInfo, setShowInfo] = useState(false);
 
   const cumulativeScore = streak?.cumulative_score ?? 0;
@@ -97,6 +99,9 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
   const nextTierIndex = TIERS.findIndex(t => cumulativeScore < t.min);
   const nextTier = nextTierIndex > 0 ? TIERS[nextTierIndex] : null;
   const pointsToNext = nextTier ? nextTier.min - cumulativeScore : null;
+  const cardMedium = design.cardMedium;
+  const cardStyleBase = getCardStyle(cardMedium, design.gradientFrom, design.gradientTo);
+  const topBarStyleOverride = getTopBarStyle(cardMedium, design.gradientFrom, design.gradientTo);
 
   return (
     <>
@@ -104,11 +109,14 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
         onClick={() => setShowInfo(true)}
         className={cn(
           'w-full text-left rounded-2xl border shadow-sm transition-all duration-500 hover:shadow-md active:scale-[0.99]',
-          tier.bg,
-          tier.border,
+          'bg-gradient-to-br from-emerald-50/80 via-teal-50/30 to-white border-emerald-200/50',
           className
         )}
+        style={cardStyleBase}
       >
+        {topBarStyleOverride && (
+          <div style={topBarStyleOverride} />
+        )}
         <div className="flex items-center justify-between px-5 pt-5 pb-4">
           <div className="flex items-center gap-2.5">
             <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ring-2', `bg-gradient-to-br ${tier.color}`, 'ring-white/40')}>
@@ -129,7 +137,7 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
         <div className="px-5 pb-4">
           <div className="flex items-end justify-between gap-4 mb-4">
             <div>
-              <p className={cn('text-5xl font-black tabular-nums tracking-tight leading-none', tier.textColor)}>
+              <p className={cn('text-6xl sm:text-7xl font-semibold tabular-nums tracking-tight leading-none', tier.textColor)}>
                 {cumulativeScore.toLocaleString('da-DK')}
               </p>
               <p className="text-xs text-muted-foreground/60 mt-1.5 leading-snug">
@@ -145,7 +153,7 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
                   {isRecord ? <Award className="h-5 w-5 text-white" /> : <Flame className="h-5 w-5 text-white" />}
                 </div>
                 <div>
-                  <p className="text-sm font-black text-orange-800 tabular-nums leading-none">{currentStreak} mdr.</p>
+                  <p className="text-sm font-semibold tracking-tight text-orange-800 tabular-nums leading-none">{currentStreak} mdr.</p>
                   <p className="text-[10px] text-orange-600/70 leading-none mt-0.5">
                     {isRecord ? 'Rekord!' : `Rekord: ${longestStreak}`}
                   </p>
@@ -248,8 +256,8 @@ export default function NuvioScoreStandaloneCard({ streak, score, scoreLabel, sc
             <div className="px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 shrink-0 border-t border-foreground/5">
               <button
                 onClick={() => setShowInfo(false)}
-                className="w-full rounded-2xl text-white text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
-                style={{ background: 'linear-gradient(to right, #0d9488, #10b981)', height: '52px' }}
+                className="nuvio-action-button w-full rounded-full text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
+                style={{ height: '52px' }}
               >
                 Forstået
               </button>

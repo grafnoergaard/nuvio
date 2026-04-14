@@ -97,6 +97,24 @@
     background: linear-gradient(135deg, hsl(164 73% 50%) 0%, hsl(164 73% 60%) 100%);
   }
 
+  .nuvio-action-button {
+    background: var(--button-active-bg, #0d9488);
+    color: var(--button-active-text, #ffffff);
+    border-radius: 9999px;
+  }
+
+  .nuvio-action-button:hover:not(:disabled) {
+    background: var(--button-hover-bg, #0E3B43);
+    color: var(--button-hover-text, #ffffff);
+  }
+
+  .nuvio-action-button:disabled {
+    background: var(--button-disabled-bg, #9BCFBE);
+    color: var(--button-disabled-text, #ffffff);
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
   .gradient-warning {
     background: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(25 95% 53%) 100%);
   }

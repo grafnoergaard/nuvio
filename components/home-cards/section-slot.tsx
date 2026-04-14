@@ -14,8 +14,9 @@ import { ConsumptionStatusCard } from '@/components/home-cards/consumption-statu
 import BudgetStatusCard from '@/components/budget-status-card';
 import FlowSavingsCard from '@/components/flow-savings-card';
 import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
+import StreakCountCard from '@/components/home-cards/streak-count-card';
 import type { HomeDerived } from '@/lib/home-derived';
-import type { QuickExpenseStreak } from '@/lib/quick-expense-service';
+import type { QuickExpenseStreak, QuickExpenseWeeklyStreak } from '@/lib/quick-expense-service';
 
 interface SectionSlotProps {
   cardKey: HomeCardKey;
@@ -25,6 +26,7 @@ interface SectionSlotProps {
   categoryGroupTypes: Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>;
   recipientCount: number;
   quickStreak: QuickExpenseStreak | null;
+  weeklyStreak: QuickExpenseWeeklyStreak | null;
   openingBalance: number;
   wizardEnabled: (key: string) => boolean;
   onDismissOnboarding: () => void;
@@ -42,6 +44,7 @@ export function SectionSlot({
   categoryGroupTypes,
   recipientCount,
   quickStreak,
+  weeklyStreak,
   openingBalance,
   wizardEnabled,
   onDismissOnboarding,
@@ -143,6 +146,14 @@ export function SectionSlot({
         <div className={cn('relative', dimmed && 'opacity-50')}>
           {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="flow_savings" mode="inline" /></div>}
           <FlowSavingsCard />
+        </div>
+      );
+
+    case 'streak_count':
+      return (
+        <div className="relative">
+          {isAdmin && <div className="absolute top-2 right-2 z-20"><CardVisibilityToggle cardKey="streak_count" mode="inline" /></div>}
+          <StreakCountCard streak={weeklyStreak} dimmed={dimmed} />
         </div>
       );
 

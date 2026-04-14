@@ -4,7 +4,12 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getBudgetStructure } from '@/lib/db-helpers';
 import { fetchActiveSdsData, type SdsData } from '@/lib/standard-data-service';
-import { getStreak, type QuickExpenseStreak } from '@/lib/quick-expense-service';
+import {
+  getStreak,
+  getWeeklyBudgetStreak,
+  type QuickExpenseStreak,
+  type QuickExpenseWeeklyStreak,
+} from '@/lib/quick-expense-service';
 import type { InvestmentSettings } from '@/lib/home-calculations';
 
 export interface HomeBudget {
@@ -30,6 +35,7 @@ export interface HomeDataState {
   householdChildBirthYears: (number | null)[];
   categoryGroupTypes: Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>;
   quickStreak: QuickExpenseStreak | null;
+  weeklyStreak: QuickExpenseWeeklyStreak | null;
 }
 
 export interface HomeDataActions {
@@ -67,6 +73,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
   const [householdChildBirthYears, setHouseholdChildBirthYears] = useState<(number | null)[]>(initialCache?.householdChildBirthYears ?? []);
   const [categoryGroupTypes, setCategoryGroupTypes] = useState<Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>>(initialCache?.categoryGroupTypes ?? []);
   const [quickStreak, setQuickStreak] = useState<QuickExpenseStreak | null>(initialCache?.quickStreak ?? null);
+  const [weeklyStreak, setWeeklyStreak] = useState<QuickExpenseWeeklyStreak | null>(initialCache?.weeklyStreak ?? null);
 
   const userIdRef = useRef<string | undefined>(undefined);
 
@@ -91,6 +98,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
         householdChildBirthYears,
         categoryGroupTypes,
         quickStreak,
+        weeklyStreak,
       },
     };
   }, [
@@ -107,6 +115,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     householdChildBirthYears,
     categoryGroupTypes,
     quickStreak,
+    weeklyStreak,
   ]);
 
   async function loadHousehold() {
@@ -204,6 +213,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     loadInvestmentSettings();
     fetchActiveSdsData().then(setSdsData);
     getStreak().then(setQuickStreak).catch(() => {});
+    getWeeklyBudgetStreak().then(setWeeklyStreak).catch(() => {});
     if (userIdRef.current) loadHousehold();
   }
 
@@ -221,6 +231,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     householdChildBirthYears,
     categoryGroupTypes,
     quickStreak,
+    weeklyStreak,
     loadData,
     loadHousehold,
     loadInvestmentSettings,

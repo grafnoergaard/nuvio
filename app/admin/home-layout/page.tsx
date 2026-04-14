@@ -23,6 +23,7 @@ const CARD_DESCRIPTIONS: Record<string, string> = {
   next_step: 'Næste anbefalede handling',
   consumption_status: 'Forbrugsstatus med procentindikator',
   budget_status: 'Nuvio Flow budgetstatus — rådighedsbeløb, flow-score og ugebudget',
+  streak_count: 'Aktiv Nuvio Flow-streak med månedspulser',
 };
 
 const WIDTH_LABELS: Record<HomeCardWidth, string> = {

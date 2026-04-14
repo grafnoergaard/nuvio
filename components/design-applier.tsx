@@ -47,6 +47,13 @@ export function DesignApplier() {
     root.style.setProperty('--destructive', hexToHsl(design.minusColor));
     root.style.setProperty('--card-foreground', hexToHsl(design.textColor));
 
+    root.style.setProperty('--button-active-bg', design.buttonActiveColor);
+    root.style.setProperty('--button-active-text', design.buttonActiveTextColor);
+    root.style.setProperty('--button-hover-bg', design.buttonHoverColor);
+    root.style.setProperty('--button-hover-text', design.buttonHoverTextColor);
+    root.style.setProperty('--button-disabled-bg', design.buttonDisabledColor);
+    root.style.setProperty('--button-disabled-text', design.buttonDisabledTextColor);
+
     root.style.setProperty('--design-gradient-from', design.gradientFrom);
     root.style.setProperty('--design-gradient-to', design.gradientTo);
     root.style.setProperty('--design-card1-from', design.card1GradientFrom);

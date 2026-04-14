@@ -49,7 +49,7 @@ type DisplaySlot = {
 function NavHighlight({ activeIndex, count }: { activeIndex: number; count: number }) {
   if (count <= 0) return null;
   return (
-    <div className="absolute inset-y-1 left-2 right-2 pointer-events-none overflow-hidden">
+    <div className="absolute inset-1 pointer-events-none overflow-hidden">
       <div
         className="h-full transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
         style={{
@@ -58,7 +58,7 @@ function NavHighlight({ activeIndex, count }: { activeIndex: number; count: numb
           width: `${100 / count}%`,
         }}
       >
-        <div className="mx-1 h-full rounded-full bg-[#0E3B43] shadow-sm" />
+        <div className="h-full rounded-full bg-[#0E3B43] shadow-sm" />
       </div>
     </div>
   );
@@ -211,13 +211,13 @@ export function MobileNav() {
     <>
       {burgerOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
           onClick={() => setBurgerOpen(false)}
         />
       )}
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-[60] md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden"
         style={{ pointerEvents: 'none', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="px-4 pb-3" style={{ pointerEvents: 'none' }}>
@@ -293,7 +293,7 @@ export function MobileNav() {
             className="rounded-full bg-card/95 backdrop-blur-xl border border-border/30 shadow-2xl"
             style={{ pointerEvents: 'auto', height: navHeight }}
           >
-            <div className="relative flex items-center justify-around h-full px-2">
+            <div className="relative flex items-center justify-around h-full p-1">
               <NavHighlight activeIndex={displayedActiveSlotIndex} count={displaySlots.length} />
               {displaySlots.map((slot, index) => {
                 if (slot.isEmpty) return <div key={slot.key} className="relative z-10 flex-1" />;
@@ -305,19 +305,19 @@ export function MobileNav() {
                       key={slot.key}
                       onClick={() => setBurgerOpen((v) => !v)}
                       className={cn(
-                        'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
+                        'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 self-stretch px-2 py-2 rounded-full transition-colors duration-300',
                         active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                       )}
                     >
                       <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                         {burgerOpen
-                          ? <X className="h-[18px] w-[18px] text-[#2ED3A7]" />
-                          : <Menu className="h-[18px] w-[18px] text-muted-foreground" />
+                          ? <X className="h-5 w-5 text-[#2ED3A7]" />
+                          : <Menu className="h-5 w-5 text-muted-foreground" />
                         }
                       </div>
                       <span className={cn(
                         'text-[10px] font-semibold leading-none tracking-wide',
-                        active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
+                        active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                       )}>
                         Menu
                       </span>
@@ -336,16 +336,16 @@ export function MobileNav() {
                       router.push(slot.href);
                     }}
                     className={cn(
-                      'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 mx-1 px-2 py-2 rounded-full transition-colors duration-300',
+                      'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 self-stretch px-2 py-2 rounded-full transition-colors duration-300',
                       active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                     )}
                   >
                     <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
-                      <Icon className={cn('h-[18px] w-[18px]', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
+                      <Icon className={cn('h-5 w-5', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
                     </div>
                     <span className={cn(
                       'text-[10px] font-semibold leading-none tracking-wide',
-                      active ? 'text-[#2ED3A7]' : 'text-muted-foreground/70'
+                      active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                     )}>
                       {slot.label}
                     </span>

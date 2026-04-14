@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export const USER_CONFIGURABLE_CARD_KEYS = ['nuvio_score_standalone', 'budget_status', 'flow_savings'] as const;
+export const USER_CONFIGURABLE_CARD_KEYS = ['nuvio_score_standalone', 'budget_status', 'flow_savings', 'streak_count'] as const;
 export type UserConfigurableCardKey = typeof USER_CONFIGURABLE_CARD_KEYS[number];
 
 export interface UserHomeCardConfig {
@@ -15,12 +15,14 @@ export const USER_CARD_LABELS: Record<UserConfigurableCardKey, string> = {
   nuvio_score_standalone: 'Nuvio Score',
   budget_status: 'Nuvio Flow',
   flow_savings: 'Flow Opsparing',
+  streak_count: 'Streak Count',
 };
 
 export const USER_CARD_DESCRIPTIONS: Record<UserConfigurableCardKey, string> = {
   nuvio_score_standalone: 'Din daglige stræk og finansielle score',
   budget_status: 'Rådighedsbeløb, flow-score og ugebudget',
   flow_savings: 'Opsparing via Flow-systemet',
+  streak_count: 'Din aktive Nuvio Flow-streak',
 };
 
 export async function fetchUserHomeCardConfig(): Promise<UserHomeCardConfig[]> {
@@ -72,7 +74,8 @@ export type HomeCardKey =
   | 'next_step'
   | 'consumption_status'
   | 'budget_status'
-  | 'flow_savings';
+  | 'flow_savings'
+  | 'streak_count';
 
 export type HomeCardWidth = 'full' | 'half';
 
@@ -154,6 +157,7 @@ export function buildCardVisibilityMap(configs: HomeCardConfig[]): Record<HomeCa
     consumption_status: true,
     budget_status: false,
     flow_savings: true,
+    streak_count: true,
   };
   for (const cfg of configs) {
     defaults[cfg.card_key] = cfg.is_visible;
@@ -174,6 +178,7 @@ export function buildCardWidthMap(configs: HomeCardConfig[]): Record<HomeCardKey
     consumption_status: 'full',
     budget_status: 'full',
     flow_savings: 'full',
+    streak_count: 'full',
   };
   for (const cfg of configs) {
     defaults[cfg.card_key] = cfg.width ?? 'full';

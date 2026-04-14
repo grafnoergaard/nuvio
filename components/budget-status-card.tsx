@@ -644,13 +644,12 @@ export default function BudgetStatusCard() {
                   onClick={handleAddExpense}
                   disabled={expenseSaving || (!expenseAmount && !expenseSaved)}
                   className={cn(
-                    'w-full h-13 rounded-2xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 mt-1',
+                    'nuvio-action-button w-full h-13 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 mt-1',
                     expenseSaved
                       ? 'bg-emerald-500 text-white scale-[0.98]'
-                      : 'text-white',
-                    (expenseSaving || (!expenseAmount && !expenseSaved)) && !expenseSaved && 'opacity-50 cursor-not-allowed'
+                      : 'text-white'
                   )}
-                  style={expenseSaved ? undefined : { background: expenseAmount && !expenseSaving ? 'linear-gradient(to right, #0d9488, #10b981)' : '#9ca3af', height: '52px', borderRadius: '16px' }}
+                  style={{ height: '52px' }}
                 >
                   {expenseSaved ? (
                     <>
