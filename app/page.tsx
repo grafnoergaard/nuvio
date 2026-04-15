@@ -18,6 +18,9 @@ import { useHomeData } from '@/hooks/use-home-data';
 import { useHomeUI } from '@/hooks/use-home-ui';
 import { useHomeCards } from '@/hooks/use-home-cards';
 import { useHomeDerived } from '@/lib/home-derived';
+import { useWeekTransition } from '@/hooks/use-week-transition';
+import { WeekTransitionBottomSheet, WeekTransitionWizard } from '@/components/week-transition-wizard';
+import { FlowSavingsModal } from '@/components/flow-savings-modal';
 
 export default function HomePage() {
   const router = useRouter();
@@ -67,6 +70,8 @@ export default function HomePage() {
     householdChildBirthYears,
     recipientCount,
   });
+
+  const weekTransition = useWeekTransition();
 
   useEffect(() => {
     setUserRef(user?.id);
@@ -274,6 +279,37 @@ export default function HomePage() {
           onChange={setOpeningBalanceInput}
           onSave={saveOpeningBalance}
           onClose={() => setEditingOpeningBalance(false)}
+        />
+      )}
+
+      {weekTransition.showBottomSheet && weekTransition.summaryData && (
+        <WeekTransitionBottomSheet
+          summaryData={weekTransition.summaryData}
+          dismissCount={weekTransition.dismissCount}
+          onOpen={weekTransition.onOpenWizard}
+          onDismiss={weekTransition.onDismiss}
+        />
+      )}
+
+      {weekTransition.showWizard && weekTransition.summaryData && (
+        <WeekTransitionWizard
+          summaryData={weekTransition.summaryData}
+          cachedAiSummary={weekTransition.cachedAiSummary}
+          monthlySavings={weekTransition.monthlySavings}
+          onAcknowledge={weekTransition.onAcknowledge}
+          onDismiss={weekTransition.onDismiss}
+          onExpenseAdded={weekTransition.recomputeSummary}
+        />
+      )}
+
+      {weekTransition.showFlowSavingsModal && weekTransition.summaryData && (
+        <FlowSavingsModal
+          summaryData={weekTransition.summaryData}
+          currentBalance={weekTransition.flowSavingsTotals?.current_balance ?? 0}
+          lifetimeTotal={weekTransition.flowSavingsTotals?.lifetime_total ?? 0}
+          weekCount={weekTransition.flowSavingsTotals?.week_count ?? 0}
+          onConfirm={weekTransition.onFlowSavingsConfirm}
+          onDismiss={weekTransition.onFlowSavingsDismiss}
         />
       )}
     </HomeCardProvider>

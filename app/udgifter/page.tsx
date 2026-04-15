@@ -31,9 +31,6 @@ import { supabase } from '@/lib/supabase';
 import MonthTransitionModal from '@/components/month-transition-modal';
 import StreakBadge from '@/components/streak-badge';
 import EditExpenseModal from '@/components/edit-expense-modal';
-import { WeekTransitionBottomSheet, WeekTransitionWizard } from '@/components/week-transition-wizard';
-import { useWeekTransition } from '@/hooks/use-week-transition';
-import { FlowSavingsModal } from '@/components/flow-savings-modal';
 import NuvioFlowGuideModal from '@/components/nuvio-flow-guide-modal';
 import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
 import { toKuvertCopy } from '@/lib/kuvert-copy';
@@ -205,8 +202,6 @@ export default function NuvioFlowPage() {
   const [editingExpense, setEditingExpense] = useState<QuickExpense | null>(null);
   const [variableEstimate, setVariableEstimate] = useState<number | null>(null);
   const amountRef = useRef<HTMLInputElement>(null);
-
-  const weekTransition = useWeekTransition();
 
   const [showTransitionModal, setShowTransitionModal] = useState(false);
   const [prevSummary, setPrevSummary] = useState<MonthSummary | null>(null);
@@ -1366,37 +1361,6 @@ export default function NuvioFlowPage() {
           month={viewMonth}
           onSave={handleEditSave}
           onClose={() => setEditingExpense(null)}
-        />
-      )}
-
-      {weekTransition.showBottomSheet && weekTransition.summaryData && (
-        <WeekTransitionBottomSheet
-          summaryData={weekTransition.summaryData}
-          dismissCount={weekTransition.dismissCount}
-          onOpen={weekTransition.onOpenWizard}
-          onDismiss={weekTransition.onDismiss}
-        />
-      )}
-
-      {weekTransition.showWizard && weekTransition.summaryData && (
-        <WeekTransitionWizard
-          summaryData={weekTransition.summaryData}
-          cachedAiSummary={weekTransition.cachedAiSummary}
-          monthlySavings={weekTransition.monthlySavings}
-          onAcknowledge={weekTransition.onAcknowledge}
-          onDismiss={weekTransition.onDismiss}
-          onExpenseAdded={weekTransition.recomputeSummary}
-        />
-      )}
-
-      {weekTransition.showFlowSavingsModal && weekTransition.summaryData && (
-        <FlowSavingsModal
-          summaryData={weekTransition.summaryData}
-          currentBalance={weekTransition.flowSavingsTotals?.current_balance ?? 0}
-          lifetimeTotal={weekTransition.flowSavingsTotals?.lifetime_total ?? 0}
-          weekCount={weekTransition.flowSavingsTotals?.week_count ?? 0}
-          onConfirm={weekTransition.onFlowSavingsConfirm}
-          onDismiss={weekTransition.onFlowSavingsDismiss}
         />
       )}
 

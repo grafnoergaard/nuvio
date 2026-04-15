@@ -195,7 +195,7 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
             <div className="flex flex-col gap-1">
               <h1 className="text-3xl font-bold text-center text-foreground">Kuvert</h1>
               <p className="text-xs text-muted-foreground text-center">
-                Økonomisk rådgivning – uden bank.
+                Forbrugsstyring med kuvert
               </p>
             </div>
           </div>
