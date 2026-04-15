@@ -251,12 +251,13 @@ export default function NuvioFlowGuideModal({ open, onClose, onComplete }: Nuvio
           </div>
 
           <div
-            className="transition-all duration-[180ms]"
+            className="transition-all"
             style={{
               opacity: animating ? 0 : 1,
               transform: animating
                 ? `translateX(${direction === 'forward' ? '12px' : '-12px'})`
                 : 'translateX(0)',
+              transitionDuration: '180ms',
             }}
           >
             <div className="flex items-center gap-3 mb-4">

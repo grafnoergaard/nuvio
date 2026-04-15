@@ -127,7 +127,13 @@ export default function HomePage() {
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const color = 'rgb(236,253,245)';
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
     document.body.style.backgroundColor = color;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
     let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
     if (!meta) {
       meta = document.createElement('meta');
@@ -137,6 +143,9 @@ export default function HomePage() {
     meta.content = color;
     return () => {
       document.body.style.backgroundColor = '';
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
       if (meta) meta.content = '#f8f9f2';
     };
   }, []);
@@ -219,7 +228,7 @@ export default function HomePage() {
       >
         <div
           ref={homeScrollRef}
-          className="home-scroll h-full overflow-y-auto overscroll-contain"
+          className={`home-scroll h-full overscroll-none ${needsBottomScrollSpace ? 'overflow-y-auto' : 'overflow-hidden'}`}
         >
           <div
             ref={homeContentRef}

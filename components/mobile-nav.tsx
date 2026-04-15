@@ -44,10 +44,11 @@ function NavHighlight({ activeIndex, count }: { activeIndex: number; count: numb
   return (
     <div className="absolute inset-1 pointer-events-none overflow-hidden">
       <div
-        className="h-full transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+        className="h-full transition-[transform,opacity] duration-200 will-change-transform"
         style={{
           opacity: activeIndex >= 0 ? 1 : 0,
           transform: `translate3d(${Math.max(activeIndex, 0) * 100}%, 0, 0)`,
+          transitionTimingFunction: 'cubic-bezier(0.22,1,0.36,1)',
           width: `${100 / count}%`,
         }}
       >

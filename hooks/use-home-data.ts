@@ -112,12 +112,53 @@ export interface HomeDataActions {
 type HomeDataSnapshot = Omit<HomeDataState, 'loading'>;
 
 const HOME_DATA_CACHE_TTL = 60_000;
+const HOME_DATA_PERSISTED_CACHE_TTL = 6 * 60 * 60 * 1000;
+const HOME_DATA_STORAGE_KEY = 'kuvert.homeData.v1';
 let homeDataCache: { at: number; data: HomeDataSnapshot } | null = null;
 
 function getHomeDataCache(): HomeDataSnapshot | null {
-  if (!homeDataCache) return null;
-  if (Date.now() - homeDataCache.at > HOME_DATA_CACHE_TTL) return null;
-  return homeDataCache.data;
+  const now = Date.now();
+  if (homeDataCache && now - homeDataCache.at <= HOME_DATA_CACHE_TTL) {
+    return homeDataCache.data;
+  }
+
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(HOME_DATA_STORAGE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw) as { at?: number; data?: HomeDataSnapshot };
+    if (!cached.at || !cached.data) return null;
+    if (now - cached.at > HOME_DATA_PERSISTED_CACHE_TTL) return null;
+    homeDataCache = { at: cached.at, data: cached.data };
+    return cached.data;
+  } catch {
+    return null;
+  }
+}
+
+function persistHomeDataCache(data: HomeDataSnapshot) {
+  const payload = { at: Date.now(), data };
+  homeDataCache = payload;
+
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(HOME_DATA_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Browser storage can be full or unavailable in private mode.
+  }
+}
+
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 export function useHomeData(): HomeDataState & HomeDataActions {
@@ -150,29 +191,26 @@ export function useHomeData(): HomeDataState & HomeDataActions {
 
   useEffect(() => {
     if (loading) return;
-    homeDataCache = {
-      at: Date.now(),
-      data: {
-        budget,
-        expenses,
-        income,
-        recipientCount,
-        householdMonthlyIncome,
-        variableExpenseEstimate,
-        investmentSettings,
-        sdsData,
-        householdAdultCount,
-        householdChildBirthYears,
-        categoryGroupTypes,
-        quickStreak,
-        weeklyStreak,
-        flowMonthlyBudget,
-        flowMonthlySpent,
-        flowScoreThreshold,
-        flowStatusConfig,
-        flowWeeklyStatus,
-      },
-    };
+    persistHomeDataCache({
+      budget,
+      expenses,
+      income,
+      recipientCount,
+      householdMonthlyIncome,
+      variableExpenseEstimate,
+      investmentSettings,
+      sdsData,
+      householdAdultCount,
+      householdChildBirthYears,
+      categoryGroupTypes,
+      quickStreak,
+      weeklyStreak,
+      flowMonthlyBudget,
+      flowMonthlySpent,
+      flowScoreThreshold,
+      flowStatusConfig,
+      flowWeeklyStatus,
+    });
   }, [
     loading,
     budget,
@@ -197,32 +235,48 @@ export function useHomeData(): HomeDataState & HomeDataActions {
 
   async function loadHousehold() {
     if (!userIdRef.current) return;
-    const { data } = await supabase
-      .from('household')
-      .select('members, variable_expense_estimate, adult_count, variable_children_birth_years')
-      .eq('user_id', userIdRef.current)
-      .maybeSingle();
-    if (data?.members) {
-      const members = data.members as Array<{ type: string; monthly_net_salary: number | null }>;
-      const total = members.filter(m => m.type === 'adult').reduce((sum, m) => sum + (m.monthly_net_salary ?? 0), 0);
-      setHouseholdMonthlyIncome(total);
-      setHouseholdAdultCount(members.filter(m => m.type === 'adult').length || 1);
-    }
-    if (data?.variable_expense_estimate != null) {
-      setVariableExpenseEstimate(Number(data.variable_expense_estimate));
-    }
-    if (data && Array.isArray(data.variable_children_birth_years)) {
-      setHouseholdChildBirthYears(data.variable_children_birth_years as (number | null)[]);
+    try {
+      const { data } = await withTimeout(
+        supabase
+          .from('household')
+          .select('members, variable_expense_estimate, adult_count, variable_children_birth_years')
+          .eq('user_id', userIdRef.current)
+          .maybeSingle(),
+        2500,
+        'household'
+      );
+      if (data?.members) {
+        const members = data.members as Array<{ type: string; monthly_net_salary: number | null }>;
+        const total = members.filter(m => m.type === 'adult').reduce((sum, m) => sum + (m.monthly_net_salary ?? 0), 0);
+        setHouseholdMonthlyIncome(total);
+        setHouseholdAdultCount(members.filter(m => m.type === 'adult').length || 1);
+      }
+      if (data?.variable_expense_estimate != null) {
+        setVariableExpenseEstimate(Number(data.variable_expense_estimate));
+      }
+      if (data && Array.isArray(data.variable_children_birth_years)) {
+        setHouseholdChildBirthYears(data.variable_children_birth_years as (number | null)[]);
+      }
+    } catch (error) {
+      console.warn('Household data skipped:', error);
     }
   }
 
   async function loadInvestmentSettings() {
-    const { data } = await supabase
-      .from('investment_settings')
-      .select('monthly_amount, current_amount, scenario, time_horizon, market_reaction')
-      .maybeSingle();
-    if (data && data.monthly_amount > 0) {
-      setInvestmentSettings(data as InvestmentSettings);
+    try {
+      const { data } = await withTimeout(
+        supabase
+          .from('investment_settings')
+          .select('monthly_amount, current_amount, scenario, time_horizon, market_reaction')
+          .maybeSingle(),
+        2500,
+        'investment settings'
+      );
+      if (data && data.monthly_amount > 0) {
+        setInvestmentSettings(data as InvestmentSettings);
+      }
+    } catch (error) {
+      console.warn('Investment settings skipped:', error);
     }
   }
 
@@ -233,25 +287,33 @@ export function useHomeData(): HomeDataState & HomeDataActions {
       initialLoadingReleased = true;
       setLoading(false);
     };
-    const loadingFallback = window.setTimeout(releaseInitialLoading, 4500);
+    const loadingFallback = window.setTimeout(releaseInitialLoading, budget ? 900 : 3500);
 
     try {
-      const { data: activeBudgets } = await supabase
-        .from('budgets')
-        .select('id, name, year, onboarding_dismissed, has_variable_budget, opening_balance')
-        .eq('is_active', true)
-        .limit(1);
+      const { data: activeBudgets } = await withTimeout(
+        supabase
+          .from('budgets')
+          .select('id, name, year, onboarding_dismissed, has_variable_budget, opening_balance')
+          .eq('is_active', true)
+          .limit(1),
+        3000,
+        'active budget'
+      );
 
       let currentBudget: HomeBudget | null = null;
       if (activeBudgets && activeBudgets.length > 0) {
         currentBudget = activeBudgets[0] as HomeBudget;
       } else {
-        const { data: fallbackBudgets } = await supabase
-          .from('budgets')
-          .select('id, name, year, onboarding_dismissed, has_variable_budget, opening_balance')
-          .order('year', { ascending: false })
-          .order('start_month', { ascending: false })
-          .limit(1);
+        const { data: fallbackBudgets } = await withTimeout(
+          supabase
+            .from('budgets')
+            .select('id, name, year, onboarding_dismissed, has_variable_budget, opening_balance')
+            .order('year', { ascending: false })
+            .order('start_month', { ascending: false })
+            .limit(1),
+          3000,
+          'fallback budget'
+        );
         if (!fallbackBudgets || fallbackBudgets.length === 0) {
           releaseInitialLoading();
           return;
@@ -261,7 +323,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
       setBudget(currentBudget);
       releaseInitialLoading();
 
-      const structure = await getBudgetStructure(currentBudget.id);
+      const structure = await withTimeout(getBudgetStructure(currentBudget.id), 3500, 'budget structure');
       if (!structure) return;
 
       let totalExpenses = 0;
