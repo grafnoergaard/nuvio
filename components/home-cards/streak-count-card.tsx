@@ -143,15 +143,20 @@ export default function StreakCountCard({ streak, dimmed }: StreakCountCardProps
 
         <div className="mt-4 rounded-2xl border border-foreground/6 bg-white/55 px-4 py-3">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/45">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-foreground/70">
               {currentMonthLabel}
             </p>
             {completedStreakMonths > 0 && (
               <span
-                className="rounded-full px-2.5 py-1 text-xs font-bold tabular-nums text-[#0E3B43] shadow-sm"
+                className="inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-[#0E3B43] shadow-sm"
                 style={{ background: tone.accent }}
+                aria-label={`${completedStreakMonths} ${completedStreakMonths === 1 ? 'måned' : 'måneder'} i træk`}
+                title={`${completedStreakMonths} ${completedStreakMonths === 1 ? 'måned' : 'måneder'} i træk`}
               >
-                x{completedStreakMonths}
+                <span className="text-sm font-bold leading-none tabular-nums">X{completedStreakMonths}</span>
+                <span className="text-[9px] font-semibold uppercase leading-none tracking-wide opacity-70">
+                  {completedStreakMonths === 1 ? 'måned' : 'mdr.'}
+                </span>
               </span>
             )}
           </div>

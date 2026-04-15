@@ -227,6 +227,14 @@ export function useHomeData(): HomeDataState & HomeDataActions {
   }
 
   async function loadData() {
+    let initialLoadingReleased = false;
+    const releaseInitialLoading = () => {
+      if (initialLoadingReleased) return;
+      initialLoadingReleased = true;
+      setLoading(false);
+    };
+    const loadingFallback = window.setTimeout(releaseInitialLoading, 4500);
+
     try {
       const { data: activeBudgets } = await supabase
         .from('budgets')
@@ -245,13 +253,13 @@ export function useHomeData(): HomeDataState & HomeDataActions {
           .order('start_month', { ascending: false })
           .limit(1);
         if (!fallbackBudgets || fallbackBudgets.length === 0) {
-          setLoading(false);
+          releaseInitialLoading();
           return;
         }
         currentBudget = fallbackBudgets[0] as HomeBudget;
       }
       setBudget(currentBudget);
-      setLoading(false);
+      releaseInitialLoading();
 
       const structure = await getBudgetStructure(currentBudget.id);
       if (!structure) return;
@@ -282,7 +290,8 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     } catch (error: unknown) {
       console.error('Error loading home data:', error);
     } finally {
-      setLoading(false);
+      window.clearTimeout(loadingFallback);
+      releaseInitialLoading();
     }
   }
 

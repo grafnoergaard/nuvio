@@ -124,19 +124,19 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_80%,rgba(16,185,129,0.08),transparent_60%)]" />
         <div className="relative z-10 text-white max-w-md">
           <div className="mb-10">
-            <Image src="/nuvio.png" alt="Nuvio" width={120} height={120} className="h-20 w-20 rounded-3xl object-contain shadow-lg" />
+            <Image src="/kuvert-icon.png" alt="Kuvert" width={120} height={120} className="h-20 w-20 rounded-3xl object-contain shadow-lg" />
           </div>
           <h2 className="text-4xl font-bold leading-tight mb-4">
-            Tag kontrol over din økonomi.
+            Din økonomi i en enkel kuvert.
           </h2>
           <p className="text-stone-400 text-lg leading-relaxed">
-            Nuvio giver dig det fulde overblik — fra budget til mål — i ét enkelt og smukt interface.
+            Kuvert viser dig, hvad du har til rådighed lige nu. Når der er penge i kuverten, kan du bruge dem med ro i maven.
           </p>
           <div className="mt-12 space-y-4">
             {[
-              'Automatisk kategorisering af udgifter',
-              'Opsparingsmål med konkrete anbefalinger',
-              'Fuld kontrol over dit månedlige rådighedsbeløb',
+              'Se dit beløb til rådighed uden at regne',
+              'Registrér udgifter på få sekunder',
+              'Hold din uge og måned inden for budget',
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -152,7 +152,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8 flex justify-center">
-            <Image src="/nuvio.png" alt="Nuvio" width={64} height={64} className="h-16 w-16 rounded-2xl object-contain shadow-md" />
+            <Image src="/kuvert-icon.png" alt="Kuvert" width={64} height={64} className="h-16 w-16 rounded-2xl object-contain shadow-md" />
           </div>
 
           <div className="mb-8">
@@ -161,8 +161,8 @@ export default function LoginPage() {
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               {mode === 'login'
-                ? 'Log ind for at se din økonomi'
-                : 'Kom i gang med Nuvio i dag'}
+                ? 'Log ind og se hvad du har til rådighed'
+                : 'Kom i gang med Kuvert i dag'}
             </p>
           </div>
 

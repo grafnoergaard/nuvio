@@ -14,8 +14,8 @@ const SLIDES = [
   {
     icon: <TrendingUp className="h-8 w-8 text-emerald-600" />,
     tag: 'Kuvert',
-    title: 'Få styr på dine penge — hver dag',
-    body: 'Se præcis hvad du har tilbage. Ikke bare sidst på måneden — men lige nu. Du undgår at løbe tør, fordi du altid ved, hvor du står.',
+    title: 'Din digitale kuvert til hverdagen',
+    body: 'Se præcis hvad du har til rådighed. Ikke sidst på måneden, men lige nu. Når der er penge i kuverten, kan du bruge dem med ro i maven.',
     visual: (
       <div className="mt-5 rounded-2xl bg-white/70 border border-emerald-100 px-4 py-4 flex items-center justify-between">
         <div>
@@ -32,14 +32,14 @@ const SLIDES = [
   {
     icon: <Sparkles className="h-8 w-8 text-emerald-600" />,
     tag: 'Daglig værdi',
-    title: 'Du ved altid, hvad du har tilbage',
-    body: 'Ingen ubehagelige overraskelser sidst på måneden. 20 sekunder om dagen kan ændre din økonomi.',
+    title: 'Du ved altid, hvad kuverten rummer',
+    body: 'Ingen ubehagelige overraskelser sidst på måneden. Et hurtigt tjek om dagen gør dine valg lettere.',
     visual: (
       <div className="mt-5 space-y-2.5">
         {[
-          { label: 'Bevidsthed', desc: 'Du ved altid, hvad du har tilbage' },
-          { label: 'Kontrol', desc: 'Ingen ubehagelige overraskelser sidst på måneden' },
-          { label: 'Ro', desc: 'Din økonomi føles overskuelig — hele tiden' },
+          { label: 'Bevidsthed', desc: 'Du ved altid, hvad du har til rådighed' },
+          { label: 'Kontrol', desc: 'Du bruger kun det, der ligger i kuverten' },
+          { label: 'Ro', desc: 'Du kan bruge penge uden dårlig samvittighed' },
         ].map((item) => (
           <div key={item.label} className="flex items-start gap-3 rounded-xl bg-white/70 border border-emerald-100 px-3 py-2.5">
             <div className="h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
@@ -57,8 +57,8 @@ const SLIDES = [
   {
     icon: <Receipt className="h-8 w-8 text-emerald-600" />,
     tag: 'Hurtig handling',
-    title: 'Track dine penge på 5 sekunder',
-    body: 'Indtast beløbet og gem. Så er du opdateret — med det samme. Det opdaterer dit daglige beløb og din Score automatisk.',
+    title: 'Læg hver udgift i kuverten',
+    body: 'Indtast beløbet og gem. Så opdateres dit beløb til rådighed med det samme, og din Score følger automatisk med.',
     visual: (
       <div className="mt-5 space-y-3">
         <div className="rounded-2xl bg-white/70 border border-emerald-100 px-4 py-3 flex items-center gap-3">
@@ -80,7 +80,7 @@ const SLIDES = [
     icon: <ShieldCheck className="h-8 w-8 text-emerald-600" />,
     tag: 'Den vigtigste regel',
     title: 'Notér det, når du bruger penge',
-    body: 'Ikke senere. Ikke "når du husker det". Lige når du betaler. 5 sekunder nu = fuldt overblik hele måneden.',
+    body: 'Ikke senere. Ikke "når du husker det". Lige når du betaler. Så ved du altid, hvor meget der er tilbage i kuverten.',
     visual: (
       <div className="mt-5 space-y-2.5">
         {[
@@ -105,7 +105,7 @@ const SLIDES = [
     icon: <CalendarDays className="h-8 w-8 text-emerald-600" />,
     tag: 'Kuvert',
     title: 'Din måned — delt op for dig',
-    body: 'Dit beløb fordeles automatisk ud på uger. Bruger du mere én uge, justeres resten. Du kan altid se, om du er foran eller bagud.',
+    body: 'Din kuvert deles automatisk op i uger. Bruger du mere én uge, justeres resten, så du stadig kan se, hvad du har til rådighed.',
     visual: (
       <div className="mt-5 space-y-2">
         {[
@@ -148,14 +148,14 @@ const SLIDES = [
   {
     icon: <TrendingUp className="h-8 w-8 text-emerald-600" />,
     tag: 'Kom i gang',
-    title: 'Klar til at få overblik?',
-    body: 'Det tager under 30 sekunder at komme i gang. Du kan justere alt undervejs — start bare.',
+    title: 'Klar til at åbne din kuvert?',
+    body: 'Det tager under 30 sekunder at komme i gang. Du kan justere alt undervejs - start bare.',
     visual: (
       <div className="mt-5 space-y-2.5">
         {[
-          { label: 'Trin 1', desc: 'Indtast dit rådighedsbeløb øverst på siden' },
+          { label: 'Trin 1', desc: 'Indtast hvad du vil have til rådighed' },
           { label: 'Trin 2', desc: 'Registrér din første udgift, næste gang du handler' },
-          { label: 'Trin 3', desc: 'Tjek din score — og hold den grøn' },
+          { label: 'Trin 3', desc: 'Tjek din Score og hold kuverten grøn' },
         ].map((item) => (
           <div key={item.label} className="flex items-start gap-3 rounded-xl bg-white/70 border border-emerald-100 px-3 py-2.5">
             <div className="h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">

@@ -5,6 +5,7 @@ import { Sidebar } from './sidebar';
 import { MobileNav } from './mobile-nav';
 import { useUIStrings } from '@/lib/ui-strings-context';
 import { useAuth } from '@/lib/auth-context';
+import { usePathname } from 'next/navigation';
 
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
   const [pinned, setPinned] = useState(true);
@@ -12,9 +13,11 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { getString } = useUIStrings();
   const { isAdmin } = useAuth();
+  const pathname = usePathname();
   const navHeight = parseInt(getString('mobile_nav_height', '58'), 10) || 58;
   const mobileNavEnabled = getString('mobile_nav_enabled', 'true') !== 'false';
   const showMobileNav = isAdmin || mobileNavEnabled;
+  const pageOwnsMobileNavSpace = pathname === '/';
 
   const visible = pinned || hovered;
 
@@ -70,10 +73,10 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
 
       <main
         className="flex-1 min-w-0"
-        style={showMobileNav ? {
+        style={showMobileNav && !pageOwnsMobileNavSpace ? {
           paddingBottom: `calc(var(--mobile-nav-height, 58px) + env(safe-area-inset-bottom, 0px))`,
         } : undefined}
-        data-mobile-pb={showMobileNav ? 'true' : undefined}
+        data-mobile-pb={showMobileNav && !pageOwnsMobileNavSpace ? 'true' : undefined}
       >
         {children}
       </main>

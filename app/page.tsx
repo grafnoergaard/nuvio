@@ -219,8 +219,7 @@ export default function HomePage() {
       >
         <div
           ref={homeScrollRef}
-          className="h-full overflow-y-auto overscroll-contain"
-          style={{ scrollbarWidth: 'none' }}
+          className="home-scroll h-full overflow-y-auto overscroll-contain"
         >
           <div
             ref={homeContentRef}
@@ -232,6 +231,16 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        <style jsx>{`
+          .home-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+
+          .home-scroll::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
       </div>
 
       {showIncomeWizard && budget && (
