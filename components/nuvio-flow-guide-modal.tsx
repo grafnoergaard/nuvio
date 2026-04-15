@@ -304,8 +304,7 @@ export default function NuvioFlowGuideModal({ open, onClose, onComplete }: Nuvio
             ) : (
               <button
                 onClick={() => go('forward')}
-                className="h-11 px-8 rounded-2xl font-semibold text-sm text-white shadow-sm active:scale-[0.98] transition-transform flex items-center gap-2"
-                style={{ background: 'linear-gradient(to right, #0d9488, #10b981)' }}
+                className="nuvio-action-button h-11 px-8 font-semibold text-sm shadow-sm active:scale-[0.98] transition-transform flex items-center gap-2"
               >
                 Fortsæt
                 <ChevronRight className="h-4 w-4" />
