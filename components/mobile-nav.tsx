@@ -2,29 +2,22 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, PiggyBank, Activity, Menu, X, TrendingUp, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, Menu, X, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/lib/settings-context';
 import { useAuth } from '@/lib/auth-context';
-import { DEFAULT_MOBILE_NAV_OPTIONS, getNavGroupsWithItems, getMobileNavSlots, NAV_ICON_MAP } from '@/lib/nav-config';
+import { DEFAULT_MOBILE_NAV_OPTIONS, RELEASE_NAV_HREFS, getNavGroupsWithItems, getMobileNavSlots, NAV_ICON_MAP } from '@/lib/nav-config';
 import { useUIStrings } from '@/lib/ui-strings-context';
 import { VERSION } from '@/lib/version';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from '@/lib/database.types';
 
 const DEFAULT_BURGER_SECTIONS = [
   {
-    label: 'Økonomi',
+    label: 'Kuvert',
     items: [
       { label: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Kuvert'] },
-      { label: 'Investering', href: '/investering', icon: TrendingUp },
-      { label: 'Sparet', href: '/maal', icon: PiggyBank },
-      { label: 'Husstand', href: '/husstand', icon: Users },
-    ],
-  },
-  {
-    label: 'Indstillinger',
-    items: [
-      { label: 'Kuvert Checkup', href: '/checkup', icon: Activity },
+      { label: 'Udgifter', href: '/nuvio-flow', icon: NAV_ICON_MAP['Coins'] },
+      { label: 'Sparet', href: '/opsparing', icon: NAV_ICON_MAP['PiggyBank'] },
       { label: 'Indstillinger', href: '/indstillinger', icon: Settings },
     ],
   },
@@ -100,6 +93,10 @@ export function MobileNav() {
     return pathname === href || pathname.startsWith(href);
   }
 
+  function getReleaseDefaultSlot(index: number) {
+    return DEFAULT_MOBILE_NAV_OPTIONS[index] ?? DEFAULT_MOBILE_NAV_OPTIONS[DEFAULT_MOBILE_NAV_OPTIONS.length - 1];
+  }
+
   const burgerSections = useMemo(
     () => dbGroups.length > 0
       ? dbGroups.map((g) => ({
@@ -108,8 +105,8 @@ export function MobileNav() {
             label: item.name,
             href: item.href,
             icon: NAV_ICON_MAP[item.icon_name] ?? LayoutDashboard,
-          })),
-        }))
+          })).filter((item) => RELEASE_NAV_HREFS.has(item.href)),
+        })).filter((section) => section.items.length > 0)
       : DEFAULT_BURGER_SECTIONS,
     [dbGroups],
   );
@@ -124,7 +121,7 @@ export function MobileNav() {
       const slot = slotsByPosition.get(position);
 
       if (!slot) {
-        const def = DEFAULT_MOBILE_NAV_OPTIONS[index] ?? DEFAULT_MOBILE_NAV_OPTIONS[DEFAULT_MOBILE_NAV_OPTIONS.length - 1];
+        const def = getReleaseDefaultSlot(index);
         return {
           key: `default-${def.id}-${position}`,
           isBurger: Boolean(def.isBurger),
@@ -147,13 +144,26 @@ export function MobileNav() {
       }
 
       if (!slot.nav_item) {
+        const def = getReleaseDefaultSlot(index);
         return {
-          key: slot.id,
+          key: `fallback-empty-${slot.id}-${position}`,
           isBurger: false,
-          isEmpty: true,
-          href: '',
-          label: '',
-          icon: LayoutDashboard,
+          isEmpty: false,
+          href: def.href,
+          label: def.label,
+          icon: def.icon,
+        };
+      }
+
+      if (!RELEASE_NAV_HREFS.has(slot.nav_item.href)) {
+        const def = getReleaseDefaultSlot(index);
+        return {
+          key: `fallback-parked-${slot.id}-${position}`,
+          isBurger: Boolean(def.isBurger),
+          isEmpty: false,
+          href: def.href,
+          label: def.label,
+          icon: def.icon,
         };
       }
 

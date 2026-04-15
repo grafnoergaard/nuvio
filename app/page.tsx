@@ -187,7 +187,7 @@ export default function HomePage() {
   }
 
   if (!budget && wizardEnabled('wizard_enabled_onboarding')) {
-    return <OnboardingIntro onComplete={() => router.push('/budgets')} />;
+    return <OnboardingIntro onComplete={() => { loadData(); router.push('/'); }} />;
   }
 
   const slotProps = {

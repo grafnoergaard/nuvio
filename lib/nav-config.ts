@@ -29,11 +29,17 @@ export const NAV_ICON_MAP: Record<string, ComponentType<{ className?: string }>>
 };
 
 export const DEFAULT_MOBILE_NAV_OPTIONS: { id: string; icon: ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
-  { id: 'hjem', icon: Coins, href: '/nuvio-flow', label: 'Udgifter' },
-  { id: 'investering', icon: TrendingUp, href: '/investering', label: 'Investering' },
-  { id: 'checkup', icon: Activity, href: '/checkup', label: 'Checkup' },
-  { id: 'burger', icon: List, href: '', label: 'Menu', isBurger: true },
+  { id: 'kuvert', icon: KuvertIcon, href: '/', label: 'Kuvert' },
+  { id: 'udgifter', icon: Coins, href: '/nuvio-flow', label: 'Udgifter' },
+  { id: 'sparet', icon: PiggyBank, href: '/opsparing', label: 'Sparet' },
+  { id: 'indstillinger', icon: Settings, href: '/indstillinger', label: 'Indstillinger' },
 ];
+
+export const RELEASE_NAV_HREFS = new Set(
+  DEFAULT_MOBILE_NAV_OPTIONS
+    .filter((item) => !item.isBurger)
+    .map((item) => item.href)
+);
 
 export function getDisplayNavName(name: string, href?: string | null): string {
   if (href === '/') return 'Kuvert';

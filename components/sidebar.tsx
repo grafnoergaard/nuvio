@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/lib/settings-context';
 import { useAuth } from '@/lib/auth-context';
 import { VERSION } from '@/lib/version';
-import { getNavGroupsWithItems, NAV_ICON_MAP } from '@/lib/nav-config';
+import { getNavGroupsWithItems, NAV_ICON_MAP, RELEASE_NAV_HREFS } from '@/lib/nav-config';
 import type { NavGroupWithItems, NavItem } from '@/lib/database.types';
 
 interface FlatNavItem {
@@ -72,6 +72,7 @@ function dbGroupsToFlatGroups(
         const isVisibleToUsers = (item as any).is_visible_to_users as boolean | null;
         if (requiresBudget && !currentBudgetId) return false;
         if (requiresTx && !hasTransactions) return false;
+        if (!RELEASE_NAV_HREFS.has(resolveHref(item, currentBudgetId))) return false;
         if (!isAdmin && isVisibleToUsers === false) return false;
         return true;
       })
@@ -148,25 +149,19 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
             label: 'Økonomi',
             items: [
               { name: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Home'] },
-              { name: 'Plan', href: '/plan', icon: NAV_ICON_MAP['LayoutDashboard'] },
-              { name: 'Investering', href: '/investering', icon: NAV_ICON_MAP['TrendingUp'] },
-              { name: 'Sparet', href: '/maal', icon: NAV_ICON_MAP['Target'] },
-              { name: 'Husstand', href: '/husstand', icon: NAV_ICON_MAP['Users'] },
-            ],
-          },
-          {
-            label: 'Indstillinger',
-            items: [
-              { name: 'Kuvert Checkup', href: '/checkup', icon: NAV_ICON_MAP['Activity'] },
+              { name: 'Udgifter', href: '/nuvio-flow', icon: NAV_ICON_MAP['Coins'] },
+              { name: 'Sparet', href: '/opsparing', icon: NAV_ICON_MAP['PiggyBank'] },
               { name: 'Indstillinger', href: '/indstillinger', icon: NAV_ICON_MAP['Settings'] },
             ],
           },
         ];
 
-  const allGroups: FlatNavGroup[] = [
-    ...dynamicGroups,
-    { label: 'Backend', items: BACKEND_ITEMS },
-  ];
+  const allGroups: FlatNavGroup[] = isAdmin
+    ? [
+        ...dynamicGroups,
+        { label: 'Backend', items: BACKEND_ITEMS },
+      ]
+    : dynamicGroups;
 
   return (
     <div
