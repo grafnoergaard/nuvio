@@ -16,7 +16,7 @@ const DEFAULT_BURGER_SECTIONS = [
     label: 'Kuvert',
     items: [
       { label: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Kuvert'] },
-      { label: 'Udgifter', href: '/nuvio-flow', icon: NAV_ICON_MAP['Coins'] },
+      { label: 'Udgifter', href: '/udgifter', icon: NAV_ICON_MAP['Coins'] },
       { label: 'Sparet', href: '/opsparing', icon: NAV_ICON_MAP['PiggyBank'] },
       { label: 'Indstillinger', href: '/indstillinger', icon: Settings },
     ],

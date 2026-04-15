@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toKuvertCopy } from '@/lib/kuvert-copy';
 
 interface FlowStatusConfig {
   warnHealthMin: number;
@@ -175,7 +176,7 @@ export default function BudgetStatusCard() {
       if (flowConfigEntries.data && flowConfigEntries.data.length > 0) {
         const m = new Map(flowConfigEntries.data.map((e: any) => [e.key, e]));
         const n = (key: string, fallback: number) => (m.get(key) as any)?.value_numeric ?? fallback;
-        const t = (key: string, fallback: string) => (m.get(key) as any)?.value_text ?? fallback;
+        const t = (key: string, fallback: string) => toKuvertCopy((m.get(key) as any)?.value_text ?? fallback);
         const d = FLOW_STATUS_DEFAULTS;
         setFlowStatusConfig({
           warnHealthMin: n('FLOW_STATUS_WARN_HEALTH_MIN', d.warnHealthMin),
@@ -456,7 +457,7 @@ export default function BudgetStatusCard() {
               Rådighedsbeløb
             </button>
             <button
-              onClick={() => router.push('/nuvio-flow')}
+              onClick={() => router.push('/udgifter')}
               className="flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground transition-colors"
             >
               <ChevronRight className="h-3.5 w-3.5" />
@@ -471,7 +472,7 @@ export default function BudgetStatusCard() {
               Sæt et månedligt beløb for at se din budgetstatus.
             </p>
             <button
-              onClick={() => router.push('/nuvio-flow')}
+              onClick={() => router.push('/udgifter')}
               className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline"
             >
               Åbn Udgifter <ChevronRight className="h-3 w-3" />

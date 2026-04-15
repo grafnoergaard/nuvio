@@ -36,6 +36,7 @@ import { useWeekTransition } from '@/hooks/use-week-transition';
 import { FlowSavingsModal } from '@/components/flow-savings-modal';
 import NuvioFlowGuideModal from '@/components/nuvio-flow-guide-modal';
 import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
+import { toKuvertCopy } from '@/lib/kuvert-copy';
 
 const GUIDE_SEEN_KEY = 'nuvio_flow_guide_seen_v1';
 
@@ -285,7 +286,7 @@ export default function NuvioFlowPage() {
         const m = new Map(flowConfigEntries.data.map(e => [e.key, e]));
         setFlowScoreThreshold(m.get('NUVIO_FLOW_SCORE_PERFECT_THRESHOLD')?.value_numeric ?? 0.15);
         const n = (key: string, fallback: number) => m.get(key)?.value_numeric ?? fallback;
-        const t = (key: string, fallback: string) => m.get(key)?.value_text ?? fallback;
+        const t = (key: string, fallback: string) => toKuvertCopy(m.get(key)?.value_text ?? fallback);
         const d = FLOW_STATUS_DEFAULTS;
         setFlowStatusConfig({
           warnHealthMin: n('FLOW_STATUS_WARN_HEALTH_MIN', d.warnHealthMin),

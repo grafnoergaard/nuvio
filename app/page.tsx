@@ -18,7 +18,6 @@ import { useHomeData } from '@/hooks/use-home-data';
 import { useHomeUI } from '@/hooks/use-home-ui';
 import { useHomeCards } from '@/hooks/use-home-cards';
 import { useHomeDerived } from '@/lib/home-derived';
-import { getStartScreenHref } from '@/lib/start-screen';
 
 export default function HomePage() {
   const router = useRouter();
@@ -74,15 +73,6 @@ export default function HomePage() {
   }, [user]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      const hasBeenRedirected = sessionStorage.getItem('nuvio_initial_redirect_done');
-      if (!hasBeenRedirected) {
-        sessionStorage.setItem('nuvio_initial_redirect_done', '1');
-        router.replace(getStartScreenHref());
-        return;
-      }
-    }
-
     loadAll();
     loadCardConfigs();
 

@@ -12,7 +12,7 @@ export interface UserHomeCardConfig {
 }
 
 export const USER_CARD_LABELS: Record<UserConfigurableCardKey, string> = {
-  nuvio_score_standalone: 'Nuvio Score',
+  nuvio_score_standalone: 'Din Score',
   quick_expense_action: 'Tilføj udgift',
   budget_status: 'Udgifter',
   flow_savings: 'Sparet',
@@ -22,7 +22,7 @@ export const USER_CARD_LABELS: Record<UserConfigurableCardKey, string> = {
 export const USER_CARD_DESCRIPTIONS: Record<UserConfigurableCardKey, string> = {
   nuvio_score_standalone: 'Din daglige stræk og finansielle score',
   quick_expense_action: 'Mini-knap til hurtig registrering af udgifter',
-  budget_status: 'Rådighedsbeløb, flow-score og ugebudget',
+  budget_status: 'Rådighedsbeløb, score og ugebudget',
   flow_savings: 'Penge sparet via Udgifter',
   streak_count: 'Din aktive udgifts-streak',
 };

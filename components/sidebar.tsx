@@ -149,7 +149,7 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
             label: 'Økonomi',
             items: [
               { name: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Home'] },
-              { name: 'Udgifter', href: '/nuvio-flow', icon: NAV_ICON_MAP['Coins'] },
+              { name: 'Udgifter', href: '/udgifter', icon: NAV_ICON_MAP['Coins'] },
               { name: 'Sparet', href: '/opsparing', icon: NAV_ICON_MAP['PiggyBank'] },
               { name: 'Indstillinger', href: '/indstillinger', icon: NAV_ICON_MAP['Settings'] },
             ],

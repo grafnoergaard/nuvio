@@ -16,6 +16,7 @@ import {
   type WeeklyCarryOverSummary,
 } from '@/lib/quick-expense-service';
 import type { InvestmentSettings } from '@/lib/home-calculations';
+import { toKuvertCopy } from '@/lib/kuvert-copy';
 
 export interface FlowStatusConfig {
   warnHealthMin: number;
@@ -377,7 +378,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     if (flowConfigEntries.data && flowConfigEntries.data.length > 0) {
       const m = new Map(flowConfigEntries.data.map((entry: any) => [entry.key, entry]));
       const n = (key: string, fallback: number) => (m.get(key) as any)?.value_numeric ?? fallback;
-      const t = (key: string, fallback: string) => (m.get(key) as any)?.value_text ?? fallback;
+      const t = (key: string, fallback: string) => toKuvertCopy((m.get(key) as any)?.value_text ?? fallback);
       const d = FLOW_STATUS_DEFAULTS;
       setFlowScoreThreshold(n('NUVIO_FLOW_SCORE_PERFECT_THRESHOLD', 0.15));
       setFlowStatusConfig({

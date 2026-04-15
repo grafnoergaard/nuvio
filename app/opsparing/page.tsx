@@ -182,7 +182,7 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
               <span className="font-semibold text-foreground">Sparet</span> er penge du automatisk sparer, hver gang du afslutter en uge under dit Udgifter-budget. Overskuddet overføres direkte til din saldo i Sparet.
             </p>
             <p>
-              Jo mere præcist du holder dit ugentlige Flow-budget, jo mere akkumulerer du over tid — uden at tænke over det.
+              Jo mere præcist du holder dit ugentlige kuvertbudget, jo mere akkumulerer du over tid — uden at tænke over det.
             </p>
           </div>
           <button

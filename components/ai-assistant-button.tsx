@@ -155,7 +155,7 @@ function AiModal({ onClose, context }: { onClose: () => void; context?: AiContex
     : [
         {
           icon: TrendingUp,
-          title: 'Analyser min Flow Score',
+          title: 'Analyser min Score',
           desc: 'Få en personlig vurdering af din nuværende score',
         },
         {
@@ -232,7 +232,7 @@ function AiModal({ onClose, context }: { onClose: () => void; context?: AiContex
                 {context?.page === 'home'
                   ? 'Vælg et emne nedenfor for at få en personlig analyse af din samlede økonomi.'
                   : context
-                  ? 'Vælg et emne nedenfor for at få en personlig analyse baseret på din aktuelle Flow Score.'
+                  ? 'Vælg et emne nedenfor for at få en personlig analyse baseret på din aktuelle score.'
                   : 'Hej! Jeg er din personlige finansielle assistent. Åbn en side for at få kontekstbaserede indsigter.'}
               </p>
             )}

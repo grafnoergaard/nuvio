@@ -30,7 +30,7 @@ export const NAV_ICON_MAP: Record<string, ComponentType<{ className?: string }>>
 
 export const DEFAULT_MOBILE_NAV_OPTIONS: { id: string; icon: ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
   { id: 'kuvert', icon: KuvertIcon, href: '/', label: 'Kuvert' },
-  { id: 'udgifter', icon: Coins, href: '/nuvio-flow', label: 'Udgifter' },
+  { id: 'udgifter', icon: Coins, href: '/udgifter', label: 'Udgifter' },
   { id: 'sparet', icon: PiggyBank, href: '/opsparing', label: 'Sparet' },
   { id: 'indstillinger', icon: Settings, href: '/indstillinger', label: 'Indstillinger' },
 ];
@@ -43,7 +43,7 @@ export const RELEASE_NAV_HREFS = new Set(
 
 export function getDisplayNavName(name: string, href?: string | null): string {
   if (href === '/') return 'Kuvert';
-  if (href === '/nuvio-flow') return 'Udgifter';
+  if (href === '/udgifter') return 'Udgifter';
   if (href === '/maal' || href === '/opsparing') return 'Sparet';
   if (name === 'Oversigt' || name === 'Overblik') return 'Kuvert';
   if (name === 'Nuvio Flow' || name === 'Flow' || name === 'Kuvert') return 'Udgifter';

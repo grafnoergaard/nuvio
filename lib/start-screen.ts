@@ -1,6 +1,6 @@
 export const DEFAULT_START_SCREEN_HREF = '/';
 const START_SCREEN_STORAGE_KEY = 'nuvio_start_screen_href';
-const RELEASE_START_SCREEN_HREFS = new Set(['/', '/nuvio-flow', '/opsparing', '/indstillinger']);
+const RELEASE_START_SCREEN_HREFS = new Set(['/', '/udgifter', '/opsparing', '/indstillinger']);
 
 export function getStartScreenHref(): string {
   if (typeof window === 'undefined') return DEFAULT_START_SCREEN_HREF;

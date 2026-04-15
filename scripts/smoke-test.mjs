@@ -1,5 +1,5 @@
 const baseUrl = process.env.SMOKE_BASE_URL || 'http://localhost:3000';
-const routes = ['/', '/login', '/indstillinger', '/opsparing'];
+const routes = ['/', '/login', '/indstillinger', '/opsparing', '/udgifter'];
 const timeoutMs = Number(process.env.SMOKE_TIMEOUT_MS || 10_000);
 
 async function checkRoute(route) {
