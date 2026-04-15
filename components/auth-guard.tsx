@@ -19,10 +19,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 rounded-2xl bg-muted animate-pulse" />
-          <div className="h-2 w-24 bg-muted rounded-full animate-pulse" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/60 via-white to-white">
+        <div className="flex flex-col items-center gap-5">
+          <img src="/kuvert-icon.png" alt="Kuvert" className="h-28 w-28 object-contain" />
+          <p className="text-base font-semibold text-foreground">Åbner Kuvert…</p>
         </div>
       </div>
     );

@@ -83,6 +83,13 @@ function getWeekProgressPct(weekStart: string, weekEnd: string, now: Date): numb
   return Math.min(100, Math.max(0, (elapsed / total) * 100));
 }
 
+function getDaysLeftInRange(end: Date | string, now: Date): number {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endDate = end instanceof Date ? end : new Date(`${end}T00:00:00`);
+  const rangeEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  return Math.max(0, Math.floor((rangeEnd.getTime() - today.getTime()) / 86400000) + 1);
+}
+
 export function KuvertHeroCard({
   weeklyStreak,
   flowMonthlyBudget,
@@ -115,27 +122,28 @@ export function KuvertHeroCard({
         is_current: false,
       }));
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const remainingDays = daysInMonth - now.getDate() + 1;
-  const remaining = flowMonthlyBudget - flowMonthlySpent;
-  const overBudget = flowMonthlyBudget > 0 && flowMonthlySpent > flowMonthlyBudget;
+  const currentWeekStatus = flowWeeklyStatus?.weeks.find(week => week.isCurrentWeek) ?? null;
+  const budgetPeriodLabel = currentWeekStatus ? 'Ugebudget' : 'Budget';
+  const activeBudget = currentWeekStatus?.effectiveBudget ?? flowMonthlyBudget;
+  const activeSpent = currentWeekStatus?.spent ?? flowMonthlySpent;
+  const activePeriodDays = currentWeekStatus?.daysInMonth ?? daysInMonth;
+  const remainingDays = currentWeekStatus
+    ? getDaysLeftInRange(currentWeekStatus.weekEnd, now)
+    : daysInMonth - now.getDate() + 1;
+  const remaining = activeBudget - activeSpent;
+  const overBudget = activeBudget > 0 && activeSpent > activeBudget;
   const dailyAvailable = remainingDays > 0 && remaining > 0 ? remaining / remainingDays : 0;
-  const usedPct = flowMonthlyBudget > 0 ? Math.min(100, (flowMonthlySpent / flowMonthlyBudget) * 100) : 0;
-  const carryOverPenalty = flowWeeklyStatus ? Math.abs(Math.min(0, flowWeeklyStatus.accumulatedCarryOver)) : 0;
+  const usedPct = activeBudget > 0 ? Math.min(100, (activeSpent / activeBudget) * 100) : 0;
   const flowScore = (() => {
-    if (flowMonthlyBudget <= 0) return 0;
+    if (activeBudget <= 0) return 0;
     if (overBudget) return 0;
     if (remainingDays <= 0) return remaining >= 0 ? 100 : 0;
-    const idealDailyRate = flowMonthlyBudget / daysInMonth;
+    const idealDailyRate = activeBudget / activePeriodDays;
     const affordableDailyRate = remaining / remainingDays;
     const recoveryRatio = idealDailyRate > 0 ? affordableDailyRate / idealDailyRate : 0;
-    const carryOverPenaltyRatio = flowMonthlyBudget > 0 ? carryOverPenalty / flowMonthlyBudget : 0;
-    const penaltyFactor = Math.max(0, 1 - carryOverPenaltyRatio * 2);
-    const baseScore = (() => {
-      if (recoveryRatio >= 1 + flowScoreThreshold) return 100;
-      if (recoveryRatio <= 0) return 0;
-      return Math.max(0, Math.min(100, (recoveryRatio / (1 + flowScoreThreshold)) * 100));
-    })();
-    return Math.round(baseScore * penaltyFactor);
+    if (recoveryRatio >= 1 + flowScoreThreshold) return 100;
+    if (recoveryRatio <= 0) return 0;
+    return Math.round(Math.max(0, Math.min(100, (recoveryRatio / (1 + flowScoreThreshold)) * 100)));
   })();
   const flowBarPct = Math.min(100, Math.max(4, flowScore));
   const flowBarColor = flowScore >= 60 ? 'from-emerald-400 to-teal-400' : flowScore >= 30 ? 'from-amber-400 to-orange-300' : 'from-red-400 to-rose-400';
@@ -319,13 +327,13 @@ export function KuvertHeroCard({
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className={cn('mb-1 text-xs font-medium leading-snug', flowStatus.headlineColor)}>
-                    Budget
+                    {budgetPeriodLabel}
                   </p>
                   <p className={cn('text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl', flowStatus.amountColor)}>
                     {formatDKK(Math.abs(remaining))}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {overBudget ? 'over budget' : `tilbage af ${formatDKK(flowMonthlyBudget)}`}
+                    {overBudget ? 'over budget' : `tilbage af ${formatDKK(activeBudget)}`}
                   </p>
                 </div>
 
@@ -358,12 +366,12 @@ export function KuvertHeroCard({
                       overBudget ? 'bg-red-400' : !progressBarStyle && cn('bg-gradient-to-r', flowBarColor, flowGlow)
                     )}
                     style={{
-                      width: `${flowMonthlyBudget > 0 ? (overBudget ? usedPct : flowBarPct) : 0}%`,
+                      width: `${activeBudget > 0 ? (overBudget ? usedPct : flowBarPct) : 0}%`,
                       ...(progressBarStyle ?? {}),
                       boxShadow: progressGlowColor ? `0 0 6px 1px ${progressGlowColor}` : undefined,
                     }}
                   >
-                    {!overBudget && flowMonthlyBudget > 0 && (
+                    {!overBudget && activeBudget > 0 && (
                       <div
                         className="absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 rounded-full border-2 bg-white shadow-md"
                         style={{ borderColor: progressDotColor }}
@@ -372,7 +380,7 @@ export function KuvertHeroCard({
                   </div>
                 </div>
                 <p className="text-label leading-snug text-muted-foreground/60">
-                  {formatDKK(flowMonthlySpent)} brugt · {formatDKK(Math.round(dailyAvailable))} pr. dag
+                  {formatDKK(activeSpent)} brugt · {formatDKK(Math.round(dailyAvailable))} pr. dag
                 </p>
               </div>
             </div>
