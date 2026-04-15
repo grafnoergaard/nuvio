@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
@@ -52,6 +52,9 @@ export default function HomePage() {
   const [openingBalanceInput, setOpeningBalanceInput] = useState('0');
   const [editingOpeningBalance, setEditingOpeningBalance] = useState(false);
   const [showQuickExpenseModal, setShowQuickExpenseModal] = useState(false);
+  const homeScrollRef = useRef<HTMLDivElement>(null);
+  const homeContentRef = useRef<HTMLDivElement>(null);
+  const [needsBottomScrollSpace, setNeedsBottomScrollSpace] = useState(false);
 
   const derived = useHomeDerived({
     budget,
@@ -138,6 +141,30 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const scroller = homeScrollRef.current;
+    const content = homeContentRef.current;
+    if (!scroller || !content) return;
+
+    const measure = () => {
+      const navReserve = 96;
+      const style = window.getComputedStyle(content);
+      const paddingBottom = parseFloat(style.paddingBottom || '0') || 0;
+      const naturalContentHeight = content.scrollHeight - paddingBottom;
+      setNeedsBottomScrollSpace(naturalContentHeight > scroller.clientHeight - navReserve);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(scroller);
+    observer.observe(content);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [sortedCardKeys, cardVisibility, flowMonthlyBudget, flowMonthlySpent, weeklyStreak]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -187,15 +214,22 @@ export default function HomePage() {
       onToggleCard={handleToggleCard}
     >
       <div
-        className="min-h-screen bg-gradient-to-b from-emerald-50/60 via-white to-white"
+        className="h-[100dvh] min-h-[100dvh] overflow-hidden bg-gradient-to-b from-emerald-50/60 via-white to-white"
         style={{ backgroundColor: 'rgb(236,253,245)' }}
       >
         <div
-          className="max-w-lg mx-auto px-4 pb-32 sm:pb-16"
-          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}
+          ref={homeScrollRef}
+          className="h-full overflow-y-auto overscroll-contain"
+          style={{ scrollbarWidth: 'none' }}
         >
-          <div className="flex flex-col gap-4">
-            <DynamicSections {...slotProps} sortedCardKeys={sortedCardKeys} cardWidth={cardWidth} />
+          <div
+            ref={homeContentRef}
+            className={`max-w-lg mx-auto px-4 sm:pb-16 ${needsBottomScrollSpace ? 'pb-28' : 'pb-4'}`}
+            style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}
+          >
+            <div className="flex flex-col gap-4">
+              <DynamicSections {...slotProps} sortedCardKeys={sortedCardKeys} cardWidth={cardWidth} />
+            </div>
           </div>
         </div>
       </div>
