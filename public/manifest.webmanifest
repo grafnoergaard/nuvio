@@ -11,13 +11,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/nuvio.png",
+      "src": "/kuvert-icon.png",
       "sizes": "653x647",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/nuvio.png",
+      "src": "/kuvert-icon.png",
       "sizes": "653x647",
       "type": "image/png",
       "purpose": "maskable"

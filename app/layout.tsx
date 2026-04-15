@@ -38,11 +38,11 @@ export default function RootLayout({
         <meta name="application-name" content="Kuvert" />
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="apple-touch-icon" href="/nuvio.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/nuvio.png" />
-        <link rel="apple-touch-icon" sizes="167x167" href="/nuvio.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/nuvio.png" />
-        <link rel="icon" type="image/png" href="/nuvio.png" />
+        <link rel="apple-touch-icon" href="/kuvert-icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/kuvert-icon.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/kuvert-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/kuvert-icon.png" />
+        <link rel="icon" type="image/png" href="/kuvert-icon.png" />
       </head>
       <body className="font-sans">
         <AuthProvider>
