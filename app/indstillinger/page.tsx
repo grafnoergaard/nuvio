@@ -11,6 +11,7 @@ import { EditableText } from '@/components/editable-text';
 import UserDataResetWizard from '@/components/user-data-reset-wizard';
 import { getUserWeekStartDay, setUserWeekStartDay } from '@/lib/quick-expense-service';
 import { VERSION } from '@/lib/version';
+import { PushNotificationSettings } from '@/components/push-notification-settings';
 
 export default function IndstillingerPage() {
   const { settings, updateSetting, resetSettings } = useSettings();
@@ -186,6 +187,14 @@ export default function IndstillingerPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 px-1 mb-2 flex items-center gap-1.5">
+            <Info className="h-3 w-3" />
+            Notifikationer
+          </p>
+          <PushNotificationSettings />
         </section>
 
         <section>

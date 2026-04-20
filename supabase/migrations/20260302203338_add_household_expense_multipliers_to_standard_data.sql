@@ -39,7 +39,7 @@
 
 INSERT INTO standard_data_entries (version_id, section, key, value_numeric, unit, label, notes, requires_admin_value)
 SELECT
-  'bfb5ffdf-15c0-4696-9a81-3b176a33fb84',
+  v.id,
   'OEVRIGE_FASTE_UDGIFTER',
   e.key,
   e.value_numeric,
@@ -61,4 +61,7 @@ FROM (VALUES
   ('FIXED_TRANSPORT_ADULT_MULTIPLIER',  1000,  'Transport – tillæg per voksen',          'Tillæg per voksen husstandsmedlem'),
   ('FIXED_TRANSPORT_CHILD_MULTIPLIER',   300,  'Transport – tillæg per barn',            'Tillæg per hjemmeboende barn')
 ) AS e(key, value_numeric, label, notes)
+CROSS JOIN standard_data_versions v
+WHERE v.version = '2025.1'
+  AND v.is_active = true
 ON CONFLICT (version_id, key) DO NOTHING;

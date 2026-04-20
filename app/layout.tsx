@@ -11,6 +11,7 @@ import { AppShell } from '@/components/app-shell';
 import { AdminLabelProvider } from '@/components/admin-page-label';
 import { TypographyInspectorProvider } from '@/lib/typography-inspector-context';
 import { TypographyInspector } from '@/components/typography-inspector';
+import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -51,6 +52,7 @@ export default function RootLayout({
               <TypographyProvider>
                 <TypographyInspectorProvider>
                   <DesignApplier />
+                  <ServiceWorkerRegistrar />
                   <AdminLabelProvider>
                     <AppShell>
                       {children}
