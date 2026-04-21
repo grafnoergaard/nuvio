@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { IncomeWizard } from '@/components/income-wizard';
@@ -19,9 +19,11 @@ import { useHomeDerived } from '@/lib/home-derived';
 import { useWeekTransition } from '@/hooks/use-week-transition';
 import { WeekTransitionBottomSheet, WeekTransitionWizard } from '@/components/week-transition-wizard';
 import { FlowSavingsModal } from '@/components/flow-savings-modal';
+import { WeeklyBudgetReminderModal } from '@/components/weekly-budget-reminder-modal';
 
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAdmin } = useAuth();
 
   const data = useHomeData();
@@ -50,6 +52,7 @@ export default function HomePage() {
   const [openingBalanceInput, setOpeningBalanceInput] = useState('0');
   const [editingOpeningBalance, setEditingOpeningBalance] = useState(false);
   const [showQuickExpenseModal, setShowQuickExpenseModal] = useState(false);
+  const [showWeeklyBudgetReminder, setShowWeeklyBudgetReminder] = useState(false);
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
   const [needsBottomScrollSpace, setNeedsBottomScrollSpace] = useState(false);
@@ -68,6 +71,10 @@ export default function HomePage() {
   });
 
   const weekTransition = useWeekTransition();
+  const currentWeekReminder = useMemo(
+    () => flowWeeklyStatus?.weeks.find((week) => week.isCurrentWeek) ?? null,
+    [flowWeeklyStatus]
+  );
 
   useEffect(() => {
     setUserRef(user?.id);
@@ -164,6 +171,38 @@ export default function HomePage() {
     };
   }, [sortedCardKeys, cardVisibility, flowMonthlyBudget, flowMonthlySpent, weeklyStreak]);
 
+  useEffect(() => {
+    if (loading) return;
+    const flow = searchParams.get('flow');
+    if (flow === 'weekly-budget-reminder' && currentWeekReminder) {
+      setShowWeeklyBudgetReminder(true);
+    }
+  }, [currentWeekReminder, loading, searchParams]);
+
+  function clearReminderQuery() {
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('flow');
+    const query = next.toString();
+    router.replace(query ? `/?${query}` : '/', { scroll: false });
+  }
+
+  function dismissWeeklyReminder() {
+    setShowWeeklyBudgetReminder(false);
+    clearReminderQuery();
+  }
+
+  function openWeeklyBudgetDetails() {
+    setShowWeeklyBudgetReminder(false);
+    clearReminderQuery();
+    router.push('/udgifter?section=weekly-budget');
+  }
+
+  function openQuickExpenseFromReminder() {
+    setShowWeeklyBudgetReminder(false);
+    clearReminderQuery();
+    setShowQuickExpenseModal(true);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -258,6 +297,15 @@ export default function HomePage() {
         <QuickExpenseAddModal
           onComplete={() => { setShowQuickExpenseModal(false); loadAll(); }}
           onDismiss={() => setShowQuickExpenseModal(false)}
+        />
+      )}
+      {showWeeklyBudgetReminder && currentWeekReminder && (
+        <WeeklyBudgetReminderModal
+          week={currentWeekReminder}
+          weeklyStreak={weeklyStreak}
+          onClose={dismissWeeklyReminder}
+          onOpenExpenses={openWeeklyBudgetDetails}
+          onAddExpense={openQuickExpenseFromReminder}
         />
       )}
       {editingOpeningBalance && budget && (

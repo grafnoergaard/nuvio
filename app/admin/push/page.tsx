@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Bell, BellRing, Rocket, Send, Sparkles, Users, TriangleAlert, RefreshCw } from 'lucide-react';
+import { Bell, BellRing, Clock3, Rocket, Save, Send, Sparkles, Users, TriangleAlert, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth-context';
+import type { PushScheduleType } from '@/lib/push-notifications';
 
 type OverviewResponse = {
   ok: boolean;
@@ -25,14 +28,48 @@ type OverviewResponse = {
     audience: string;
     status: string;
     enabled: boolean;
+    supportsAuto: boolean;
+    supportedScheduleTypes: PushScheduleType[];
+    autoSendEnabled: boolean;
+    scheduleType: PushScheduleType;
+    sendDayOfWeek: number | null;
+    sendDayOfMonth: number | null;
+    sendHour: number;
+    sendMinute: number;
+    timezone: string;
+    lastSentAt: string | null;
+    lastResult: string | null;
   }>;
 };
+
+type NotificationConfigState = {
+  enabled: boolean;
+  autoSendEnabled: boolean;
+  scheduleType: PushScheduleType;
+  sendDayOfWeek: number | null;
+  sendDayOfMonth: number | null;
+  sendHour: number;
+  sendMinute: number;
+  timezone: string;
+};
+
+const WEEKDAY_OPTIONS = [
+  { value: '0', label: 'Søndag' },
+  { value: '1', label: 'Mandag' },
+  { value: '2', label: 'Tirsdag' },
+  { value: '3', label: 'Onsdag' },
+  { value: '4', label: 'Torsdag' },
+  { value: '5', label: 'Fredag' },
+  { value: '6', label: 'Lørdag' },
+];
 
 export default function AdminPushPage() {
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [configs, setConfigs] = useState<Record<string, NotificationConfigState>>({});
 
   const headers = useMemo(() => ({
     'Content-Type': 'application/json',
@@ -48,6 +85,19 @@ export default function AdminPushPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error || 'Kunne ikke hente push-overblik');
       setOverview(data);
+      setConfigs(Object.fromEntries((data.notifications ?? []).map((notification: OverviewResponse['notifications'][number]) => [
+        notification.key,
+        {
+          enabled: notification.enabled,
+          autoSendEnabled: notification.autoSendEnabled,
+          scheduleType: notification.scheduleType,
+          sendDayOfWeek: notification.sendDayOfWeek,
+          sendDayOfMonth: notification.sendDayOfMonth,
+          sendHour: notification.sendHour,
+          sendMinute: notification.sendMinute,
+          timezone: notification.timezone,
+        },
+      ])));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Kunne ikke hente push-overblik');
     } finally {
@@ -61,22 +111,63 @@ export default function AdminPushPage() {
   }, [session?.access_token]);
 
   async function sendTestPush() {
+    await sendPushAction('/api/admin/push/send-test', 'Test sendt');
+  }
+
+  async function sendWeeklyBudgetReminder() {
+    await sendPushAction('/api/admin/push/send-weekly-reminder', 'Ugebudget-påmindelse sendt');
+  }
+
+  async function saveConfig(key: string) {
+    const config = configs[key];
+    if (!config) return;
+
+    setSavingKey(key);
+    try {
+      const response = await fetch('/api/admin/push/config', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          key,
+          enabled: config.enabled,
+          autoSendEnabled: config.autoSendEnabled,
+          scheduleType: config.scheduleType,
+          sendDayOfWeek: config.sendDayOfWeek,
+          sendDayOfMonth: config.sendDayOfMonth,
+          sendHour: config.sendHour,
+          sendMinute: config.sendMinute,
+          timezone: config.timezone,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || 'Kunne ikke gemme push-indstillinger');
+
+      toast.success('Push-indstillinger gemt');
+      loadOverview();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kunne ikke gemme push-indstillinger');
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function sendPushAction(url: string, successLabel: string) {
     setSending(true);
     try {
-      const response = await fetch('/api/admin/push/send-test', {
+      const response = await fetch(url, {
         method: 'POST',
         headers,
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || 'Kunne ikke sende test push');
+      if (!response.ok) throw new Error(data?.error || 'Kunne ikke sende push');
 
       const result = data?.result;
       toast.success(
-        `Test sendt. ${result?.sent ?? 0} leveret, ${result?.failed ?? 0} fejlede.`
+        `${successLabel}. ${result?.sent ?? 0} leveret, ${result?.failed ?? 0} fejlede.`
       );
       loadOverview();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Kunne ikke sende test push');
+      toast.error(error instanceof Error ? error.message : 'Kunne ikke sende push');
     } finally {
       setSending(false);
     }
@@ -86,8 +177,19 @@ export default function AdminPushPage() {
     totalSubscriptions: 0,
     activeSubscriptions: 0,
     seenLast7Days: 0,
-    failingSubscriptions: 0,
-  };
+      failingSubscriptions: 0,
+    };
+
+  function updateConfig(key: string, updater: (current: NotificationConfigState) => NotificationConfigState) {
+    setConfigs((current) => {
+      const existing = current[key];
+      if (!existing) return current;
+      return {
+        ...current,
+        [key]: updater(existing),
+      };
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 py-8 px-4 md:px-8">
@@ -161,7 +263,7 @@ export default function AdminPushPage() {
                   key={notification.key}
                   className="rounded-2xl border border-border/60 bg-card px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold text-foreground">{notification.title}</p>
                       <Badge variant="outline" className="rounded-full">
@@ -174,21 +276,155 @@ export default function AdminPushPage() {
                     <p className="mt-2 text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
                       Målgruppe: {notification.audience}
                     </p>
+
+                    <div className="mt-4 rounded-2xl border border-border/50 bg-secondary/10 p-3">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Aktiv</p>
+                            <p className="text-xs text-muted-foreground">Pushen er synlig og klar til brug.</p>
+                          </div>
+                          <Switch
+                            checked={configs[notification.key]?.enabled ?? notification.enabled}
+                            onCheckedChange={(checked) => updateConfig(notification.key, (current) => ({ ...current, enabled: checked }))}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Automatisk</p>
+                            <p className="text-xs text-muted-foreground">
+                              {notification.supportsAuto
+                                ? 'Sendes automatisk efter det valgte tidspunkt.'
+                                : 'Test-push sendes kun manuelt.'}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={configs[notification.key]?.autoSendEnabled ?? notification.autoSendEnabled}
+                            disabled={!notification.supportsAuto}
+                            onCheckedChange={(checked) => updateConfig(notification.key, (current) => ({ ...current, autoSendEnabled: checked }))}
+                          />
+                        </div>
+                      </div>
+
+                      {notification.supportsAuto ? (
+                        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px_120px]">
+                          {configs[notification.key]?.scheduleType === 'monthly' ? (
+                            <div>
+                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                Sendes den
+                              </p>
+                              <Select
+                                value={String(configs[notification.key]?.sendDayOfMonth ?? notification.sendDayOfMonth ?? 25)}
+                                onValueChange={(value) => updateConfig(notification.key, (current) => ({
+                                  ...current,
+                                  sendDayOfMonth: Number(value),
+                                }))}
+                              >
+                                <SelectTrigger className="h-10 rounded-xl bg-white/80">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+                                    <SelectItem key={day} value={String(day)}>
+                                      D. {day}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                Sendes den
+                              </p>
+                              <Select
+                                value={String(configs[notification.key]?.sendDayOfWeek ?? notification.sendDayOfWeek ?? 1)}
+                                onValueChange={(value) => updateConfig(notification.key, (current) => ({
+                                  ...current,
+                                  sendDayOfWeek: Number(value),
+                                }))}
+                              >
+                                <SelectTrigger className="h-10 rounded-xl bg-white/80">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {WEEKDAY_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          <NumberField
+                            label="Time"
+                            min={0}
+                            max={23}
+                            value={configs[notification.key]?.sendHour ?? notification.sendHour}
+                            onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendHour: value }))}
+                          />
+
+                          <NumberField
+                            label="Minut"
+                            min={0}
+                            max={59}
+                            value={configs[notification.key]?.sendMinute ?? notification.sendMinute}
+                            onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendMinute: value }))}
+                          />
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Denne bruges kun manuelt, så du altid selv styrer hvornår testen går ud.
+                        </p>
+                      )}
+
+                      {notification.lastSentAt && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <Clock3 className="h-3.5 w-3.5" />
+                          <span>Sidst sendt: {new Date(notification.lastSentAt).toLocaleString('da-DK')}</span>
+                          {notification.lastResult ? <span>• {notification.lastResult}</span> : null}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {notification.key === 'test_all_users' ? (
+                  <div className="flex shrink-0 flex-col gap-2">
+                    {notification.key === 'test_all_users' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendTestPush}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'weekly_budget_reminder' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendWeeklyBudgetReminder}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : (
+                      <Button variant="outline" className="shrink-0" disabled>
+                        Kommer snart
+                      </Button>
+                    )}
+
                     <Button
+                      variant="outline"
                       className="shrink-0"
-                      onClick={sendTestPush}
-                      disabled={sending || loading}
+                      onClick={() => saveConfig(notification.key)}
+                      disabled={savingKey === notification.key || loading}
                     >
-                      <Send className="mr-2 h-4 w-4" />
-                      Send nu
+                      <Save className="mr-2 h-4 w-4" />
+                      Gem
                     </Button>
-                  ) : (
-                    <Button variant="outline" className="shrink-0" disabled>
-                      Kommer snart
-                    </Button>
-                  )}
+                  </div>
                 </div>
               ))}
             </CardContent>
@@ -215,6 +451,9 @@ export default function AdminPushPage() {
                 <p>
                   Det giver os et klart skel mellem teknisk test og rigtige brugerbeskeder.
                 </p>
+                <p>
+                  Automatikken læser de gemte tider fra admin og kører via <span className="font-medium text-foreground">/api/push/cron</span>, så næste praktiske step efter UI er at koble den route til Vercel Cron eller en anden scheduler.
+                </p>
               </CardContent>
             </Card>
 
@@ -229,7 +468,7 @@ export default function AdminPushPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <SuggestionRow title="Midt-uge påmindelse" copy="Du har stadig plads i din Kuvert denne uge." />
+                <SuggestionRow title="Ugebudget-påmindelse" copy="Åbner et lille uge-flow med status og et nyttigt næste skridt." />
                 <SuggestionRow title="Streak i fare" copy="Du er tæt på at bryde din uge-streak." />
                 <SuggestionRow title="Måneden lukker snart" copy="Nu er det tid til at lande blødt i slutningen af måneden." />
               </CardContent>
@@ -274,6 +513,40 @@ function SuggestionRow({ title, copy }: { title: string; copy: string }) {
     <div className="rounded-2xl border border-border/60 px-4 py-3">
       <p className="text-sm font-semibold text-foreground">{title}</p>
       <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
+    </div>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+        {label}
+      </p>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(event) => {
+          const next = Number(event.target.value);
+          if (!Number.isFinite(next)) return;
+          onChange(Math.max(min, Math.min(max, next)));
+        }}
+        className="h-10 w-full rounded-xl border border-border/60 bg-white/80 px-3 text-sm outline-none ring-0 focus:border-primary"
+      />
     </div>
   );
 }

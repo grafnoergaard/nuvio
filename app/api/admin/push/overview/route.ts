@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  getDefaultPushNotificationConfig,
+  PUSH_NOTIFICATION_DEFINITIONS,
+  type PushNotificationConfigRow,
+} from '@/lib/push-notifications';
 import { createSupabaseRouteClient, createSupabaseServiceClient } from '@/lib/supabase-server';
 
 function isAdminUser(user: { app_metadata?: Record<string, unknown> | null } | null) {
@@ -31,6 +36,7 @@ export async function GET(request: NextRequest) {
     activeResult,
     recentResult,
     failingResult,
+    configResult,
   ] = await Promise.all([
     supabase
       .from('push_subscriptions')
@@ -47,6 +53,9 @@ export async function GET(request: NextRequest) {
       .from('push_subscriptions')
       .select('id', { count: 'exact', head: true })
       .gt('failure_count', 0),
+    supabase
+      .from('push_notification_configs')
+      .select('key,is_enabled,auto_send_enabled,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,last_sent_at,last_result'),
   ]);
 
   const errors = [totalResult.error, activeResult.error, recentResult.error, failingResult.error].filter(Boolean);
@@ -63,39 +72,31 @@ export async function GET(request: NextRequest) {
       seenLast7Days: recentResult.count ?? 0,
       failingSubscriptions: failingResult.count ?? 0,
     },
-    notifications: [
-      {
-        key: 'test_all_users',
-        title: 'Test push',
-        description: 'Sender en enkel testbesked til alle aktive push-modtagere.',
-        audience: 'Alle aktive brugere',
-        status: 'Klar',
-        enabled: true,
-      },
-      {
-        key: 'weekly_budget_reminder',
-        title: 'Ugebudget-påmindelse',
-        description: 'Forslag: mind brugeren om status midt i ugen.',
-        audience: 'Brugere med aktiv Kuvert',
-        status: 'Forslag',
-        enabled: false,
-      },
-      {
-        key: 'streak_risk',
-        title: 'Streak i fare',
-        description: 'Forslag: send besked når streak er ved at ryge.',
-        audience: 'Brugere tæt på budgetgrænse',
-        status: 'Forslag',
-        enabled: false,
-      },
-      {
-        key: 'month_close',
-        title: 'Måneden lukker snart',
-        description: 'Forslag: mind om de sidste dage i den aktuelle Kuvert.',
-        audience: 'Aktive brugere sidst på måneden',
-        status: 'Forslag',
-        enabled: false,
-      },
-    ],
+    notifications: PUSH_NOTIFICATION_DEFINITIONS.map((definition) => {
+      const storedConfig = configResult.error
+        ? null
+        : (configResult.data as PushNotificationConfigRow[] | null)?.find((row) => row.key === definition.key);
+      const config = storedConfig ?? getDefaultPushNotificationConfig(definition);
+
+      return {
+        key: definition.key,
+        title: definition.title,
+        description: definition.description,
+        audience: definition.audience,
+        status: definition.status,
+        enabled: config.is_enabled,
+        supportsAuto: definition.supportsAuto,
+        supportedScheduleTypes: definition.supportedScheduleTypes,
+        autoSendEnabled: config.auto_send_enabled,
+        scheduleType: config.schedule_type,
+        sendDayOfWeek: config.send_day_of_week,
+        sendDayOfMonth: config.send_day_of_month,
+        sendHour: config.send_hour,
+        sendMinute: config.send_minute,
+        timezone: config.timezone,
+        lastSentAt: config.last_sent_at,
+        lastResult: config.last_result,
+      };
+    }),
   });
 }

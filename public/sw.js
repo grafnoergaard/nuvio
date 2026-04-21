@@ -38,21 +38,24 @@ self.addEventListener('notificationclick', (event) => {
 
   const targetUrl = event.notification.data?.url || '/';
 
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      const matchingClient = clients.find((client) => {
-        try {
-          return new URL(client.url).pathname === targetUrl;
-        } catch {
-          return false;
-        }
-      });
-
-      if (matchingClient) {
-        return matchingClient.focus();
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const sameOriginClient = clients.find((client) => {
+      try {
+        return new URL(client.url).origin === self.location.origin;
+      } catch {
+        return false;
       }
+    });
 
-      return self.clients.openWindow(targetUrl);
-    })
-  );
+    if (sameOriginClient) {
+      if (typeof sameOriginClient.navigate === 'function') {
+        await sameOriginClient.navigate(targetUrl);
+      }
+      await sameOriginClient.focus();
+      return;
+    }
+
+    await self.clients.openWindow(targetUrl);
+  })());
 });
