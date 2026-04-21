@@ -1,2 +1,6 @@
-export const BUILD_NUMBER = 1244;
-export const VERSION = `0.00.${BUILD_NUMBER}`;
+export const BUILD_NUMBER = 1246;
+
+const VERSION_MINOR = Math.floor(BUILD_NUMBER / 100);
+const VERSION_PATCH = BUILD_NUMBER % 100;
+
+export const VERSION = `0.${String(VERSION_MINOR).padStart(2, '0')}.${String(VERSION_PATCH).padStart(2, '0')}`;

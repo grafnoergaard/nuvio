@@ -10,7 +10,10 @@ const match = content.match(/BUILD_NUMBER = (\d+)/);
 if (!match) process.exit(1);
 
 const next = parseInt(match[1], 10) + 1;
-const updated = content.replace(/BUILD_NUMBER = \d+/, `BUILD_NUMBER = ${next}`).replace(/VERSION = `0\.00\.\d+`/, `VERSION = \`0.00.${next}\``);
+const nextMinor = Math.floor(next / 100);
+const nextPatch = next % 100;
+const nextVersion = `0.${String(nextMinor).padStart(2, '0')}.${String(nextPatch).padStart(2, '0')}`;
+const updated = content.replace(/BUILD_NUMBER = \d+/, `BUILD_NUMBER = ${next}`);
 
 writeFileSync(versionPath, updated, 'utf-8');
-console.log(`Version bumped to 0.00.${next}`);
+console.log(`Version bumped to ${nextVersion}`);

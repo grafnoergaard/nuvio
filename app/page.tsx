@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { OnboardingIntro } from '@/components/onboarding-intro';
 import { IncomeWizard } from '@/components/income-wizard';
 import { FixedExpensesWizard } from '@/components/fixed-expenses-wizard';
 import { VariableForbrugWizardModal } from '@/components/variable-forbrug-wizard-modal';
@@ -171,10 +170,6 @@ export default function HomePage() {
         <p className="text-muted-foreground">Indlæser...</p>
       </div>
     );
-  }
-
-  if (!budget && wizardEnabled('wizard_enabled_onboarding')) {
-    return <OnboardingIntro onComplete={() => { loadData(); router.push('/'); }} />;
   }
 
   const slotProps = {
