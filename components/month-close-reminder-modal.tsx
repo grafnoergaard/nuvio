@@ -209,7 +209,7 @@ export function MonthCloseReminderModal({
                 onClick={onAddExpense}
                 className="flex h-14 items-center justify-center rounded-full bg-[#56C7A7] px-5 text-base font-semibold text-white transition active:scale-[0.98]"
               >
-                Tilføj udgift
+                Registrér sidste udgift
               </button>
             </div>
           ) : (

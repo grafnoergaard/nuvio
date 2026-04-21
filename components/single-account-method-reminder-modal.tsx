@@ -104,18 +104,12 @@ export function SingleAccountMethodReminderModal({
 
         <div className="space-y-3 px-5 pb-4">
           {isLast ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               <button
                 onClick={onClose}
                 className="flex h-14 items-center justify-center rounded-full bg-[#0E3B43] px-5 text-base font-semibold text-white transition active:scale-[0.98]"
               >
                 Jeg prøver den metode
-              </button>
-              <button
-                onClick={onAddExpense}
-                className="flex h-14 items-center justify-center rounded-full bg-[#56C7A7] px-5 text-base font-semibold text-white transition active:scale-[0.98]"
-              >
-                Tilføj udgift
               </button>
             </div>
           ) : (
