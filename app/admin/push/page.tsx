@@ -149,6 +149,22 @@ export default function AdminPushPage() {
     await sendPushAction('/api/admin/push/send-score-drop', 'Score-fald-påmindelse sendt');
   }
 
+  async function sendScoreStrong() {
+    await sendPushAction('/api/admin/push/send-score-strong', 'Positiv score-påmindelse sendt');
+  }
+
+  async function sendGoodGrip() {
+    await sendPushAction('/api/admin/push/send-good-grip', 'Godt greb-påmindelse sendt');
+  }
+
+  async function sendHonestEntries() {
+    await sendPushAction('/api/admin/push/send-honest-entries', 'Ærlige poster-påmindelse sendt');
+  }
+
+  async function sendSingleAccountMethod() {
+    await sendPushAction('/api/admin/push/send-single-account-method', 'Én konto-påmindelse sendt');
+  }
+
   async function saveConfig(key: string) {
     const config = configs[key];
     if (!config) return;
@@ -424,11 +440,32 @@ export default function AdminPushPage() {
                                     </SelectContent>
                                   </Select>
                                 </div>
-                              ) : (
+                              ) : notification.key === 'score_drop' ? (
                                 <div className="rounded-xl bg-white/80 px-3 py-2">
                                   <p className="text-sm font-medium text-foreground">Trigger</p>
                                   <p className="mt-1 text-xs text-muted-foreground">
                                     Sendes når månedsscoren falder ind i en gul eller rød zone. Kan sende igen, hvis den bliver tydeligt værre.
+                                  </p>
+                                </div>
+                              ) : notification.key === 'score_strong' ? (
+                                <div className="rounded-xl bg-white/80 px-3 py-2">
+                                  <p className="text-sm font-medium text-foreground">Trigger</p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Sendes når månedsscoren står stærkt. Maks én gang pr. måned, så den føles som en varm forstærkning og ikke støj.
+                                  </p>
+                                </div>
+                              ) : notification.key === 'good_grip' ? (
+                                <div className="rounded-xl bg-white/80 px-3 py-2">
+                                  <p className="text-sm font-medium text-foreground">Trigger</p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Sendes når brugeren står et sundt sted i måneden. Den er tænkt som en rolig nudge, før noget begynder at skride.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="rounded-xl bg-white/80 px-3 py-2">
+                                  <p className="text-sm font-medium text-foreground">Trigger</p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Sendes på en semi-tilfældig dag i måneden til brugere, hvor påmindelsen giver mening. Den er bygget til at føles som en rolig, nyttig nudge - ikke en alarm.
                                   </p>
                                 </div>
                               )}
@@ -453,7 +490,13 @@ export default function AdminPushPage() {
                             <p className="text-xs text-muted-foreground">
                               {notification.key === 'streak_risk'
                                 ? 'Tjekkes løbende, men sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.'
-                                : 'Tjekkes løbende, men sendes højst én gang pr. måned. Hvis scoren falder fra gul til rød zone, må den gerne sende igen.'}
+                                : notification.key === 'score_drop'
+                                  ? 'Tjekkes løbende, men sendes højst én gang pr. måned. Hvis scoren falder fra gul til rød zone, må den gerne sende igen.'
+                                  : notification.key === 'score_strong'
+                                    ? 'Tjekkes løbende, men sendes højst én gang pr. måned, når scoren står stærkt.'
+                                    : notification.key === 'good_grip'
+                                      ? 'Tjekkes løbende, men sendes højst én gang pr. måned, når brugeren har et sundt og stabilt greb om måneden.'
+                                      : 'Tjekkes løbende, men sendes højst cirka én gang hver anden til tredje uge pr. bruger.'}
                             </p>
                           </div>
                         ) : (
@@ -596,6 +639,42 @@ export default function AdminPushPage() {
                         <Send className="mr-2 h-4 w-4" />
                         Send nu
                       </Button>
+                    ) : notification.key === 'score_strong' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendScoreStrong}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'good_grip' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendGoodGrip}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'honest_entries' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendHonestEntries}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'single_account_method' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendSingleAccountMethod}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
                     ) : (
                       <Button variant="outline" className="shrink-0" disabled>
                         Kommer snart
@@ -658,6 +737,7 @@ export default function AdminPushPage() {
                 <SuggestionRow title="Ugebudget-påmindelse" copy="Åbner et lille uge-flow med status og et nyttigt næste skridt." />
                 <SuggestionRow title="Streak i fare" copy="Du er tæt på at bryde din uge-streak." />
                 <SuggestionRow title="Måneden lukker snart" copy="Nu er det tid til at lande blødt i slutningen af måneden." />
+                <SuggestionRow title="Din score er stærk" copy="En positiv besked der forstærker, når det brugeren gør faktisk virker." />
               </CardContent>
             </Card>
           </div>

@@ -141,7 +141,14 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const isSpecialRoute = config.key === 'streak_risk' || config.key === 'month_close' || config.key === 'score_drop';
+    const isSpecialRoute =
+      config.key === 'streak_risk' ||
+      config.key === 'month_close' ||
+      config.key === 'score_drop' ||
+      config.key === 'score_strong' ||
+      config.key === 'good_grip' ||
+      config.key === 'honest_entries' ||
+      config.key === 'single_account_method';
     const payload = resolvePushNotificationMessage(definition, config);
     const response = await fetch(
         new URL(
@@ -149,8 +156,16 @@ export async function GET(request: NextRequest) {
           ? '/api/push/send-streak-risk'
           : config.key === 'month_close'
             ? '/api/push/send-month-close'
-            : config.key === 'score_drop'
-              ? '/api/push/send-score-drop'
+              : config.key === 'score_drop'
+                ? '/api/push/send-score-drop'
+                : config.key === 'score_strong'
+                  ? '/api/push/send-score-strong'
+                  : config.key === 'good_grip'
+                    ? '/api/push/send-good-grip'
+                    : config.key === 'honest_entries'
+                      ? '/api/push/send-honest-entries'
+                      : config.key === 'single_account_method'
+                        ? '/api/push/send-single-account-method'
             : '/api/push/send',
         appUrl
       ),

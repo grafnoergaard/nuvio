@@ -22,6 +22,10 @@ import { FlowSavingsModal } from '@/components/flow-savings-modal';
 import { WeeklyBudgetReminderModal } from '@/components/weekly-budget-reminder-modal';
 import { MonthCloseReminderModal } from '@/components/month-close-reminder-modal';
 import { ScoreDropReminderModal } from '@/components/score-drop-reminder-modal';
+import { ScoreStrongReminderModal } from '@/components/score-strong-reminder-modal';
+import { GoodGripReminderModal } from '@/components/good-grip-reminder-modal';
+import { HonestEntriesReminderModal } from '@/components/honest-entries-reminder-modal';
+import { SingleAccountMethodReminderModal } from '@/components/single-account-method-reminder-modal';
 
 export default function HomePage() {
   const router = useRouter();
@@ -57,6 +61,10 @@ export default function HomePage() {
   const [showWeeklyBudgetReminder, setShowWeeklyBudgetReminder] = useState(false);
   const [showMonthCloseReminder, setShowMonthCloseReminder] = useState(false);
   const [showScoreDropReminder, setShowScoreDropReminder] = useState(false);
+  const [showScoreStrongReminder, setShowScoreStrongReminder] = useState(false);
+  const [showGoodGripReminder, setShowGoodGripReminder] = useState(false);
+  const [showHonestEntriesReminder, setShowHonestEntriesReminder] = useState(false);
+  const [showSingleAccountMethodReminder, setShowSingleAccountMethodReminder] = useState(false);
   const [weeklyReminderMode, setWeeklyReminderMode] = useState<'weekly-budget-reminder' | 'streak-risk'>('weekly-budget-reminder');
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
@@ -189,6 +197,18 @@ export default function HomePage() {
     if (flow === 'score-drop' && flowMonthlyBudget > 0) {
       setShowScoreDropReminder(true);
     }
+    if (flow === 'score-strong' && flowMonthlyBudget > 0) {
+      setShowScoreStrongReminder(true);
+    }
+    if (flow === 'good-grip' && flowMonthlyBudget > 0) {
+      setShowGoodGripReminder(true);
+    }
+    if (flow === 'honest-entries') {
+      setShowHonestEntriesReminder(true);
+    }
+    if (flow === 'single-account-method') {
+      setShowSingleAccountMethodReminder(true);
+    }
   }, [currentWeekReminder, flowMonthlyBudget, loading, searchParams]);
 
   function clearReminderQuery() {
@@ -213,6 +233,26 @@ export default function HomePage() {
     clearReminderQuery();
   }
 
+  function dismissScoreStrongReminder() {
+    setShowScoreStrongReminder(false);
+    clearReminderQuery();
+  }
+
+  function dismissGoodGripReminder() {
+    setShowGoodGripReminder(false);
+    clearReminderQuery();
+  }
+
+  function dismissHonestEntriesReminder() {
+    setShowHonestEntriesReminder(false);
+    clearReminderQuery();
+  }
+
+  function dismissSingleAccountMethodReminder() {
+    setShowSingleAccountMethodReminder(false);
+    clearReminderQuery();
+  }
+
   function openWeeklyBudgetDetails() {
     setShowWeeklyBudgetReminder(false);
     clearReminderQuery();
@@ -227,6 +267,30 @@ export default function HomePage() {
 
   function openScoreDropDetails() {
     setShowScoreDropReminder(false);
+    clearReminderQuery();
+    router.push('/udgifter');
+  }
+
+  function openScoreStrongDetails() {
+    setShowScoreStrongReminder(false);
+    clearReminderQuery();
+    router.push('/udgifter');
+  }
+
+  function openGoodGripDetails() {
+    setShowGoodGripReminder(false);
+    clearReminderQuery();
+    router.push('/udgifter');
+  }
+
+  function openHonestEntriesDetails() {
+    setShowHonestEntriesReminder(false);
+    clearReminderQuery();
+    router.push('/udgifter');
+  }
+
+  function openSingleAccountMethodDetails() {
+    setShowSingleAccountMethodReminder(false);
     clearReminderQuery();
     router.push('/udgifter');
   }
@@ -362,6 +426,42 @@ export default function HomePage() {
           carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
           onClose={dismissScoreDropReminder}
           onOpenExpenses={openScoreDropDetails}
+          onAddExpense={openQuickExpenseFromReminder}
+        />
+      )}
+      {showScoreStrongReminder && flowMonthlyBudget > 0 && (
+        <ScoreStrongReminderModal
+          monthlyBudget={flowMonthlyBudget}
+          monthlySpent={flowMonthlySpent}
+          scoreThreshold={flowScoreThreshold}
+          carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
+          onClose={dismissScoreStrongReminder}
+          onOpenExpenses={openScoreStrongDetails}
+          onAddExpense={openQuickExpenseFromReminder}
+        />
+      )}
+      {showGoodGripReminder && flowMonthlyBudget > 0 && (
+        <GoodGripReminderModal
+          monthlyBudget={flowMonthlyBudget}
+          monthlySpent={flowMonthlySpent}
+          scoreThreshold={flowScoreThreshold}
+          carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
+          onClose={dismissGoodGripReminder}
+          onOpenExpenses={openGoodGripDetails}
+          onAddExpense={openQuickExpenseFromReminder}
+        />
+      )}
+      {showHonestEntriesReminder && (
+        <HonestEntriesReminderModal
+          onClose={dismissHonestEntriesReminder}
+          onOpenExpenses={openHonestEntriesDetails}
+          onAddExpense={openQuickExpenseFromReminder}
+        />
+      )}
+      {showSingleAccountMethodReminder && (
+        <SingleAccountMethodReminderModal
+          onClose={dismissSingleAccountMethodReminder}
+          onOpenExpenses={openSingleAccountMethodDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
