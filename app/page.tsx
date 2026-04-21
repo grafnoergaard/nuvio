@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { OnboardingIntro } from '@/components/onboarding-intro';
-import { WhyWizard } from '@/components/why-wizard';
 import { IncomeWizard } from '@/components/income-wizard';
 import { FixedExpensesWizard } from '@/components/fixed-expenses-wizard';
 import { VariableForbrugWizardModal } from '@/components/variable-forbrug-wizard-modal';
@@ -40,10 +39,8 @@ export default function HomePage() {
 
   const {
     showIncomeWizard, showFixedExpensesWizard, showVariableWizard,
-    showWhyWizard,
     setShowIncomeWizard, setShowFixedExpensesWizard, setShowVariableWizard,
-    setShowWhyWizard,
-    checkWhyWizard, markWhyWizardChecked, wizardEnabled,
+    markWhyWizardChecked, wizardEnabled,
   } = ui;
 
   const {
@@ -98,7 +95,6 @@ export default function HomePage() {
     }
     setUserRef(user.id);
     loadHousehold();
-    checkWhyWizard(user.id);
   }, [user]);
 
   async function saveOpeningBalance() {
@@ -175,10 +171,6 @@ export default function HomePage() {
         <p className="text-muted-foreground">Indlæser...</p>
       </div>
     );
-  }
-
-  if (showWhyWizard && wizardEnabled('wizard_enabled_why')) {
-    return <WhyWizard onComplete={() => setShowWhyWizard(false)} />;
   }
 
   if (!budget && wizardEnabled('wizard_enabled_onboarding')) {
