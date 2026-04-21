@@ -253,48 +253,6 @@ export default function HomePage() {
     clearReminderQuery();
   }
 
-  function openWeeklyBudgetDetails() {
-    setShowWeeklyBudgetReminder(false);
-    clearReminderQuery();
-    router.push('/udgifter?section=weekly-budget');
-  }
-
-  function openMonthCloseDetails() {
-    setShowMonthCloseReminder(false);
-    clearReminderQuery();
-    router.push('/udgifter');
-  }
-
-  function openScoreDropDetails() {
-    setShowScoreDropReminder(false);
-    clearReminderQuery();
-    router.push('/udgifter');
-  }
-
-  function openScoreStrongDetails() {
-    setShowScoreStrongReminder(false);
-    clearReminderQuery();
-    router.push('/udgifter');
-  }
-
-  function openGoodGripDetails() {
-    setShowGoodGripReminder(false);
-    clearReminderQuery();
-    router.push('/udgifter');
-  }
-
-  function openHonestEntriesDetails() {
-    setShowHonestEntriesReminder(false);
-    clearReminderQuery();
-    router.push('/udgifter');
-  }
-
-  function openSingleAccountMethodDetails() {
-    setShowSingleAccountMethodReminder(false);
-    clearReminderQuery();
-    router.push('/udgifter');
-  }
-
   function openQuickExpenseFromReminder() {
     setShowWeeklyBudgetReminder(false);
     clearReminderQuery();
@@ -403,7 +361,6 @@ export default function HomePage() {
           weeklyStreak={weeklyStreak}
           mode={weeklyReminderMode}
           onClose={dismissWeeklyReminder}
-          onOpenExpenses={openWeeklyBudgetDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
@@ -414,7 +371,6 @@ export default function HomePage() {
           scoreThreshold={flowScoreThreshold}
           carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
           onClose={dismissMonthCloseReminder}
-          onOpenExpenses={openMonthCloseDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
@@ -425,7 +381,6 @@ export default function HomePage() {
           scoreThreshold={flowScoreThreshold}
           carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
           onClose={dismissScoreDropReminder}
-          onOpenExpenses={openScoreDropDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
@@ -436,7 +391,6 @@ export default function HomePage() {
           scoreThreshold={flowScoreThreshold}
           carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
           onClose={dismissScoreStrongReminder}
-          onOpenExpenses={openScoreStrongDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
@@ -447,21 +401,18 @@ export default function HomePage() {
           scoreThreshold={flowScoreThreshold}
           carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
           onClose={dismissGoodGripReminder}
-          onOpenExpenses={openGoodGripDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
       {showHonestEntriesReminder && (
         <HonestEntriesReminderModal
           onClose={dismissHonestEntriesReminder}
-          onOpenExpenses={openHonestEntriesDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
       {showSingleAccountMethodReminder && (
         <SingleAccountMethodReminderModal
           onClose={dismissSingleAccountMethodReminder}
-          onOpenExpenses={openSingleAccountMethodDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}

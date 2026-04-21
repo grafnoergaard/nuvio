@@ -11,7 +11,6 @@ interface MonthCloseReminderModalProps {
   scoreThreshold: number;
   carryOverPenalty?: number;
   onClose: () => void;
-  onOpenExpenses: () => void;
   onAddExpense: () => void;
 }
 
@@ -41,7 +40,6 @@ export function MonthCloseReminderModal({
   scoreThreshold,
   carryOverPenalty = 0,
   onClose,
-  onOpenExpenses,
   onAddExpense,
 }: MonthCloseReminderModalProps) {
   const [step, setStep] = useState(0);
@@ -202,10 +200,10 @@ export function MonthCloseReminderModal({
           {isLast ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <button
-                onClick={onOpenExpenses}
+                onClick={onClose}
                 className="flex h-14 items-center justify-center rounded-full bg-[#0E3B43] px-5 text-base font-semibold text-white transition active:scale-[0.98]"
               >
-                Se udgifter
+                Tak for overblikket
               </button>
               <button
                 onClick={onAddExpense}

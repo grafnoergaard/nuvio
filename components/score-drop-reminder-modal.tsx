@@ -11,7 +11,6 @@ interface ScoreDropReminderModalProps {
   scoreThreshold: number;
   carryOverPenalty?: number;
   onClose: () => void;
-  onOpenExpenses: () => void;
   onAddExpense: () => void;
 }
 
@@ -86,7 +85,6 @@ export function ScoreDropReminderModal({
   scoreThreshold,
   carryOverPenalty = 0,
   onClose,
-  onOpenExpenses,
   onAddExpense,
 }: ScoreDropReminderModalProps) {
   const [step, setStep] = useState(0);
@@ -230,10 +228,10 @@ export function ScoreDropReminderModal({
           {isLast ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <button
-                onClick={onOpenExpenses}
+                onClick={onClose}
                 className="flex h-14 items-center justify-center rounded-full bg-[#0E3B43] px-5 text-base font-semibold text-white transition active:scale-[0.98]"
               >
-                Se udgifter
+                Jeg tager det ind
               </button>
               <button
                 onClick={onAddExpense}

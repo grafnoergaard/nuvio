@@ -13,7 +13,6 @@ interface WeeklyBudgetReminderModalProps {
   weeklyStreak: QuickExpenseWeeklyStreak | null;
   mode?: 'weekly-budget-reminder' | 'streak-risk';
   onClose: () => void;
-  onOpenExpenses: () => void;
   onAddExpense: () => void;
 }
 
@@ -42,7 +41,6 @@ export function WeeklyBudgetReminderModal({
   weeklyStreak,
   mode = 'weekly-budget-reminder',
   onClose,
-  onOpenExpenses,
   onAddExpense,
 }: WeeklyBudgetReminderModalProps) {
   const [step, setStep] = useState(0);
@@ -197,6 +195,8 @@ export function WeeklyBudgetReminderModal({
 
   const current = steps[step];
   const isLast = step === steps.length - 1;
+  const closeCtaLabel =
+    mode === 'streak-risk' ? 'Jeg passer på rytmen' : 'Det giver mening';
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 30);
@@ -284,17 +284,17 @@ export function WeeklyBudgetReminderModal({
             <div className="flex flex-col gap-3">
               <button
                 type="button"
-                onClick={onAddExpense}
+                onClick={onClose}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border/60 bg-white/80 px-5 py-4 text-base font-semibold text-foreground transition-colors hover:bg-secondary/20"
               >
-                Registrér udgift
+                {closeCtaLabel}
               </button>
               <button
                 type="button"
-                onClick={onOpenExpenses}
+                onClick={onAddExpense}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#0E3B43] to-[#2ED3A7] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-200/60 transition-transform active:scale-[0.98]"
               >
-                Åbn Ugebudget
+                Registrér udgift
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>

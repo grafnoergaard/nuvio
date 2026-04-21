@@ -7,13 +7,11 @@ import { WizardShell, useWizardAnimation } from '@/components/wizard-shell';
 
 interface SingleAccountMethodReminderModalProps {
   onClose: () => void;
-  onOpenExpenses: () => void;
   onAddExpense: () => void;
 }
 
 export function SingleAccountMethodReminderModal({
   onClose,
-  onOpenExpenses,
   onAddExpense,
 }: SingleAccountMethodReminderModalProps) {
   const [step, setStep] = useState(0);
@@ -108,10 +106,10 @@ export function SingleAccountMethodReminderModal({
           {isLast ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <button
-                onClick={onOpenExpenses}
+                onClick={onClose}
                 className="flex h-14 items-center justify-center rounded-full bg-[#0E3B43] px-5 text-base font-semibold text-white transition active:scale-[0.98]"
               >
-                Se udgifter
+                Jeg prøver den metode
               </button>
               <button
                 onClick={onAddExpense}
