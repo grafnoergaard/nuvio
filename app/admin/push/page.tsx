@@ -145,6 +145,10 @@ export default function AdminPushPage() {
     await sendPushAction('/api/admin/push/send-month-close', 'Månedsluk-påmindelse sendt');
   }
 
+  async function sendScoreDrop() {
+    await sendPushAction('/api/admin/push/send-score-drop', 'Score-fald-påmindelse sendt');
+  }
+
   async function saveConfig(key: string) {
     const config = configs[key];
     if (!config) return;
@@ -397,28 +401,37 @@ export default function AdminPushPage() {
                       {notification.supportsAuto ? (
                         notification.automationMode === 'event' ? (
                           <div className="mt-3 space-y-3">
-                            <div className="grid gap-3 md:grid-cols-[1.2fr_120px_120px]">
-                              <div>
-                                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-                                  Trigger når
-                                </p>
-                                <Select
-                                  value={configs[notification.key]?.triggerCondition ?? notification.triggerCondition}
-                                  onValueChange={(value) => updateConfig(notification.key, (current) => ({
-                                    ...current,
-                                    triggerCondition: value as StreakRiskTriggerCondition,
-                                  }))}
-                                >
-                                  <SelectTrigger className="h-10 rounded-xl bg-white/80">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="both">Tæt på grænsen eller over budget</SelectItem>
-                                    <SelectItem value="close">Kun tæt på grænsen</SelectItem>
-                                    <SelectItem value="over">Kun over budget</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                            <div className={`grid gap-3 ${notification.key === 'streak_risk' ? 'md:grid-cols-[1.2fr_120px_120px]' : 'md:grid-cols-[1fr_120px_120px]'}`}>
+                              {notification.key === 'streak_risk' ? (
+                                <div>
+                                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                    Trigger når
+                                  </p>
+                                  <Select
+                                    value={configs[notification.key]?.triggerCondition ?? notification.triggerCondition}
+                                    onValueChange={(value) => updateConfig(notification.key, (current) => ({
+                                      ...current,
+                                      triggerCondition: value as StreakRiskTriggerCondition,
+                                    }))}
+                                  >
+                                    <SelectTrigger className="h-10 rounded-xl bg-white/80">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="both">Tæt på grænsen eller over budget</SelectItem>
+                                      <SelectItem value="close">Kun tæt på grænsen</SelectItem>
+                                      <SelectItem value="over">Kun over budget</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ) : (
+                                <div className="rounded-xl bg-white/80 px-3 py-2">
+                                  <p className="text-sm font-medium text-foreground">Trigger</p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Sendes når månedsscoren falder ind i en gul eller rød zone. Kan sende igen, hvis den bliver tydeligt værre.
+                                  </p>
+                                </div>
+                              )}
 
                               <NumberField
                                 label="Fra"
@@ -438,7 +451,9 @@ export default function AdminPushPage() {
                             </div>
 
                             <p className="text-xs text-muted-foreground">
-                              Tjekkes løbende, men sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.
+                              {notification.key === 'streak_risk'
+                                ? 'Tjekkes løbende, men sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.'
+                                : 'Tjekkes løbende, men sendes højst én gang pr. måned. Hvis scoren falder fra gul til rød zone, må den gerne sende igen.'}
                             </p>
                           </div>
                         ) : (
@@ -567,6 +582,15 @@ export default function AdminPushPage() {
                       <Button
                         className="shrink-0"
                         onClick={sendMonthClose}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'score_drop' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendScoreDrop}
                         disabled={sending || loading}
                       >
                         <Send className="mr-2 h-4 w-4" />

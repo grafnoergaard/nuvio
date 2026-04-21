@@ -2,7 +2,8 @@ export type PushNotificationKey =
   | 'test_all_users'
   | 'weekly_budget_reminder'
   | 'streak_risk'
-  | 'month_close';
+  | 'month_close'
+  | 'score_drop';
 
 export type PushScheduleType = 'manual' | 'weekly' | 'monthly';
 export type PushAutomationMode = 'scheduled' | 'event';
@@ -150,6 +151,31 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
     automationMode: 'scheduled',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
+  },
+  {
+    key: 'score_drop',
+    title: 'Score falder',
+    description: 'Kalder brugeren ind, når månedsscoren glider ned i en zone, der er værd at reagere på.',
+    audience: 'Brugere hvor månedsscoren er i gul eller rød zone',
+    status: 'Klar',
+    defaultMessageTitle: 'Din score kalder på et hurtigt tjek',
+    defaultMessageBody: 'Et roligt kig nu kan hjælpe dig med at løfte din score igen, mens måneden stadig er i dine hænder.',
+    defaultUrl: '/?flow=score-drop',
+    previewUrl: '/?flow=score-drop',
+    supportsAuto: true,
+    supportedScheduleTypes: ['weekly'],
+    defaultScheduleType: 'weekly',
+    defaultEnabled: true,
+    defaultAutoSendEnabled: false,
+    defaultSendDayOfWeek: 1,
+    defaultSendDayOfMonth: null,
+    defaultSendHour: 10,
+    defaultSendMinute: 0,
+    defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'event',
     defaultTriggerCondition: 'both',
     defaultDeliveryWindowStartHour: 9,
     defaultDeliveryWindowEndHour: 20,

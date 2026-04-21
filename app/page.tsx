@@ -21,6 +21,7 @@ import { WeekTransitionBottomSheet, WeekTransitionWizard } from '@/components/we
 import { FlowSavingsModal } from '@/components/flow-savings-modal';
 import { WeeklyBudgetReminderModal } from '@/components/weekly-budget-reminder-modal';
 import { MonthCloseReminderModal } from '@/components/month-close-reminder-modal';
+import { ScoreDropReminderModal } from '@/components/score-drop-reminder-modal';
 
 export default function HomePage() {
   const router = useRouter();
@@ -55,6 +56,7 @@ export default function HomePage() {
   const [showQuickExpenseModal, setShowQuickExpenseModal] = useState(false);
   const [showWeeklyBudgetReminder, setShowWeeklyBudgetReminder] = useState(false);
   const [showMonthCloseReminder, setShowMonthCloseReminder] = useState(false);
+  const [showScoreDropReminder, setShowScoreDropReminder] = useState(false);
   const [weeklyReminderMode, setWeeklyReminderMode] = useState<'weekly-budget-reminder' | 'streak-risk'>('weekly-budget-reminder');
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
@@ -184,6 +186,9 @@ export default function HomePage() {
     if (flow === 'month-close' && flowMonthlyBudget > 0) {
       setShowMonthCloseReminder(true);
     }
+    if (flow === 'score-drop' && flowMonthlyBudget > 0) {
+      setShowScoreDropReminder(true);
+    }
   }, [currentWeekReminder, flowMonthlyBudget, loading, searchParams]);
 
   function clearReminderQuery() {
@@ -203,6 +208,11 @@ export default function HomePage() {
     clearReminderQuery();
   }
 
+  function dismissScoreDropReminder() {
+    setShowScoreDropReminder(false);
+    clearReminderQuery();
+  }
+
   function openWeeklyBudgetDetails() {
     setShowWeeklyBudgetReminder(false);
     clearReminderQuery();
@@ -211,6 +221,12 @@ export default function HomePage() {
 
   function openMonthCloseDetails() {
     setShowMonthCloseReminder(false);
+    clearReminderQuery();
+    router.push('/udgifter');
+  }
+
+  function openScoreDropDetails() {
+    setShowScoreDropReminder(false);
     clearReminderQuery();
     router.push('/udgifter');
   }
@@ -335,6 +351,17 @@ export default function HomePage() {
           carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
           onClose={dismissMonthCloseReminder}
           onOpenExpenses={openMonthCloseDetails}
+          onAddExpense={openQuickExpenseFromReminder}
+        />
+      )}
+      {showScoreDropReminder && flowMonthlyBudget > 0 && (
+        <ScoreDropReminderModal
+          monthlyBudget={flowMonthlyBudget}
+          monthlySpent={flowMonthlySpent}
+          scoreThreshold={flowScoreThreshold}
+          carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
+          onClose={dismissScoreDropReminder}
+          onOpenExpenses={openScoreDropDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
