@@ -1,6 +1,8 @@
 {
   "name": "Kuvert",
   "short_name": "Kuvert",
+  "lang": "da-DK",
+  "dir": "ltr",
   "description": "Budgetstyring med kuvert-metoden",
   "start_url": "/",
   "scope": "/",

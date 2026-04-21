@@ -24,6 +24,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
+      lang: 'da-DK',
+      dir: 'ltr',
       icon: '/kuvert-icon.png',
       badge: '/kuvert-icon.png',
       data: {
