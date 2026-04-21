@@ -83,7 +83,7 @@ export function WeeklyBudgetReminderModal({
   const steps = useMemo(() => {
     const statusCopy = {
       ahead: {
-        title: `Du er foran budget i uge ${week.isoWeekNumber}`,
+        title: 'Du er foran budget i denne uge',
         body: `Du har ${formatDKK(remaining)} tilbage, så du står et roligt sted lige nu. Et hurtigt tjek nu hjælper dig med at holde den gode rytme resten af ugen.`,
         guidanceTitle: 'Sådan bevarer du overskuddet',
         guidanceBody: daysLeft > 0
@@ -91,7 +91,7 @@ export function WeeklyBudgetReminderModal({
           : 'Ugen er ved at lukke, og du står stadig godt. Det er et fint tidspunkt at tage læringen med videre til næste uge.',
       },
       close: {
-        title: `Du er tæt på grænsen i uge ${week.isoWeekNumber}`,
+        title: 'Du er tæt på grænsen i denne uge',
         body: `Du har ${formatDKK(Math.max(remaining, 0))} tilbage, så den her uge er stadig helt redbar. Nu handler det mest om at være bevidst i de næste køb.`,
         guidanceTitle: 'Det bedste træk lige nu',
         guidanceBody: daysLeft > 0
@@ -99,7 +99,7 @@ export function WeeklyBudgetReminderModal({
           : 'Du er tæt på slutningen af ugen. Brug et øjeblik på at se, om der er noget, du kan udskyde til næste uge.',
       },
       over: {
-        title: `Du er ${formatDKK(Math.abs(remaining))} over i uge ${week.isoWeekNumber}`,
+        title: `Du er ${formatDKK(Math.abs(remaining))} over i denne uge`,
         body: 'Det er ikke farligt, men det er et godt tidspunkt at tage et hurtigt kig på ugens udgifter og lande blødt i stedet for at lade det løbe videre.',
         guidanceTitle: 'Dit bedste næste skridt',
         guidanceBody: daysLeft > 0
@@ -194,8 +194,8 @@ export function WeeklyBudgetReminderModal({
     >
       <div className="flex min-h-full flex-col">
         <div className="flex-1 flex flex-col justify-center py-2">
-          <div className="rounded-[30px] border border-white/60 bg-white/72 p-5 shadow-[0_24px_80px_rgba(14,59,67,0.10)] backdrop-blur-sm">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-white text-[#0E3B43] shadow-sm">
+          <div className="p-5">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-white/88 text-[#0E3B43]">
               {current.icon}
             </div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#2E9E84]">
@@ -208,7 +208,7 @@ export function WeeklyBudgetReminderModal({
               {current.body}
             </p>
 
-            <div className="mt-6 rounded-[24px] border border-emerald-100/80 bg-emerald-50/65 px-4 py-4">
+            <div className="mt-6 rounded-[24px] border border-emerald-100/70 bg-white/55 px-4 py-4">
               <p className="text-sm font-medium text-muted-foreground">{current.highlightLabel}</p>
               <p className="mt-2 text-[2rem] font-semibold tracking-tight text-[#0E3B43] sm:text-[2.2rem]">
                 {current.highlightValue}
