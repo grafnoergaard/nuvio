@@ -20,6 +20,7 @@ import { useWeekTransition } from '@/hooks/use-week-transition';
 import { WeekTransitionBottomSheet, WeekTransitionWizard } from '@/components/week-transition-wizard';
 import { FlowSavingsModal } from '@/components/flow-savings-modal';
 import { WeeklyBudgetReminderModal } from '@/components/weekly-budget-reminder-modal';
+import { MonthCloseReminderModal } from '@/components/month-close-reminder-modal';
 
 export default function HomePage() {
   const router = useRouter();
@@ -53,6 +54,7 @@ export default function HomePage() {
   const [editingOpeningBalance, setEditingOpeningBalance] = useState(false);
   const [showQuickExpenseModal, setShowQuickExpenseModal] = useState(false);
   const [showWeeklyBudgetReminder, setShowWeeklyBudgetReminder] = useState(false);
+  const [showMonthCloseReminder, setShowMonthCloseReminder] = useState(false);
   const [weeklyReminderMode, setWeeklyReminderMode] = useState<'weekly-budget-reminder' | 'streak-risk'>('weekly-budget-reminder');
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
@@ -179,7 +181,10 @@ export default function HomePage() {
       setWeeklyReminderMode(flow === 'streak-risk' ? 'streak-risk' : 'weekly-budget-reminder');
       setShowWeeklyBudgetReminder(true);
     }
-  }, [currentWeekReminder, loading, searchParams]);
+    if (flow === 'month-close' && flowMonthlyBudget > 0) {
+      setShowMonthCloseReminder(true);
+    }
+  }, [currentWeekReminder, flowMonthlyBudget, loading, searchParams]);
 
   function clearReminderQuery() {
     const next = new URLSearchParams(searchParams.toString());
@@ -193,10 +198,21 @@ export default function HomePage() {
     clearReminderQuery();
   }
 
+  function dismissMonthCloseReminder() {
+    setShowMonthCloseReminder(false);
+    clearReminderQuery();
+  }
+
   function openWeeklyBudgetDetails() {
     setShowWeeklyBudgetReminder(false);
     clearReminderQuery();
     router.push('/udgifter?section=weekly-budget');
+  }
+
+  function openMonthCloseDetails() {
+    setShowMonthCloseReminder(false);
+    clearReminderQuery();
+    router.push('/udgifter');
   }
 
   function openQuickExpenseFromReminder() {
@@ -308,6 +324,17 @@ export default function HomePage() {
           mode={weeklyReminderMode}
           onClose={dismissWeeklyReminder}
           onOpenExpenses={openWeeklyBudgetDetails}
+          onAddExpense={openQuickExpenseFromReminder}
+        />
+      )}
+      {showMonthCloseReminder && flowMonthlyBudget > 0 && (
+        <MonthCloseReminderModal
+          monthlyBudget={flowMonthlyBudget}
+          monthlySpent={flowMonthlySpent}
+          scoreThreshold={flowScoreThreshold}
+          carryOverPenalty={Math.abs(Math.min(0, flowWeeklyStatus?.accumulatedCarryOver ?? 0))}
+          onClose={dismissMonthCloseReminder}
+          onOpenExpenses={openMonthCloseDetails}
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}

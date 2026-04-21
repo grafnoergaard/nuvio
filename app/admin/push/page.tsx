@@ -141,6 +141,10 @@ export default function AdminPushPage() {
     await sendPushAction('/api/admin/push/send-streak-risk', 'Streak i fare sendt');
   }
 
+  async function sendMonthClose() {
+    await sendPushAction('/api/admin/push/send-month-close', 'Månedsluk-påmindelse sendt');
+  }
+
   async function saveConfig(key: string) {
     const config = configs[key];
     if (!config) return;
@@ -554,6 +558,15 @@ export default function AdminPushPage() {
                       <Button
                         className="shrink-0"
                         onClick={sendStreakRisk}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'month_close' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendMonthClose}
                         disabled={sending || loading}
                       >
                         <Send className="mr-2 h-4 w-4" />

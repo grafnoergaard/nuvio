@@ -141,10 +141,17 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const isSpecialRoute = config.key === 'streak_risk';
+    const isSpecialRoute = config.key === 'streak_risk' || config.key === 'month_close';
     const payload = resolvePushNotificationMessage(definition, config);
     const response = await fetch(
-      new URL(isSpecialRoute ? '/api/push/send-streak-risk' : '/api/push/send', appUrl),
+      new URL(
+        config.key === 'streak_risk'
+          ? '/api/push/send-streak-risk'
+          : config.key === 'month_close'
+            ? '/api/push/send-month-close'
+            : '/api/push/send',
+        appUrl
+      ),
       {
         method: 'POST',
         headers: {
