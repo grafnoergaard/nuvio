@@ -33,7 +33,7 @@ function isAuthorized(request: NextRequest) {
 function configureWebPush() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || 'mailto:kontakt@kuvert.live';
+  const subject = process.env.VAPID_SUBJECT || 'mailto:grafnoergaard@gmail.com';
 
   if (!publicKey || !privateKey) {
     throw new Error('VAPID keys mangler');
