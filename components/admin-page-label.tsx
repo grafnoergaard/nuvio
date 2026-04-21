@@ -90,6 +90,7 @@ const PAGE_NAMES: Record<string, string> = {
   '/admin/checkup': 'Admin · Onboarding standardværdier',
   '/admin/advisory-engine': 'Admin · Advisory Engine',
   '/admin/navigation': 'Admin · Navigation',
+  '/admin/push': 'Admin · Push',
   '/admin/why': 'Admin · Why Wizard',
 };
 

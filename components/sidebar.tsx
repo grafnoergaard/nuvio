@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronRight, ChevronLeft, ShieldCheck, Calculator, LogOut, ClipboardCheck, Zap, Navigation, Database, LayoutDashboard, Bot, Wand as Wand2, Activity, Type } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ShieldCheck, Calculator, LogOut, ClipboardCheck, Zap, Navigation, Database, LayoutDashboard, Bot, Wand as Wand2, Activity, Type, BellRing } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -40,6 +40,7 @@ const BACKEND_ITEMS: FlatNavItem[] = [
   { name: 'Kuvert AI', href: '/admin/ai-assistant', icon: Bot },
   { name: 'Advisory Engine', href: '/admin/advisory-engine', icon: Zap },
   { name: 'Navigation', href: '/admin/navigation', icon: Navigation },
+  { name: 'Push', href: '/admin/push', icon: BellRing },
   { name: 'Why Wizard', href: '/admin/why', icon: ShieldCheck },
   { name: 'StandardDataService', href: '/admin/standard-data', icon: Database },
   { name: 'Udgifter', href: '/admin/nuvio-flow', icon: Activity },
