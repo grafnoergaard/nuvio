@@ -6,19 +6,15 @@ import { ArrowRight, CalendarDays, Coins, Wallet } from 'lucide-react';
 import type { QuickExpenseWeeklyStreak, WeeklyBudgetStatus } from '@/lib/quick-expense-service';
 import { cn } from '@/lib/utils';
 import { WizardShell, useWizardAnimation } from '@/components/wizard-shell';
+import { getDaysLeftInRange, getWeeklyBudgetSituation, toSafeDate } from '@/lib/weekly-budget-helpers';
 
 interface WeeklyBudgetReminderModalProps {
   week: WeeklyBudgetStatus;
   weeklyStreak: QuickExpenseWeeklyStreak | null;
+  mode?: 'weekly-budget-reminder' | 'streak-risk';
   onClose: () => void;
   onOpenExpenses: () => void;
   onAddExpense: () => void;
-}
-
-function toSafeDate(value: Date | string): Date {
-  if (value instanceof Date) return value;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
 function formatDKK(value: number): string {
@@ -38,32 +34,13 @@ function formatShortDate(date: Date | string): string {
 }
 
 function getDaysLeftInWeek(weekEnd: Date | string): number {
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const safeWeekEnd = toSafeDate(weekEnd);
-  const end = new Date(safeWeekEnd.getFullYear(), safeWeekEnd.getMonth(), safeWeekEnd.getDate());
-  return Math.max(0, Math.floor((end.getTime() - startOfToday.getTime()) / 86400000) + 1);
-}
-
-function getBudgetSituation(week: WeeklyBudgetStatus, daysLeft: number): 'ahead' | 'close' | 'over' {
-  if (week.isOver || week.remaining < 0) return 'over';
-
-  const budget = Math.max(week.effectiveBudget, 0);
-  if (budget <= 0) return 'close';
-
-  const remainingRatio = week.remaining / budget;
-  const closeThreshold = daysLeft <= 2 ? 0.2 : 0.15;
-
-  if (remainingRatio <= closeThreshold || week.remaining <= budget / Math.max(daysLeft, 1)) {
-    return 'close';
-  }
-
-  return 'ahead';
+  return getDaysLeftInRange(weekEnd);
 }
 
 export function WeeklyBudgetReminderModal({
   week,
   weeklyStreak,
+  mode = 'weekly-budget-reminder',
   onClose,
   onOpenExpenses,
   onAddExpense,
@@ -78,9 +55,73 @@ export function WeeklyBudgetReminderModal({
   const dailyAmount = daysLeft > 0 && remaining > 0 ? Math.floor(remaining / daysLeft) : 0;
   const currentStreak = weeklyStreak?.current_streak ?? 0;
   const nextStreak = currentStreak + (week.remaining >= 0 ? 1 : 0);
-  const situation = getBudgetSituation(week, daysLeft);
+  const situation = getWeeklyBudgetSituation(week, daysLeft);
 
   const steps = useMemo(() => {
+    if (mode === 'streak-risk') {
+      const streakValue = currentStreak > 0
+        ? `${currentStreak} ${currentStreak === 1 ? 'uge i træk' : 'uger i træk'}`
+        : 'Ny rytme starter med én uge';
+
+      const streakRiskCopy = {
+        close: {
+          title: 'Din streak er værd at beskytte i denne uge',
+          body: `Du er tæt på grænsen, men du er ikke væltet ud over endnu. Et lille skift nu kan være nok til at holde rytmen i live.`,
+          actionTitle: 'Det vigtigste lige nu',
+          actionBody: daysLeft > 0
+            ? `Der er ${daysLeft} ${daysLeft === 1 ? 'dag' : 'dage'} tilbage. Hold dig så tæt som muligt på ${dailyAmount > 0 ? formatDKK(dailyAmount) : 'et lavt niveau'} pr. dag, så giver du streaken de bedste chancer.`
+            : 'Ugen lukker snart, så det vigtigste nu er et hurtigt overblik over de sidste køb.',
+        },
+        over: {
+          title: 'Din streak er i fare i denne uge',
+          body: `Du er ${formatDKK(Math.abs(remaining))} over, men det betyder ikke, at rytmen er tabt. Et roligt kig nu gør det lettere at lande ugen bedre og tage læringen med videre.`,
+          actionTitle: 'Tag styringen tilbage nu',
+          actionBody: daysLeft > 0
+            ? `Der er stadig ${daysLeft} ${daysLeft === 1 ? 'dag' : 'dage'} tilbage. Hvis du holder igen resten af ugen, beskytter du både overblikket og din rytme.`
+            : 'Ugen er ved at lukke. Brug et øjeblik på at se, hvad der trak dig over, så næste uge starter mere roligt.',
+        },
+        ahead: {
+          title: 'Din streak ser stærk ud i denne uge',
+          body: `Du står faktisk godt. Det her flow hjælper bare med at beskytte den rytme, du allerede er i gang med at bygge.`,
+          actionTitle: 'Sådan holder du streaken levende',
+          actionBody: daysLeft > 0
+            ? `Du har cirka ${formatDKK(dailyAmount)} pr. dag tilbage uden at miste grebet. Hold kursen, så lander du endnu en god uge.`
+            : 'Ugen er næsten lukket, og du står stadig godt. Det er et stærkt udgangspunkt for næste uge.',
+        },
+      }[situation];
+
+      return [
+        {
+          eyebrow: 'Streak i fare',
+          title: streakRiskCopy.title,
+          body: streakRiskCopy.body,
+          highlightLabel: 'Din nuværende rytme',
+          highlightValue: streakValue,
+          icon: <Wallet className="h-5 w-5" />,
+        },
+        {
+          eyebrow: 'Bevar rytmen',
+          title: streakRiskCopy.actionTitle,
+          body: streakRiskCopy.actionBody,
+          highlightLabel: 'Ugens ramme',
+          highlightValue: `${formatDKK(spent)} af ${formatDKK(effectiveBudget)}`,
+          icon: <Coins className="h-5 w-5" />,
+        },
+        {
+          eyebrow: 'Næste skridt',
+          title: currentStreak > 0
+            ? `Holder du den her uge, lander du på ${nextStreak}`
+            : 'En god uge er starten på din rytme',
+          body: currentStreak > 0
+            ? `Det bedste næste skridt er ikke perfekt kontrol, men et hurtigt overblik. Åbn Ugebudget eller registrér en udgift nu, mens ugen stadig er i dine hænder.`
+            : 'Åbn Ugebudget eller registrér en udgift nu, så du tager styringen tilbage med det samme.',
+          highlightLabel: 'Ugens periode',
+          highlightValue: `${formatShortDate(week.weekStart)} - ${formatShortDate(week.weekEnd)}`,
+          icon: <CalendarDays className="h-5 w-5" />,
+        },
+      ];
+    }
+
     const statusCopy = {
       ahead: {
         title: 'Du er foran budget i denne uge',

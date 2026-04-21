@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('push_notification_configs')
-    .select('key,is_enabled,auto_send_enabled,message_title,message_body,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,last_sent_at,last_result');
+    .select('key,is_enabled,auto_send_enabled,message_title,message_body,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,trigger_condition,delivery_window_start_hour,delivery_window_end_hour,last_sent_at,last_result');
 
   if (error) {
     return NextResponse.json({ error: 'Kunne ikke hente push-konfigurationer' }, { status: 500 });
@@ -124,6 +124,9 @@ export async function GET(request: NextRequest) {
   const dueConfigs = configs.filter((config) => {
     const definition = getPushNotificationDefinition(config.key);
     if (!definition?.supportsAuto) return false;
+    if (definition.automationMode === 'event') {
+      return config.is_enabled && config.auto_send_enabled;
+    }
     return isDue(config, now) && !wasAlreadySentThisSlot(config, now);
   });
 
@@ -138,26 +141,37 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    const isSpecialRoute = config.key === 'streak_risk';
     const payload = resolvePushNotificationMessage(definition, config);
-    const response = await fetch(new URL('/api/push/send', appUrl), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-kuvert-push-secret': secret,
-      },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      new URL(isSpecialRoute ? '/api/push/send-streak-risk' : '/api/push/send', appUrl),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-kuvert-push-secret': secret,
+        },
+        body: isSpecialRoute ? undefined : JSON.stringify(payload),
+      }
+    );
 
     const result = await response.json().catch(() => ({}));
     const ok = response.ok;
 
+    const targetedCount = Number(result?.targeted ?? result?.targetedUsers ?? 0);
+    const sentCount = Number(result?.sent ?? 0);
+    const nextLastSentAt = ok && targetedCount > 0 ? now.toISOString() : config.last_sent_at;
+    const nextLastResult = ok
+      ? targetedCount > 0
+        ? `Sendt ${sentCount}/${targetedCount}`
+        : 'Ingen brugere matchede triggeren'
+      : `Fejl: ${result?.error || 'Ukendt fejl'}`;
+
     await supabase
       .from('push_notification_configs')
       .update({
-        last_sent_at: ok ? now.toISOString() : config.last_sent_at,
-        last_result: ok
-          ? `Sendt ${result?.sent ?? 0}/${result?.targeted ?? 0}`
-          : `Fejl: ${result?.error || 'Ukendt fejl'}`,
+        last_sent_at: nextLastSentAt,
+        last_result: nextLastResult,
       } as any)
       .eq('key', config.key);
 

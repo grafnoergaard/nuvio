@@ -5,6 +5,8 @@ export type PushNotificationKey =
   | 'month_close';
 
 export type PushScheduleType = 'manual' | 'weekly' | 'monthly';
+export type PushAutomationMode = 'scheduled' | 'event';
+export type StreakRiskTriggerCondition = 'close' | 'over' | 'both';
 
 export interface PushNotificationDefinition {
   key: PushNotificationKey;
@@ -26,6 +28,10 @@ export interface PushNotificationDefinition {
   defaultSendHour: number;
   defaultSendMinute: number;
   defaultTimezone: string;
+  automationMode: PushAutomationMode;
+  defaultTriggerCondition: StreakRiskTriggerCondition;
+  defaultDeliveryWindowStartHour: number;
+  defaultDeliveryWindowEndHour: number;
 }
 
 export interface PushNotificationConfigRow {
@@ -40,6 +46,9 @@ export interface PushNotificationConfigRow {
   send_hour: number;
   send_minute: number;
   timezone: string;
+  trigger_condition: StreakRiskTriggerCondition;
+  delivery_window_start_hour: number;
+  delivery_window_end_hour: number;
   last_sent_at: string | null;
   last_result: string | null;
 }
@@ -65,6 +74,10 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendHour: 9,
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'scheduled',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
   },
   {
     key: 'weekly_budget_reminder',
@@ -86,6 +99,10 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendHour: 11,
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'scheduled',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
   },
   {
     key: 'streak_risk',
@@ -95,8 +112,8 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     status: 'Klar',
     defaultMessageTitle: 'Pas på din rytme',
     defaultMessageBody: 'Et hurtigt tjek nu kan hjælpe dig med at holde uge-rytmen i live.',
-    defaultUrl: '/?flow=weekly-budget-reminder',
-    previewUrl: '/?flow=weekly-budget-reminder',
+    defaultUrl: '/?flow=streak-risk',
+    previewUrl: '/?flow=streak-risk',
     supportsAuto: true,
     supportedScheduleTypes: ['weekly'],
     defaultScheduleType: 'weekly',
@@ -107,6 +124,10 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendHour: 16,
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'event',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
   },
   {
     key: 'month_close',
@@ -128,6 +149,10 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendHour: 9,
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'scheduled',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
   },
 ];
 
@@ -146,6 +171,9 @@ export function getDefaultPushNotificationConfig(
     send_hour: definition.defaultSendHour,
     send_minute: definition.defaultSendMinute,
     timezone: definition.defaultTimezone,
+    trigger_condition: definition.defaultTriggerCondition,
+    delivery_window_start_hour: definition.defaultDeliveryWindowStartHour,
+    delivery_window_end_hour: definition.defaultDeliveryWindowEndHour,
     last_sent_at: null,
     last_result: null,
   };

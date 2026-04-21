@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth-context';
-import type { PushScheduleType } from '@/lib/push-notifications';
+import type { PushAutomationMode, PushScheduleType, StreakRiskTriggerCondition } from '@/lib/push-notifications';
 
 type OverviewResponse = {
   ok: boolean;
@@ -34,6 +34,7 @@ type OverviewResponse = {
     messageTitle: string;
     messageBody: string;
     supportsAuto: boolean;
+    automationMode: PushAutomationMode;
     supportedScheduleTypes: PushScheduleType[];
     autoSendEnabled: boolean;
     scheduleType: PushScheduleType;
@@ -42,6 +43,9 @@ type OverviewResponse = {
     sendHour: number;
     sendMinute: number;
     timezone: string;
+    triggerCondition: StreakRiskTriggerCondition;
+    deliveryWindowStartHour: number;
+    deliveryWindowEndHour: number;
     lastSentAt: string | null;
     lastResult: string | null;
   }>;
@@ -58,6 +62,9 @@ type NotificationConfigState = {
   sendHour: number;
   sendMinute: number;
   timezone: string;
+  triggerCondition: StreakRiskTriggerCondition;
+  deliveryWindowStartHour: number;
+  deliveryWindowEndHour: number;
 };
 
 const WEEKDAY_OPTIONS = [
@@ -105,6 +112,9 @@ export default function AdminPushPage() {
           sendHour: notification.sendHour,
           sendMinute: notification.sendMinute,
           timezone: notification.timezone,
+          triggerCondition: notification.triggerCondition,
+          deliveryWindowStartHour: notification.deliveryWindowStartHour,
+          deliveryWindowEndHour: notification.deliveryWindowEndHour,
         },
       ])));
     } catch (error) {
@@ -125,6 +135,10 @@ export default function AdminPushPage() {
 
   async function sendWeeklyBudgetReminder() {
     await sendPushAction('/api/admin/push/send-weekly-reminder', 'Ugebudget-påmindelse sendt');
+  }
+
+  async function sendStreakRisk() {
+    await sendPushAction('/api/admin/push/send-streak-risk', 'Streak i fare sendt');
   }
 
   async function saveConfig(key: string) {
@@ -148,6 +162,9 @@ export default function AdminPushPage() {
           sendHour: config.sendHour,
           sendMinute: config.sendMinute,
           timezone: config.timezone,
+          triggerCondition: config.triggerCondition,
+          deliveryWindowStartHour: config.deliveryWindowStartHour,
+          deliveryWindowEndHour: config.deliveryWindowEndHour,
         }),
       });
       const data = await response.json();
@@ -359,7 +376,9 @@ export default function AdminPushPage() {
                             <p className="text-sm font-medium text-foreground">Automatisk</p>
                             <p className="text-xs text-muted-foreground">
                               {notification.supportsAuto
-                                ? 'Sendes automatisk efter det valgte tidspunkt.'
+                                ? notification.automationMode === 'event'
+                                  ? 'Tjekkes løbende og sendes når rytmen faktisk er i fare.'
+                                  : 'Sendes automatisk efter det valgte tidspunkt.'
                                 : 'Test-push sendes kun manuelt.'}
                             </p>
                           </div>
@@ -372,73 +391,121 @@ export default function AdminPushPage() {
                       </div>
 
                       {notification.supportsAuto ? (
-                        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px_120px]">
-                          {configs[notification.key]?.scheduleType === 'monthly' ? (
-                            <div>
-                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-                                Sendes den
-                              </p>
-                              <Select
-                                value={String(configs[notification.key]?.sendDayOfMonth ?? notification.sendDayOfMonth ?? 25)}
-                                onValueChange={(value) => updateConfig(notification.key, (current) => ({
-                                  ...current,
-                                  sendDayOfMonth: Number(value),
-                                }))}
-                              >
-                                <SelectTrigger className="h-10 rounded-xl bg-white/80">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
-                                    <SelectItem key={day} value={String(day)}>
-                                      D. {day}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          ) : (
-                            <div>
-                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-                                Sendes den
-                              </p>
-                              <Select
-                                value={String(configs[notification.key]?.sendDayOfWeek ?? notification.sendDayOfWeek ?? 1)}
-                                onValueChange={(value) => updateConfig(notification.key, (current) => ({
-                                  ...current,
-                                  sendDayOfWeek: Number(value),
-                                }))}
-                              >
-                                <SelectTrigger className="h-10 rounded-xl bg-white/80">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {WEEKDAY_OPTIONS.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
+                        notification.automationMode === 'event' ? (
+                          <div className="mt-3 space-y-3">
+                            <div className="grid gap-3 md:grid-cols-[1.2fr_120px_120px]">
+                              <div>
+                                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                  Trigger når
+                                </p>
+                                <Select
+                                  value={configs[notification.key]?.triggerCondition ?? notification.triggerCondition}
+                                  onValueChange={(value) => updateConfig(notification.key, (current) => ({
+                                    ...current,
+                                    triggerCondition: value as StreakRiskTriggerCondition,
+                                  }))}
+                                >
+                                  <SelectTrigger className="h-10 rounded-xl bg-white/80">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="both">Tæt på grænsen eller over budget</SelectItem>
+                                    <SelectItem value="close">Kun tæt på grænsen</SelectItem>
+                                    <SelectItem value="over">Kun over budget</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                          <NumberField
-                            label="Time"
-                            min={0}
-                            max={23}
-                            value={configs[notification.key]?.sendHour ?? notification.sendHour}
-                            onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendHour: value }))}
-                          />
+                              <NumberField
+                                label="Fra"
+                                min={0}
+                                max={23}
+                                value={configs[notification.key]?.deliveryWindowStartHour ?? notification.deliveryWindowStartHour}
+                                onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, deliveryWindowStartHour: value }))}
+                              />
 
-                          <NumberField
-                            label="Minut"
-                            min={0}
-                            max={59}
-                            value={configs[notification.key]?.sendMinute ?? notification.sendMinute}
-                            onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendMinute: value }))}
-                          />
-                        </div>
+                              <NumberField
+                                label="Til"
+                                min={0}
+                                max={23}
+                                value={configs[notification.key]?.deliveryWindowEndHour ?? notification.deliveryWindowEndHour}
+                                onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, deliveryWindowEndHour: value }))}
+                              />
+                            </div>
+
+                            <p className="text-xs text-muted-foreground">
+                              Tjekkes løbende, men sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px_120px]">
+                            {configs[notification.key]?.scheduleType === 'monthly' ? (
+                              <div>
+                                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                  Sendes den
+                                </p>
+                                <Select
+                                  value={String(configs[notification.key]?.sendDayOfMonth ?? notification.sendDayOfMonth ?? 25)}
+                                  onValueChange={(value) => updateConfig(notification.key, (current) => ({
+                                    ...current,
+                                    sendDayOfMonth: Number(value),
+                                  }))}
+                                >
+                                  <SelectTrigger className="h-10 rounded-xl bg-white/80">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+                                      <SelectItem key={day} value={String(day)}>
+                                        D. {day}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                  Sendes den
+                                </p>
+                                <Select
+                                  value={String(configs[notification.key]?.sendDayOfWeek ?? notification.sendDayOfWeek ?? 1)}
+                                  onValueChange={(value) => updateConfig(notification.key, (current) => ({
+                                    ...current,
+                                    sendDayOfWeek: Number(value),
+                                  }))}
+                                >
+                                  <SelectTrigger className="h-10 rounded-xl bg-white/80">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {WEEKDAY_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            <NumberField
+                              label="Time"
+                              min={0}
+                              max={23}
+                              value={configs[notification.key]?.sendHour ?? notification.sendHour}
+                              onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendHour: value }))}
+                            />
+
+                            <NumberField
+                              label="Minut"
+                              min={0}
+                              max={59}
+                              value={configs[notification.key]?.sendMinute ?? notification.sendMinute}
+                              onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendMinute: value }))}
+                            />
+                          </div>
+                        )
                       ) : (
                         <p className="mt-3 text-xs text-muted-foreground">
                           Denne bruges kun manuelt, så du altid selv styrer hvornår testen går ud.
@@ -478,6 +545,15 @@ export default function AdminPushPage() {
                       <Button
                         className="shrink-0"
                         onClick={sendWeeklyBudgetReminder}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'streak_risk' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendStreakRisk}
                         disabled={sending || loading}
                       >
                         <Send className="mr-2 h-4 w-4" />

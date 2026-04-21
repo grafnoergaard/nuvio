@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       .gt('failure_count', 0),
     supabase
       .from('push_notification_configs')
-      .select('key,is_enabled,auto_send_enabled,message_title,message_body,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,last_sent_at,last_result'),
+      .select('key,is_enabled,auto_send_enabled,message_title,message_body,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,trigger_condition,delivery_window_start_hour,delivery_window_end_hour,last_sent_at,last_result'),
   ]);
 
   const errors = [totalResult.error, activeResult.error, recentResult.error, failingResult.error].filter(Boolean);
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
         messageTitle: message.title,
         messageBody: message.body,
         supportsAuto: definition.supportsAuto,
+        automationMode: definition.automationMode,
         supportedScheduleTypes: definition.supportedScheduleTypes,
         autoSendEnabled: config.auto_send_enabled,
         scheduleType: config.schedule_type,
@@ -99,6 +100,9 @@ export async function GET(request: NextRequest) {
         sendHour: config.send_hour,
         sendMinute: config.send_minute,
         timezone: config.timezone,
+        triggerCondition: config.trigger_condition,
+        deliveryWindowStartHour: config.delivery_window_start_hour,
+        deliveryWindowEndHour: config.delivery_window_end_hour,
         lastSentAt: config.last_sent_at,
         lastResult: config.last_result,
       };

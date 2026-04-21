@@ -4,6 +4,7 @@ import {
   getPushNotificationDefinition,
   type PushNotificationKey,
   type PushScheduleType,
+  type StreakRiskTriggerCondition,
 } from '@/lib/push-notifications';
 import { createSupabaseRouteClient, createSupabaseServiceClient } from '@/lib/supabase-server';
 
@@ -19,6 +20,9 @@ type UpdatePushConfigBody = {
   sendHour?: number;
   sendMinute?: number;
   timezone?: string;
+  triggerCondition?: StreakRiskTriggerCondition;
+  deliveryWindowStartHour?: number;
+  deliveryWindowEndHour?: number;
 };
 
 function isAdminUser(user: { app_metadata?: Record<string, unknown> | null } | null) {
@@ -31,6 +35,10 @@ function isValidHour(value: number) {
 
 function isValidMinute(value: number) {
   return Number.isInteger(value) && value >= 0 && value <= 59;
+}
+
+function isValidTriggerCondition(value: string | undefined): value is StreakRiskTriggerCondition {
+  return value === 'close' || value === 'over' || value === 'both';
 }
 
 export async function POST(request: NextRequest) {
@@ -82,14 +90,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ugyldig minut' }, { status: 400 });
   }
 
-  if (scheduleType === 'weekly') {
+  const deliveryWindowStartHour = body.deliveryWindowStartHour ?? definition.defaultDeliveryWindowStartHour;
+  const deliveryWindowEndHour = body.deliveryWindowEndHour ?? definition.defaultDeliveryWindowEndHour;
+  const triggerCondition = body.triggerCondition ?? definition.defaultTriggerCondition;
+
+  if (!isValidHour(deliveryWindowStartHour) || !isValidHour(deliveryWindowEndHour)) {
+    return NextResponse.json({ error: 'Ugyldigt tidsrum for levering' }, { status: 400 });
+  }
+
+  if (definition.automationMode === 'event') {
+    if (!isValidTriggerCondition(triggerCondition)) {
+      return NextResponse.json({ error: 'Ugyldig trigger-betingelse' }, { status: 400 });
+    }
+
+    if (deliveryWindowStartHour === deliveryWindowEndHour) {
+      return NextResponse.json({ error: 'Start- og sluttid må ikke være identiske' }, { status: 400 });
+    }
+  }
+
+  if (definition.automationMode === 'scheduled' && scheduleType === 'weekly') {
     const day = body.sendDayOfWeek;
     if (!Number.isInteger(day) || (day ?? -1) < 0 || (day ?? 99) > 6) {
       return NextResponse.json({ error: 'Vælg en gyldig ugedag' }, { status: 400 });
     }
   }
 
-  if (scheduleType === 'monthly') {
+  if (definition.automationMode === 'scheduled' && scheduleType === 'monthly') {
     const day = body.sendDayOfMonth;
     if (!Number.isInteger(day) || (day ?? 0) < 1 || (day ?? 99) > 31) {
       return NextResponse.json({ error: 'Vælg en gyldig dato i måneden' }, { status: 400 });
@@ -112,6 +138,9 @@ export async function POST(request: NextRequest) {
       send_hour: body.sendHour ?? definition.defaultSendHour,
       send_minute: body.sendMinute ?? definition.defaultSendMinute,
       timezone: body.timezone ?? definition.defaultTimezone,
+      trigger_condition: triggerCondition,
+      delivery_window_start_hour: deliveryWindowStartHour,
+      delivery_window_end_hour: deliveryWindowEndHour,
     } as any, { onConflict: 'key' });
 
   if (error) {

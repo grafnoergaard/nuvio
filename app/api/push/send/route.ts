@@ -8,6 +8,7 @@ type PushSendBody = {
   body?: string;
   url?: string;
   userId?: string;
+  userIds?: string[];
 };
 
 type PushSubscriptionRow = {
@@ -75,6 +76,10 @@ export async function POST(request: NextRequest) {
 
   if (body.userId) {
     query = query.eq('user_id', body.userId);
+  }
+
+  if (body.userIds?.length) {
+    query = query.in('user_id', body.userIds);
   }
 
   const { data, error } = await query;

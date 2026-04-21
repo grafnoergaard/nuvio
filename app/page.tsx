@@ -53,6 +53,7 @@ export default function HomePage() {
   const [editingOpeningBalance, setEditingOpeningBalance] = useState(false);
   const [showQuickExpenseModal, setShowQuickExpenseModal] = useState(false);
   const [showWeeklyBudgetReminder, setShowWeeklyBudgetReminder] = useState(false);
+  const [weeklyReminderMode, setWeeklyReminderMode] = useState<'weekly-budget-reminder' | 'streak-risk'>('weekly-budget-reminder');
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
   const [needsBottomScrollSpace, setNeedsBottomScrollSpace] = useState(false);
@@ -174,7 +175,8 @@ export default function HomePage() {
   useEffect(() => {
     if (loading) return;
     const flow = searchParams.get('flow');
-    if (flow === 'weekly-budget-reminder' && currentWeekReminder) {
+    if ((flow === 'weekly-budget-reminder' || flow === 'streak-risk') && currentWeekReminder) {
+      setWeeklyReminderMode(flow === 'streak-risk' ? 'streak-risk' : 'weekly-budget-reminder');
       setShowWeeklyBudgetReminder(true);
     }
   }, [currentWeekReminder, loading, searchParams]);
@@ -303,6 +305,7 @@ export default function HomePage() {
         <WeeklyBudgetReminderModal
           week={currentWeekReminder}
           weeklyStreak={weeklyStreak}
+          mode={weeklyReminderMode}
           onClose={dismissWeeklyReminder}
           onOpenExpenses={openWeeklyBudgetDetails}
           onAddExpense={openQuickExpenseFromReminder}
