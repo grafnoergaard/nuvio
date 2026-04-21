@@ -12,6 +12,9 @@ export interface PushNotificationDefinition {
   description: string;
   audience: string;
   status: string;
+  defaultMessageTitle: string;
+  defaultMessageBody: string;
+  defaultUrl: string;
   supportsAuto: boolean;
   supportedScheduleTypes: PushScheduleType[];
   defaultScheduleType: PushScheduleType;
@@ -28,6 +31,8 @@ export interface PushNotificationConfigRow {
   key: PushNotificationKey;
   is_enabled: boolean;
   auto_send_enabled: boolean;
+  message_title: string | null;
+  message_body: string | null;
   schedule_type: PushScheduleType;
   send_day_of_week: number | null;
   send_day_of_month: number | null;
@@ -45,6 +50,9 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     description: 'Sender en enkel testbesked til alle aktive push-modtagere.',
     audience: 'Alle aktive brugere',
     status: 'Klar',
+    defaultMessageTitle: 'Kuvert test',
+    defaultMessageBody: 'Det her er en test fra admin. Nu ved vi, at push-laget virker.',
+    defaultUrl: '/',
     supportsAuto: false,
     supportedScheduleTypes: ['manual'],
     defaultScheduleType: 'manual',
@@ -62,6 +70,9 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     description: 'Åbner et lille uge-flow med status, per-dag retning og et klart næste skridt.',
     audience: 'Brugere med aktiv Kuvert',
     status: 'Klar',
+    defaultMessageTitle: 'Ugens Kuvert',
+    defaultMessageBody: 'Se hvor du står i denne uge - og hvad dit bedste næste skridt er.',
+    defaultUrl: '/?flow=weekly-budget-reminder',
     supportsAuto: true,
     supportedScheduleTypes: ['weekly'],
     defaultScheduleType: 'weekly',
@@ -79,6 +90,9 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     description: 'En blid besked der kalder brugeren ind, før rytmen ryger helt.',
     audience: 'Brugere tæt på budgetgrænse',
     status: 'Klar',
+    defaultMessageTitle: 'Pas på din rytme',
+    defaultMessageBody: 'Et hurtigt tjek nu kan hjælpe dig med at holde uge-rytmen i live.',
+    defaultUrl: '/?flow=weekly-budget-reminder',
     supportsAuto: true,
     supportedScheduleTypes: ['weekly'],
     defaultScheduleType: 'weekly',
@@ -96,6 +110,9 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     description: 'Minder brugeren om at lande blødt i slutningen af måneden.',
     audience: 'Aktive brugere sidst på måneden',
     status: 'Klar',
+    defaultMessageTitle: 'Måneden lukker snart',
+    defaultMessageBody: 'Tag et roligt kig på Kuvert nu, så du lander godt i slutningen af måneden.',
+    defaultUrl: '/udgifter',
     supportsAuto: true,
     supportedScheduleTypes: ['monthly'],
     defaultScheduleType: 'monthly',
@@ -116,6 +133,8 @@ export function getDefaultPushNotificationConfig(
     key: definition.key,
     is_enabled: definition.defaultEnabled,
     auto_send_enabled: definition.defaultAutoSendEnabled,
+    message_title: definition.defaultMessageTitle,
+    message_body: definition.defaultMessageBody,
     schedule_type: definition.defaultScheduleType,
     send_day_of_week: definition.defaultSendDayOfWeek,
     send_day_of_month: definition.defaultSendDayOfMonth,
@@ -129,4 +148,15 @@ export function getDefaultPushNotificationConfig(
 
 export function getPushNotificationDefinition(key: PushNotificationKey) {
   return PUSH_NOTIFICATION_DEFINITIONS.find((definition) => definition.key === key) ?? null;
+}
+
+export function resolvePushNotificationMessage(
+  definition: PushNotificationDefinition,
+  config?: Pick<PushNotificationConfigRow, 'message_title' | 'message_body'> | null
+) {
+  return {
+    title: config?.message_title?.trim() || definition.defaultMessageTitle,
+    body: config?.message_body?.trim() || definition.defaultMessageBody,
+    url: definition.defaultUrl,
+  };
 }

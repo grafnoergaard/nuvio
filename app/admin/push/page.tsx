@@ -8,8 +8,10 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth-context';
 import type { PushScheduleType } from '@/lib/push-notifications';
 
@@ -28,6 +30,8 @@ type OverviewResponse = {
     audience: string;
     status: string;
     enabled: boolean;
+    messageTitle: string;
+    messageBody: string;
     supportsAuto: boolean;
     supportedScheduleTypes: PushScheduleType[];
     autoSendEnabled: boolean;
@@ -45,6 +49,8 @@ type OverviewResponse = {
 type NotificationConfigState = {
   enabled: boolean;
   autoSendEnabled: boolean;
+  messageTitle: string;
+  messageBody: string;
   scheduleType: PushScheduleType;
   sendDayOfWeek: number | null;
   sendDayOfMonth: number | null;
@@ -90,6 +96,8 @@ export default function AdminPushPage() {
         {
           enabled: notification.enabled,
           autoSendEnabled: notification.autoSendEnabled,
+          messageTitle: notification.messageTitle,
+          messageBody: notification.messageBody,
           scheduleType: notification.scheduleType,
           sendDayOfWeek: notification.sendDayOfWeek,
           sendDayOfMonth: notification.sendDayOfMonth,
@@ -131,6 +139,8 @@ export default function AdminPushPage() {
           key,
           enabled: config.enabled,
           autoSendEnabled: config.autoSendEnabled,
+          messageTitle: config.messageTitle,
+          messageBody: config.messageBody,
           scheduleType: config.scheduleType,
           sendDayOfWeek: config.sendDayOfWeek,
           sendDayOfMonth: config.sendDayOfMonth,
@@ -278,6 +288,50 @@ export default function AdminPushPage() {
                     </p>
 
                     <div className="mt-4 rounded-2xl border border-border/50 bg-secondary/10 p-3">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div>
+                          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                            Push-titel
+                          </p>
+                          <Input
+                            value={configs[notification.key]?.messageTitle ?? notification.messageTitle}
+                            onChange={(event) => updateConfig(notification.key, (current) => ({
+                              ...current,
+                              messageTitle: event.target.value,
+                            }))}
+                            className="h-10 rounded-xl bg-white/80"
+                            placeholder="Skriv titel"
+                          />
+                        </div>
+
+                        <div className="rounded-xl border border-border/50 bg-white/70 px-3 py-2">
+                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                            Preview
+                          </p>
+                          <p className="mt-2 text-sm font-semibold text-foreground">
+                            {configs[notification.key]?.messageTitle || notification.messageTitle}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                            {configs[notification.key]?.messageBody || notification.messageBody}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+                          Push-tekst
+                        </p>
+                        <Textarea
+                          value={configs[notification.key]?.messageBody ?? notification.messageBody}
+                          onChange={(event) => updateConfig(notification.key, (current) => ({
+                            ...current,
+                            messageBody: event.target.value,
+                          }))}
+                          className="min-h-[104px] rounded-xl bg-white/80"
+                          placeholder="Skriv teksten der skal stå i notifikationen"
+                        />
+                      </div>
+
                       <div className="grid gap-3 md:grid-cols-2">
                         <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
                           <div>

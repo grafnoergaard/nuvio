@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getDefaultPushNotificationConfig,
   PUSH_NOTIFICATION_DEFINITIONS,
+  resolvePushNotificationMessage,
   type PushNotificationConfigRow,
 } from '@/lib/push-notifications';
 import { createSupabaseRouteClient, createSupabaseServiceClient } from '@/lib/supabase-server';
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       .gt('failure_count', 0),
     supabase
       .from('push_notification_configs')
-      .select('key,is_enabled,auto_send_enabled,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,last_sent_at,last_result'),
+      .select('key,is_enabled,auto_send_enabled,message_title,message_body,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,last_sent_at,last_result'),
   ]);
 
   const errors = [totalResult.error, activeResult.error, recentResult.error, failingResult.error].filter(Boolean);
@@ -77,6 +78,7 @@ export async function GET(request: NextRequest) {
         ? null
         : (configResult.data as PushNotificationConfigRow[] | null)?.find((row) => row.key === definition.key);
       const config = storedConfig ?? getDefaultPushNotificationConfig(definition);
+      const message = resolvePushNotificationMessage(definition, config);
 
       return {
         key: definition.key,
@@ -85,6 +87,8 @@ export async function GET(request: NextRequest) {
         audience: definition.audience,
         status: definition.status,
         enabled: config.is_enabled,
+        messageTitle: message.title,
+        messageBody: message.body,
         supportsAuto: definition.supportsAuto,
         supportedScheduleTypes: definition.supportedScheduleTypes,
         autoSendEnabled: config.auto_send_enabled,

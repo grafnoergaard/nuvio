@@ -14,6 +14,12 @@ interface WeeklyBudgetReminderModalProps {
   onAddExpense: () => void;
 }
 
+function toSafeDate(value: Date | string): Date {
+  if (value instanceof Date) return value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
 function formatDKK(value: number): string {
   return value.toLocaleString('da-DK', {
     style: 'currency',
@@ -23,17 +29,18 @@ function formatDKK(value: number): string {
   });
 }
 
-function formatShortDate(date: Date): string {
-  return date.toLocaleDateString('da-DK', {
+function formatShortDate(date: Date | string): string {
+  return toSafeDate(date).toLocaleDateString('da-DK', {
     day: 'numeric',
     month: 'short',
   });
 }
 
-function getDaysLeftInWeek(weekEnd: Date): number {
+function getDaysLeftInWeek(weekEnd: Date | string): number {
   const today = new Date();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const end = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate());
+  const safeWeekEnd = toSafeDate(weekEnd);
+  const end = new Date(safeWeekEnd.getFullYear(), safeWeekEnd.getMonth(), safeWeekEnd.getDate());
   return Math.max(0, Math.floor((end.getTime() - startOfToday.getTime()) / 86400000) + 1);
 }
 

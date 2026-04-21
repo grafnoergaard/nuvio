@@ -11,6 +11,8 @@ type UpdatePushConfigBody = {
   key?: PushNotificationKey;
   enabled?: boolean;
   autoSendEnabled?: boolean;
+  messageTitle?: string;
+  messageBody?: string;
   scheduleType?: PushScheduleType;
   sendDayOfWeek?: number | null;
   sendDayOfMonth?: number | null;
@@ -57,9 +59,19 @@ export async function POST(request: NextRequest) {
   }
 
   const scheduleType = body.scheduleType ?? definition.defaultScheduleType;
+  const messageTitle = body.messageTitle?.trim() || definition.defaultMessageTitle;
+  const messageBody = body.messageBody?.trim() || definition.defaultMessageBody;
 
   if (!definition.supportedScheduleTypes.includes(scheduleType)) {
     return NextResponse.json({ error: 'Ugyldig plan-type for denne push' }, { status: 400 });
+  }
+
+  if (!messageTitle) {
+    return NextResponse.json({ error: 'Titel må ikke være tom' }, { status: 400 });
+  }
+
+  if (!messageBody) {
+    return NextResponse.json({ error: 'Brødtekst må ikke være tom' }, { status: 400 });
   }
 
   if (!isValidHour(body.sendHour ?? definition.defaultSendHour)) {
@@ -92,6 +104,8 @@ export async function POST(request: NextRequest) {
       key: definition.key,
       is_enabled: body.enabled ?? definition.defaultEnabled,
       auto_send_enabled: body.autoSendEnabled ?? definition.defaultAutoSendEnabled,
+      message_title: messageTitle,
+      message_body: messageBody,
       schedule_type: scheduleType,
       send_day_of_week: scheduleType === 'weekly' ? body.sendDayOfWeek ?? definition.defaultSendDayOfWeek : null,
       send_day_of_month: scheduleType === 'monthly' ? body.sendDayOfMonth ?? definition.defaultSendDayOfMonth : null,

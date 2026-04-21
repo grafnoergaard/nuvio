@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getPushNotificationDefinition,
   PUSH_NOTIFICATION_DEFINITIONS,
+  resolvePushNotificationMessage,
   type PushNotificationConfigRow,
   type PushNotificationKey,
 } from '@/lib/push-notifications';
@@ -97,36 +98,6 @@ function wasAlreadySentThisSlot(config: PushNotificationConfigRow, now: Date) {
   );
 }
 
-function getPayloadForNotification(key: PushNotificationKey) {
-  switch (key) {
-    case 'weekly_budget_reminder':
-      return {
-        title: 'Ugens Kuvert',
-        body: 'Se hvor du står i denne uge - og hvad dit bedste næste skridt er.',
-        url: '/?flow=weekly-budget-reminder',
-      };
-    case 'streak_risk':
-      return {
-        title: 'Pas på din rytme',
-        body: 'Et hurtigt tjek nu kan hjælpe dig med at holde uge-rytmen i live.',
-        url: '/?flow=weekly-budget-reminder',
-      };
-    case 'month_close':
-      return {
-        title: 'Måneden lukker snart',
-        body: 'Tag et roligt kig på Kuvert nu, så du lander godt i slutningen af måneden.',
-        url: '/udgifter',
-      };
-    case 'test_all_users':
-    default:
-      return {
-        title: 'Kuvert test',
-        body: 'Det her er en test fra admin. Nu ved vi, at push-laget virker.',
-        url: '/',
-      };
-  }
-}
-
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Ikke autoriseret' }, { status: 401 });
@@ -143,7 +114,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('push_notification_configs')
-    .select('key,is_enabled,auto_send_enabled,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,last_sent_at,last_result');
+    .select('key,is_enabled,auto_send_enabled,message_title,message_body,schedule_type,send_day_of_week,send_day_of_month,send_hour,send_minute,timezone,last_sent_at,last_result');
 
   if (error) {
     return NextResponse.json({ error: 'Kunne ikke hente push-konfigurationer' }, { status: 500 });
@@ -157,7 +128,17 @@ export async function GET(request: NextRequest) {
   });
 
   const results = await Promise.all(dueConfigs.map(async (config) => {
-    const payload = getPayloadForNotification(config.key);
+    const definition = getPushNotificationDefinition(config.key);
+    if (!definition) {
+      return {
+        key: config.key,
+        ok: false,
+        responseStatus: 400,
+        result: { error: 'Ukendt push-definition' },
+      };
+    }
+
+    const payload = resolvePushNotificationMessage(definition, config);
     const response = await fetch(new URL('/api/push/send', appUrl), {
       method: 'POST',
       headers: {

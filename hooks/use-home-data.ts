@@ -117,10 +117,26 @@ const HOME_DATA_PERSISTED_CACHE_TTL = 6 * 60 * 60 * 1000;
 const HOME_DATA_STORAGE_KEY = 'kuvert.homeData.v1';
 let homeDataCache: { at: number; data: HomeDataSnapshot } | null = null;
 
+function reviveFlowWeeklyStatus(snapshot: HomeDataSnapshot): HomeDataSnapshot {
+  if (!snapshot.flowWeeklyStatus) return snapshot;
+
+  return {
+    ...snapshot,
+    flowWeeklyStatus: {
+      ...snapshot.flowWeeklyStatus,
+      weeks: snapshot.flowWeeklyStatus.weeks.map((week) => ({
+        ...week,
+        weekStart: new Date(week.weekStart),
+        weekEnd: new Date(week.weekEnd),
+      })),
+    },
+  };
+}
+
 function getHomeDataCache(): HomeDataSnapshot | null {
   const now = Date.now();
   if (homeDataCache && now - homeDataCache.at <= HOME_DATA_CACHE_TTL) {
-    return homeDataCache.data;
+    return reviveFlowWeeklyStatus(homeDataCache.data);
   }
 
   if (typeof window === 'undefined') return null;
@@ -131,8 +147,9 @@ function getHomeDataCache(): HomeDataSnapshot | null {
     const cached = JSON.parse(raw) as { at?: number; data?: HomeDataSnapshot };
     if (!cached.at || !cached.data) return null;
     if (now - cached.at > HOME_DATA_PERSISTED_CACHE_TTL) return null;
-    homeDataCache = { at: cached.at, data: cached.data };
-    return cached.data;
+    const revived = reviveFlowWeeklyStatus(cached.data);
+    homeDataCache = { at: cached.at, data: revived };
+    return revived;
   } catch {
     return null;
   }
