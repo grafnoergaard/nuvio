@@ -29,6 +29,7 @@ type OverviewResponse = {
     description: string;
     audience: string;
     status: string;
+    previewUrl: string | null;
     enabled: boolean;
     messageTitle: string;
     messageBody: string;
@@ -181,6 +182,15 @@ export default function AdminPushPage() {
     } finally {
       setSending(false);
     }
+  }
+
+  function previewNotificationFlow(previewUrl: string | null) {
+    if (!previewUrl) {
+      toast.error('Denne push har ikke et flow at previewe endnu');
+      return;
+    }
+
+    window.open(previewUrl, '_blank', 'noopener,noreferrer');
   }
 
   const metrics = overview?.metrics ?? {
@@ -445,6 +455,16 @@ export default function AdminPushPage() {
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2">
+                    {notification.previewUrl ? (
+                      <Button
+                        variant="outline"
+                        className="shrink-0"
+                        onClick={() => previewNotificationFlow(notification.previewUrl)}
+                      >
+                        Preview flow
+                      </Button>
+                    ) : null}
+
                     {notification.key === 'test_all_users' ? (
                       <Button
                         className="shrink-0"

@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, CalendarDays, Coins, Wallet, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, CalendarDays, Coins, Wallet } from 'lucide-react';
 
 import type { QuickExpenseWeeklyStreak, WeeklyBudgetStatus } from '@/lib/quick-expense-service';
 import { cn } from '@/lib/utils';
+import { WizardShell, useWizardAnimation } from '@/components/wizard-shell';
 
 interface WeeklyBudgetReminderModalProps {
   week: WeeklyBudgetStatus;
@@ -68,6 +69,8 @@ export function WeeklyBudgetReminderModal({
   onAddExpense,
 }: WeeklyBudgetReminderModalProps) {
   const [step, setStep] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const { animating, direction, animate } = useWizardAnimation();
   const daysLeft = getDaysLeftInWeek(week.weekEnd);
   const remaining = Math.round(week.remaining);
   const spent = Math.round(week.spent);
@@ -154,15 +157,65 @@ export function WeeklyBudgetReminderModal({
   const current = steps[step];
   const isLast = step === steps.length - 1;
 
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const color = 'rgb(236,253,245)';
+    document.body.style.backgroundColor = color;
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.content = color;
+    return () => {
+      document.body.style.backgroundColor = '';
+      if (meta) meta.content = '#ffffff';
+    };
+  }, []);
+
   return (
-    <div
-      className="fixed inset-0 z-[82] flex items-end justify-center bg-black/45 p-4 sm:items-center"
-      style={{ backdropFilter: 'blur(8px)' }}
+    <WizardShell
+      gradient="linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 42%, #ffffff 100%)"
+      visible={visible}
+      step={step}
+      totalSteps={steps.length}
+      showBack={step > 0}
+      showClose={true}
+      onBack={() => animate('back', () => setStep((value) => Math.max(0, value - 1)))}
+      onClose={onClose}
+      animating={animating}
+      direction={direction}
     >
-      <div className="w-full max-w-md overflow-hidden rounded-[28px] border border-emerald-100/70 bg-white shadow-2xl">
-        <div className="px-5 pb-6 pt-5">
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
+      <div className="flex min-h-full flex-col">
+        <div className="flex-1 flex flex-col justify-center py-2">
+          <div className="rounded-[30px] border border-white/60 bg-white/72 p-5 shadow-[0_24px_80px_rgba(14,59,67,0.10)] backdrop-blur-sm">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-white text-[#0E3B43] shadow-sm">
+              {current.icon}
+            </div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#2E9E84]">
+              {current.eyebrow}
+            </p>
+            <h2 className="mt-3 text-[2.15rem] font-bold leading-[1.08] tracking-tight text-foreground sm:text-[2.5rem]">
+              {current.title}
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-foreground/65">
+              {current.body}
+            </p>
+
+            <div className="mt-6 rounded-[24px] border border-emerald-100/80 bg-emerald-50/65 px-4 py-4">
+              <p className="text-sm font-medium text-muted-foreground">{current.highlightLabel}</p>
+              <p className="mt-2 text-[2rem] font-semibold tracking-tight text-[#0E3B43] sm:text-[2.2rem]">
+                {current.highlightValue}
+              </p>
+            </div>
+
+            <div className="mt-5 flex items-center gap-2">
               {steps.map((_, index) => (
                 <span
                   key={index}
@@ -173,84 +226,40 @@ export function WeeklyBudgetReminderModal({
                 />
               ))}
             </div>
-            <button
-              onClick={onClose}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary/30 text-foreground/70 transition-colors hover:bg-secondary/50"
-              aria-label="Luk ugebudget-påmindelse"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="rounded-[24px] border border-emerald-100/70 bg-emerald-50/40 p-4">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0E3B43] shadow-sm">
-              {current.icon}
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2E9E84]">
-              {current.eyebrow}
-            </p>
-            <h2 className="mt-3 text-[2rem] font-semibold leading-tight tracking-tight text-foreground">
-              {current.title}
-            </h2>
-            <p className="mt-3 text-base leading-8 text-muted-foreground">
-              {current.body}
-            </p>
-
-            <div className="mt-5 rounded-[22px] border border-emerald-100/80 bg-white/90 px-4 py-3">
-              <p className="text-sm text-muted-foreground">{current.highlightLabel}</p>
-              <p className="mt-1 text-2xl font-semibold tracking-tight text-[#0E3B43]">
-                {current.highlightValue}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setStep((value) => Math.max(0, value - 1))}
-              disabled={step === 0}
-              className={cn(
-                'inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors',
-                step === 0
-                  ? 'cursor-not-allowed text-muted-foreground/40'
-                  : 'text-foreground/70 hover:bg-secondary/30'
-              )}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Tilbage
-            </button>
-
-            {!isLast ? (
-              <button
-                type="button"
-                onClick={() => setStep((value) => Math.min(steps.length - 1, value + 1))}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0E3B43] to-[#2ED3A7] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/60 transition-transform active:scale-[0.98]"
-              >
-                Videre
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onAddExpense}
-                  className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/20"
-                >
-                  Registrér udgift
-                </button>
-                <button
-                  type="button"
-                  onClick={onOpenExpenses}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0E3B43] to-[#2ED3A7] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/60 transition-transform active:scale-[0.98]"
-                >
-                  Åbn Ugebudget
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            )}
           </div>
         </div>
+
+        <div className="shrink-0 pt-4">
+          {!isLast ? (
+            <button
+              type="button"
+              onClick={() => animate('forward', () => setStep((value) => Math.min(steps.length - 1, value + 1)))}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#0E3B43] to-[#2ED3A7] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-200/60 transition-transform active:scale-[0.98]"
+            >
+              Videre
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={onAddExpense}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border/60 bg-white/80 px-5 py-4 text-base font-semibold text-foreground transition-colors hover:bg-secondary/20"
+              >
+                Registrér udgift
+              </button>
+              <button
+                type="button"
+                onClick={onOpenExpenses}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#0E3B43] to-[#2ED3A7] px-6 py-4 text-base font-semibold text-white shadow-lg shadow-emerald-200/60 transition-transform active:scale-[0.98]"
+              >
+                Åbn Ugebudget
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </WizardShell>
   );
 }

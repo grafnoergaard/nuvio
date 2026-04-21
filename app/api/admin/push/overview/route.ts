@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
         description: definition.description,
         audience: definition.audience,
         status: definition.status,
+        previewUrl: definition.previewUrl ?? null,
         enabled: config.is_enabled,
         messageTitle: message.title,
         messageBody: message.body,

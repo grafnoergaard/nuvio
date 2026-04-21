@@ -15,6 +15,7 @@ export interface PushNotificationDefinition {
   defaultMessageTitle: string;
   defaultMessageBody: string;
   defaultUrl: string;
+  previewUrl?: string | null;
   supportsAuto: boolean;
   supportedScheduleTypes: PushScheduleType[];
   defaultScheduleType: PushScheduleType;
@@ -53,6 +54,7 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultMessageTitle: 'Kuvert test',
     defaultMessageBody: 'Det her er en test fra admin. Nu ved vi, at push-laget virker.',
     defaultUrl: '/',
+    previewUrl: '/',
     supportsAuto: false,
     supportedScheduleTypes: ['manual'],
     defaultScheduleType: 'manual',
@@ -73,6 +75,7 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultMessageTitle: 'Ugens Kuvert',
     defaultMessageBody: 'Se hvor du står i denne uge - og hvad dit bedste næste skridt er.',
     defaultUrl: '/?flow=weekly-budget-reminder',
+    previewUrl: '/?flow=weekly-budget-reminder',
     supportsAuto: true,
     supportedScheduleTypes: ['weekly'],
     defaultScheduleType: 'weekly',
@@ -93,6 +96,7 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultMessageTitle: 'Pas på din rytme',
     defaultMessageBody: 'Et hurtigt tjek nu kan hjælpe dig med at holde uge-rytmen i live.',
     defaultUrl: '/?flow=weekly-budget-reminder',
+    previewUrl: '/?flow=weekly-budget-reminder',
     supportsAuto: true,
     supportedScheduleTypes: ['weekly'],
     defaultScheduleType: 'weekly',
@@ -113,6 +117,7 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultMessageTitle: 'Måneden lukker snart',
     defaultMessageBody: 'Tag et roligt kig på Kuvert nu, så du lander godt i slutningen af måneden.',
     defaultUrl: '/udgifter',
+    previewUrl: '/udgifter',
     supportsAuto: true,
     supportedScheduleTypes: ['monthly'],
     defaultScheduleType: 'monthly',
