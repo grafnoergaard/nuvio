@@ -478,14 +478,14 @@ export function KuvertHeroCard({
         {showQuickExpense && (
           <div
             className={cn(
-              isNativeHero ? 'mt-7 overflow-hidden sm:mt-8' : 'mt-5 overflow-hidden',
+              isNativeHero ? 'mt-5 overflow-hidden sm:mt-7' : 'mt-5 overflow-hidden',
               isNativeHero
                 ? 'bg-transparent'
                 : statusCardStyle.className
             )}
             style={budgetPanelStyle}
           >
-            <div className={cn(isNativeHero ? 'px-2 pb-3 pt-1.5 sm:pb-4 sm:pt-2' : 'px-4 pb-4 pt-4')}>
+            <div className={cn(isNativeHero ? 'px-2 pb-2 pt-1 sm:pb-3 sm:pt-2' : 'px-4 pb-4 pt-4')}>
               <div className={cn('flex justify-between gap-4', isNativeHero ? 'items-start' : 'items-end')}>
                 <div>
                   <p className={cn(isNativeHero ? 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82' : 'mb-1 text-xs font-medium leading-snug', !isNativeHero && flowStatus.headlineColor)}>
@@ -526,7 +526,7 @@ export function KuvertHeroCard({
                 </div>
               </div>
 
-              <div className="mt-3 space-y-1">
+              <div className="mt-2.5 space-y-1">
                 <div className="flex items-center justify-between">
                   <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/46' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>Månedsscore</p>
                   <div className="flex items-center gap-2">
@@ -558,14 +558,14 @@ export function KuvertHeroCard({
                     )}
                   </div>
                 </div>
-                <p className={cn(isNativeHero ? 'text-[0.9rem] leading-snug text-foreground/46' : 'text-label leading-snug text-muted-foreground/60')}>
+                <p className={cn(isNativeHero ? 'text-[0.84rem] leading-snug text-foreground/46' : 'text-label leading-snug text-muted-foreground/60')}>
                   {formatDKK(flowMonthlySpent)} brugt · {formatDKK(Math.round(monthlyDailyAvailable))} pr. dag
                 </p>
               </div>
             </div>
 
             {isNativeHero ? (
-              <div className="mt-4 px-2 pb-1">
+              <div className="mt-2.5 px-2 pb-0">
                 <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
               </div>
             ) : (

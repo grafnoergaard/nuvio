@@ -67,13 +67,13 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
   }
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
+    <div className="space-y-2">
+      <div className="space-y-1.5">
         <label className="block">
-          <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/55">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/50">
             Tilføj udgift
           </span>
-          <div className="flex items-end gap-3 border-b border-foreground/10 pb-2">
+          <div className="flex items-end gap-2.5 border-b border-foreground/10 pb-1.5">
             <input
               ref={amountRef}
               type="number"
@@ -86,16 +86,16 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleAddExpense()}
               className={cn(
-                'min-w-0 flex-1 bg-transparent text-[2.75rem] font-semibold leading-none tracking-tight text-[#0E3B43] placeholder:text-muted-foreground/35 focus:outline-none',
+                'min-w-0 flex-1 bg-transparent text-[2.2rem] font-semibold leading-none tracking-tight text-[#0E3B43] placeholder:text-muted-foreground/35 focus:outline-none sm:text-[2.5rem]',
                 expenseError && 'text-red-600'
               )}
             />
-            <span className="pb-1 text-lg font-semibold text-muted-foreground/65">kr.</span>
+            <span className="pb-0.5 text-[1.35rem] font-semibold text-muted-foreground/60 sm:text-[1.5rem]">kr.</span>
           </div>
         </label>
 
         <label className="block">
-          <div className="flex items-end gap-3 border-b border-foreground/8 pb-2">
+          <div className="flex items-end gap-3 border-b border-foreground/8 pb-1.5">
             <input
               type="text"
               placeholder="Note (valgfri)"
@@ -103,7 +103,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
               onChange={(e) => setExpenseNote(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddExpense()}
               maxLength={120}
-              className="min-w-0 flex-1 bg-transparent text-base font-medium text-foreground/82 placeholder:text-muted-foreground/42 focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-[0.95rem] font-medium text-foreground/82 placeholder:text-muted-foreground/42 focus:outline-none"
             />
           </div>
         </label>
@@ -121,7 +121,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         onClick={handleAddExpense}
         disabled={expenseSaving || (!expenseAmount && !expenseSaved)}
         className={cn(
-          'group flex w-full items-center justify-center gap-2 rounded-full bg-[#0E3B43] px-4 py-3.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.99]',
+          'group flex w-full items-center justify-center gap-2 rounded-full bg-[#0E3B43] px-4 py-2.5 text-[0.95rem] font-semibold text-white transition-all duration-200 active:scale-[0.99]',
           expenseSaved && 'bg-emerald-500',
           (!expenseAmount && !expenseSaved) || expenseSaving ? 'opacity-80' : 'hover:bg-[#092F35]'
         )}
@@ -135,8 +135,8 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
           <span className="animate-pulse">Gemmer...</span>
         ) : (
           <>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2ED3A7] text-[#0E3B43] transition-transform duration-200 group-hover:scale-105">
-              <Plus className="h-4 w-4" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2ED3A7] text-[#0E3B43] transition-transform duration-200 group-hover:scale-105">
+              <Plus className="h-3.5 w-3.5" />
             </span>
             Gem udgift
           </>

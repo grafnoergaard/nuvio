@@ -313,10 +313,10 @@ export default function HomePage() {
         >
           <div
             ref={homeContentRef}
-            className={`max-w-lg mx-auto px-4 sm:pb-16 ${needsBottomScrollSpace ? 'pb-28' : 'pb-4'}`}
-            style={{ paddingTop: 'max(calc(env(safe-area-inset-top) + 1.75rem), 3.5rem)' }}
+            className={`max-w-lg mx-auto px-4 sm:pb-16 ${needsBottomScrollSpace ? 'pb-24' : 'pb-3'}`}
+            style={{ paddingTop: 'max(calc(env(safe-area-inset-top) + 1rem), 2.35rem)' }}
           >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 sm:gap-4">
               <DynamicSections {...slotProps} sortedCardKeys={sortedCardKeys} cardWidth={cardWidth} />
             </div>
           </div>
