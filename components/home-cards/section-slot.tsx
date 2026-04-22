@@ -4,8 +4,9 @@ import React from 'react';
 import { type HomeCardKey } from '@/lib/home-card-config';
 import { KuvertHeroCard } from '@/components/home-cards/kuvert-hero-card';
 import type { HomeDerived } from '@/lib/home-derived';
-import type { QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
+import type { QuickExpenseStreak, QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
 import type { FlowStatusConfig } from '@/hooks/use-home-data';
+import type { KuvertHomeVariant } from '@/lib/kuvert-home-variant';
 
 const HERO_CARD_KEYS = new Set<HomeCardKey>(['streak_count', 'quick_expense_action']);
 
@@ -16,6 +17,7 @@ interface SectionSlotProps {
   derived: HomeDerived;
   categoryGroupTypes: Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>;
   recipientCount: number;
+  quickStreak: QuickExpenseStreak | null;
   weeklyStreak: QuickExpenseWeeklyStreak | null;
   flowMonthlyBudget: number;
   flowMonthlySpent: number;
@@ -30,6 +32,8 @@ interface SectionSlotProps {
   onShowVariableWizard: () => void;
   onShowStartBalance: () => void;
   onShowQuickExpense: () => void;
+  onQuickExpenseSaved: () => void;
+  heroVariant: KuvertHomeVariant;
 }
 
 export function SectionSlot({
@@ -39,6 +43,7 @@ export function SectionSlot({
   derived,
   categoryGroupTypes,
   recipientCount,
+  quickStreak,
   weeklyStreak,
   flowMonthlyBudget,
   flowMonthlySpent,
@@ -53,12 +58,15 @@ export function SectionSlot({
   onShowVariableWizard,
   onShowStartBalance,
   onShowQuickExpense,
+  onQuickExpenseSaved,
+  heroVariant,
 }: SectionSlotProps) {
   const isHeroCard = cardKey === 'streak_count' && (cardVisibility.streak_count || cardVisibility.quick_expense_action);
   if (!isHeroCard) return null;
 
   return (
     <KuvertHeroCard
+      quickStreak={quickStreak}
       weeklyStreak={weeklyStreak}
       flowMonthlyBudget={flowMonthlyBudget}
       flowMonthlySpent={flowMonthlySpent}
@@ -68,6 +76,8 @@ export function SectionSlot({
       showStreak={cardVisibility.streak_count}
       showQuickExpense={cardVisibility.quick_expense_action}
       onShowQuickExpense={onShowQuickExpense}
+      onQuickExpenseSaved={onQuickExpenseSaved}
+      variant={heroVariant}
     />
   );
 }

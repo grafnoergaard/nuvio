@@ -26,6 +26,7 @@ import { ScoreStrongReminderModal } from '@/components/score-strong-reminder-mod
 import { GoodGripReminderModal } from '@/components/good-grip-reminder-modal';
 import { HonestEntriesReminderModal } from '@/components/honest-entries-reminder-modal';
 import { SingleAccountMethodReminderModal } from '@/components/single-account-method-reminder-modal';
+import { KUVERT_HOME_VARIANT } from '@/lib/kuvert-home-variant';
 
 export default function HomePage() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function HomePage() {
     budget, expenses, income, recipientCount, loading,
     householdMonthlyIncome, variableExpenseEstimate, investmentSettings,
     flowMonthlyBudget, flowMonthlySpent, flowScoreThreshold, flowStatusConfig, flowWeeklyStatus,
-    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, weeklyStreak,
+    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, quickStreak, weeklyStreak,
     loadData, loadHousehold, setBudget, setUserRef, loadAll,
   } = data;
 
@@ -273,6 +274,7 @@ export default function HomePage() {
     derived,
     categoryGroupTypes,
     recipientCount,
+    quickStreak,
     weeklyStreak,
     flowMonthlyBudget,
     flowMonthlySpent,
@@ -290,6 +292,8 @@ export default function HomePage() {
       setEditingOpeningBalance(true);
     },
     onShowQuickExpense: () => setShowQuickExpenseModal(true),
+    onQuickExpenseSaved: () => loadAll(),
+    heroVariant: KUVERT_HOME_VARIANT,
   };
 
   return (

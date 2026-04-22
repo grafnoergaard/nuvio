@@ -130,6 +130,17 @@ const FLOW_SCORE_STREAK_BONUS_PER_MONTH = 0.15;
 const FLOW_SCORE_PENALTY_MIN = 50;
 const FLOW_SCORE_PENALTY_PCT = 0.25;
 
+export function computeRewardMonthScore(usageRatio?: number): number {
+  if (usageRatio === undefined || usageRatio < 0 || usageRatio > 1) {
+    return FLOW_SCORE_BASE_MONTHLY_REWARD;
+  }
+
+  if (usageRatio < 0.5) return 100;
+  if (usageRatio < 0.75) return 90;
+  if (usageRatio < 0.9) return 75;
+  return 60;
+}
+
 export function computeQualityBonus(usageRatio: number): number {
   if (usageRatio < 0 || usageRatio > 1) return 0;
   if (usageRatio < 0.5) return 30;
@@ -150,7 +161,7 @@ export function computeMonthlyScoreDelta(
   }
   const streakMultiplier = 1 + currentStreak * FLOW_SCORE_STREAK_BONUS_PER_MONTH;
   const qualityBonus = usageRatio !== undefined ? computeQualityBonus(usageRatio) : 0;
-  const baseReward = FLOW_SCORE_BASE_MONTHLY_REWARD + qualityBonus;
+  const baseReward = computeRewardMonthScore(usageRatio) + qualityBonus;
   const reward = Math.round(baseReward * streakMultiplier);
   return Math.max(0, reward);
 }
