@@ -266,12 +266,12 @@ export function KuvertHeroCard({
       <section
         className="relative w-full overflow-hidden bg-transparent"
       >
-        <div className="pb-5 pt-2 sm:pt-3">
+        <div className="pb-4 pt-1 sm:pb-5 sm:pt-3">
 
         {showStreak && (
           <>
             {showScoreInHero ? (
-              <div className={cn(isNativeHero ? 'mt-7 sm:mt-8' : 'mt-1')}>
+              <div className={cn(isNativeHero ? 'mt-3 sm:mt-8' : 'mt-1')}>
                 <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
                   <defs>
                     <linearGradient id="kuvert-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
@@ -283,10 +283,10 @@ export function KuvertHeroCard({
                 </svg>
 
                 <div className={cn(
-                  'grid gap-x-4 gap-y-3',
+                  'grid gap-x-3 gap-y-2',
                   isNativeHero
                     ? hasWeekStreak
-                      ? 'grid-cols-[minmax(0,1fr)_8.75rem] items-start sm:grid-cols-[minmax(0,1fr)_13rem] sm:gap-x-6'
+                      ? 'grid-cols-[minmax(0,1fr)_6.5rem] items-start sm:grid-cols-[minmax(0,1fr)_13rem] sm:gap-x-6'
                       : 'grid-cols-1 items-start'
                     : 'items-end sm:grid-cols-[minmax(0,1fr)_15rem]'
                 )}>
@@ -297,10 +297,10 @@ export function KuvertHeroCard({
                     aria-label="Læs om Kuvert Score"
                   >
                     <div className={cn(isNativeHero ? 'mt-0' : 'mt-1')}>
-                      <p className={cn(isNativeHero ? 'mb-[-0.35rem] text-[0.85rem] font-medium leading-none text-foreground/68 sm:text-[0.9rem]' : 'mb-3 text-base font-medium text-muted-foreground/75')}>
+                      <p className={cn(isNativeHero ? 'mb-[-0.28rem] text-[0.82rem] font-medium leading-none text-foreground/66 sm:text-[0.9rem]' : 'mb-3 text-base font-medium text-muted-foreground/75')}>
                         Din score
                       </p>
-                      <p className={cn('font-semibold leading-[0.84] tracking-tight tabular-nums text-[#0E3B43]', isNativeHero ? 'text-left text-[4.55rem] sm:text-[5rem]' : 'text-7xl sm:text-8xl')}>
+                      <p className={cn('font-semibold leading-[0.82] tracking-tight tabular-nums text-[#0E3B43]', isNativeHero ? 'text-left text-[3.65rem] sm:text-[5rem]' : 'text-7xl sm:text-8xl')}>
                         {cumulativeScore}
                       </p>
                     </div>
@@ -312,44 +312,44 @@ export function KuvertHeroCard({
                       onClick={() => setShowStreakInfo(true)}
                       className={cn(
                         'group flex flex-col outline-none transition-transform duration-200 active:scale-[0.99]',
-                        isNativeHero ? 'w-[8.75rem] justify-self-end items-center text-center sm:w-auto sm:items-end sm:text-right' : 'items-center text-center'
+                        isNativeHero ? 'w-[6.5rem] justify-self-end items-center text-center sm:w-auto sm:items-end sm:text-right' : 'items-center text-center'
                       )}
                       aria-label="Læs om streak-funktionen"
                     >
-                      <div className={cn('flex w-full items-start', isNativeHero ? 'h-[7.5rem] justify-center sm:h-[8.5rem] sm:justify-end' : 'justify-center h-[10rem]')}>
-                        <div className={cn('relative', isNativeHero ? 'h-[7.5rem] w-[7.5rem] sm:h-[8.5rem] sm:w-[8.5rem]' : 'h-[10rem] w-[10rem]')}>
+                      <div className={cn('flex w-full items-start', isNativeHero ? 'h-[6rem] justify-center sm:h-[8.5rem] sm:justify-end' : 'justify-center h-[10rem]')}>
+                        <div className={cn('relative', isNativeHero ? 'h-[6rem] w-[6rem] sm:h-[8.5rem] sm:w-[8.5rem]' : 'h-[10rem] w-[10rem]')}>
                           <Flame
-                            className={cn('transition-transform duration-200 group-hover:scale-[1.02]', isNativeHero ? 'h-[7.5rem] w-[7.5rem] sm:h-[8.5rem] sm:w-[8.5rem]' : 'h-[10rem] w-[10rem] drop-shadow-sm')}
+                            className={cn('transition-transform duration-200 group-hover:scale-[1.02]', isNativeHero ? 'h-[6rem] w-[6rem] sm:h-[8.5rem] sm:w-[8.5rem]' : 'h-[10rem] w-[10rem] drop-shadow-sm')}
                             fill="url(#kuvert-flame-gradient)"
                             stroke="url(#kuvert-flame-gradient)"
                             strokeWidth={1.5}
                           />
-                          <span className={cn('absolute inset-0 flex items-center justify-center font-semibold tabular-nums leading-none tracking-normal text-[#0E3B43]', isNativeHero ? 'translate-x-[0.08rem] translate-y-[0.38rem] text-[2.8rem] sm:translate-x-[0.12rem] sm:translate-y-[0.2rem] sm:text-[3.2rem]' : 'pt-6 text-6xl drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]')}>
+                          <span className={cn('absolute inset-0 flex items-center justify-center font-semibold tabular-nums leading-none tracking-normal text-[#0E3B43]', isNativeHero ? 'translate-x-[0.06rem] translate-y-[0.3rem] text-[2.25rem] sm:translate-x-[0.12rem] sm:translate-y-[0.2rem] sm:text-[3.2rem]' : 'pt-6 text-6xl drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]')}>
                             {currentWeekStreak}
                           </span>
                         </div>
                       </div>
-                      <p className={cn('font-semibold tracking-normal text-[#111827]', isNativeHero ? 'mt-1 text-[0.95rem] leading-tight sm:-mt-0.5' : '-mt-2 text-lg')}>
+                      <p className={cn('font-semibold tracking-normal text-[#111827]', isNativeHero ? 'mt-0.5 text-[0.76rem] leading-tight sm:-mt-0.5 sm:text-[0.95rem]' : '-mt-2 text-lg')}>
                         {currentWeekStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
                       </p>
                     </button>
                   )}
                 </div>
 
-                <div className={cn(isNativeHero ? 'mt-4 sm:mt-3' : 'mt-4')}>
+                <div className={cn(isNativeHero ? 'mt-2.5 sm:mt-3' : 'mt-4')}>
                   <div className="flex items-end justify-between">
-                    <p className={cn(isNativeHero ? 'text-[11px] font-medium tracking-[0.08em] text-foreground/46' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>
+                    <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/44' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>
                       Kuvert niveauer
                     </p>
-                    <div className="flex max-w-[11rem] flex-col items-end text-right">
-                      <span className={cn(isNativeHero ? 'text-[11px] font-medium text-foreground/46' : 'text-xs text-muted-foreground/60')}>
+                    <div className="flex max-w-[9rem] flex-col items-end text-right sm:max-w-[11rem]">
+                      <span className={cn(isNativeHero ? 'text-[10px] font-medium leading-tight text-foreground/44' : 'text-xs text-muted-foreground/60')}>
                         {nextCumulativeMilestone
                           ? `${Math.max(0, nextCumulativeMilestone.min - cumulativeScore)} point til næste niveau`
                           : 'Du er på højeste niveau'}
                       </span>
                     </div>
                   </div>
-                  <div className="mt-2 grid grid-cols-5 gap-1.5">
+                  <div className="mt-1.5 grid grid-cols-5 gap-1">
                     {cumulativeScoreSegments.map((segment, index) => {
                       const nextMin = cumulativeScoreSegments[index + 1]?.min ?? Number.POSITIVE_INFINITY;
                       const active = cumulativeScore >= segment.min;
@@ -358,12 +358,12 @@ export function KuvertHeroCard({
                         <div key={segment.label} className="space-y-1">
                           <div
                             className={cn(
-                              'h-2 rounded-full transition-all duration-500',
+                              'h-1.5 rounded-full transition-all duration-500 sm:h-2',
                               active ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]',
                               current && !isNativeHero && 'shadow-[0_0_10px_rgba(46,211,167,0.22)]'
                             )}
                           />
-                          <p className={cn('text-[10px] font-semibold', active ? 'text-[#0E3B43]' : 'text-foreground/32')}>
+                          <p className={cn('text-[9px] font-semibold sm:text-[10px]', active ? 'text-[#0E3B43]' : 'text-foreground/32')}>
                             {segment.label}
                           </p>
                         </div>
@@ -408,7 +408,7 @@ export function KuvertHeroCard({
 
             <div
               className={cn(
-                'mt-5 px-1 py-2 sm:mt-4',
+                'mt-4 px-1 py-1.5 sm:mt-4 sm:py-2',
                 isNativeHero
                   ? 'bg-transparent'
                   : 'border border-foreground/6 bg-white/55'
@@ -436,7 +436,7 @@ export function KuvertHeroCard({
                     <div key={`${label}-${index}`} className="flex min-w-0 flex-1 flex-col items-center gap-2">
                       <span
                         className={cn(
-                          'flex h-11 w-11 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-500',
+                          'flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-500 sm:h-11 sm:w-11 sm:text-[13px]',
                           isFilled
                             ? cn('border border-transparent text-[#0E3B43]', !isNativeHero && 'shadow-sm')
                             : isCurrent
@@ -463,7 +463,7 @@ export function KuvertHeroCard({
                           index + 1
                         )}
                       </span>
-                      <span className={cn('text-center text-[11px] font-semibold', isFilled || isCurrent ? 'text-foreground/64' : 'text-foreground/32')}>
+                      <span className={cn('text-center text-[10px] font-semibold sm:text-[11px]', isFilled || isCurrent ? 'text-foreground/64' : 'text-foreground/32')}>
                         {label}
                       </span>
                     </div>
@@ -478,40 +478,40 @@ export function KuvertHeroCard({
         {showQuickExpense && (
           <div
             className={cn(
-              isNativeHero ? 'mt-10 overflow-hidden sm:mt-8' : 'mt-5 overflow-hidden',
+              isNativeHero ? 'mt-7 overflow-hidden sm:mt-8' : 'mt-5 overflow-hidden',
               isNativeHero
                 ? 'bg-transparent'
                 : statusCardStyle.className
             )}
             style={budgetPanelStyle}
           >
-            <div className={cn(isNativeHero ? 'px-2 pb-4 pt-2' : 'px-4 pb-4 pt-4')}>
+            <div className={cn(isNativeHero ? 'px-2 pb-3 pt-1.5 sm:pb-4 sm:pt-2' : 'px-4 pb-4 pt-4')}>
               <div className={cn('flex justify-between gap-4', isNativeHero ? 'items-start' : 'items-end')}>
                 <div>
-                  <p className={cn(isNativeHero ? 'mb-1 text-sm font-medium leading-snug text-foreground/84' : 'mb-1 text-xs font-medium leading-snug', !isNativeHero && flowStatus.headlineColor)}>
+                  <p className={cn(isNativeHero ? 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82' : 'mb-1 text-xs font-medium leading-snug', !isNativeHero && flowStatus.headlineColor)}>
                     {budgetPeriodLabel}
                   </p>
-                  <p className={cn('text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl', flowStatus.amountColor)}>
+                  <p className={cn('text-[2.65rem] font-semibold leading-none tracking-tight tabular-nums sm:text-4xl', flowStatus.amountColor)}>
                     {formatDKK(Math.abs(remaining))}
                   </p>
-                  <p className={cn(isNativeHero ? 'mt-1 text-[0.95rem] text-foreground/46' : 'mt-1 text-xs text-muted-foreground')}>
+                  <p className={cn(isNativeHero ? 'mt-0.5 text-[0.92rem] text-foreground/46' : 'mt-1 text-xs text-muted-foreground')}>
                     {overBudget ? 'over budget' : `tilbage af ${formatDKK(activeBudget)}`}
                   </p>
                 </div>
 
-                <div className={cn('flex shrink-0 gap-2 text-center', isNativeHero && 'pt-1')}>
+                <div className={cn('flex shrink-0 gap-2 text-center', isNativeHero && 'pt-0.5')}>
                   <div
                     className={cn(
-                      'min-w-[56px] px-3 py-2',
+                      'min-w-[54px] px-2 py-1.5 sm:min-w-[56px] sm:px-3 sm:py-2',
                       isNativeHero ? 'rounded-none border-0 bg-transparent' : 'rounded-xl border border-black/5 bg-white/60'
                     )}
                   >
-                    <p className={cn(isNativeHero ? 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/46' : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Dage tilbage</p>
-                    <p className={cn(isNativeHero ? 'text-[1.15rem] font-semibold tracking-tight text-[#111827]' : 'text-sm font-semibold tracking-tight text-foreground')}>{remainingDays}</p>
+                    <p className={cn(isNativeHero ? 'mb-0.5 text-[0.9rem] font-medium leading-snug text-foreground/46' : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Dage tilbage</p>
+                    <p className={cn(isNativeHero ? 'text-[1.05rem] font-semibold tracking-tight text-[#111827]' : 'text-sm font-semibold tracking-tight text-foreground')}>{remainingDays}</p>
                   </div>
                   <div
                     className={cn(
-                      'min-w-[56px] px-3 py-2',
+                      'min-w-[54px] px-2 py-1.5 sm:min-w-[56px] sm:px-3 sm:py-2',
                       isNativeHero
                         ? 'rounded-none border-0 bg-transparent'
                         : cn(
@@ -520,22 +520,22 @@ export function KuvertHeroCard({
                           )
                     )}
                   >
-                    <p className={cn(isNativeHero ? 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/46' : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Per dag</p>
-                    <p className={cn(isNativeHero ? 'text-[1.15rem] font-semibold tracking-tight tabular-nums text-[#0E3B43]' : 'text-sm font-semibold tracking-tight tabular-nums', !isNativeHero && flowStatus.amountColor)}>{formatDKK(Math.round(dailyAvailable))}</p>
+                    <p className={cn(isNativeHero ? 'mb-0.5 text-[0.9rem] font-medium leading-snug text-foreground/46' : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Per dag</p>
+                    <p className={cn(isNativeHero ? 'text-[1.05rem] font-semibold tracking-tight tabular-nums text-[#0E3B43]' : 'text-sm font-semibold tracking-tight tabular-nums', !isNativeHero && flowStatus.amountColor)}>{formatDKK(Math.round(dailyAvailable))}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 space-y-1.5">
+              <div className="mt-3 space-y-1">
                 <div className="flex items-center justify-between">
-                  <p className={cn(isNativeHero ? 'text-[11px] font-medium tracking-[0.08em] text-foreground/46' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>Månedsscore</p>
+                  <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/46' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>Månedsscore</p>
                   <div className="flex items-center gap-2">
-                    <span className={cn(isNativeHero ? 'text-[11px] font-semibold tabular-nums' : 'text-xs font-bold tabular-nums', monthScore >= 60 ? 'text-emerald-700' : monthScore >= 30 ? 'text-amber-700' : 'text-red-600')}>
+                    <span className={cn(isNativeHero ? 'text-[10px] font-semibold tabular-nums' : 'text-xs font-bold tabular-nums', monthScore >= 60 ? 'text-emerald-700' : monthScore >= 30 ? 'text-amber-700' : 'text-red-600')}>
                       {monthScore}
                     </span>
                   </div>
                 </div>
-                <div className="relative h-2 overflow-visible rounded-full bg-black/[0.06]">
+                <div className="relative h-1.5 overflow-visible rounded-full bg-black/[0.06] sm:h-2">
                   <div
                     className={cn(
                       'absolute inset-y-0 left-0 rounded-full shadow-sm transition-all duration-700 ease-out',
@@ -550,7 +550,7 @@ export function KuvertHeroCard({
                     {!monthlyOverBudget && flowMonthlyBudget > 0 && (
                       <div
                         className={cn(
-                          'absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 rounded-full border-2 bg-white',
+                          'absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full border-2 bg-white sm:h-3.5 sm:w-3.5',
                           !isNativeHero && 'shadow-md'
                         )}
                         style={{ borderColor: badgeHex ?? (monthScore >= 60 ? '#34d399' : monthScore >= 30 ? '#fbbf24' : '#ef4444') }}
@@ -558,7 +558,7 @@ export function KuvertHeroCard({
                     )}
                   </div>
                 </div>
-                <p className={cn(isNativeHero ? 'text-[0.95rem] leading-snug text-foreground/46' : 'text-label leading-snug text-muted-foreground/60')}>
+                <p className={cn(isNativeHero ? 'text-[0.9rem] leading-snug text-foreground/46' : 'text-label leading-snug text-muted-foreground/60')}>
                   {formatDKK(flowMonthlySpent)} brugt · {formatDKK(Math.round(monthlyDailyAvailable))} pr. dag
                 </p>
               </div>
