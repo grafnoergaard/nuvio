@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
-import { Flame, Plus, Trophy, X } from 'lucide-react';
+import { Flame, Plus, Trophy, X, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuickExpenseStreak, QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
 import type { FlowStatusConfig } from '@/hooks/use-home-data';
@@ -125,10 +125,12 @@ export function KuvertHeroCard({
   variant,
 }: KuvertHeroCardProps) {
   const [showStreakInfo, setShowStreakInfo] = useState(false);
+  const [showScoreInfo, setShowScoreInfo] = useState(false);
 
   const currentWeekStreak = weeklyStreak?.current_streak ?? 0;
   const longestWeekStreak = weeklyStreak?.longest_streak ?? 0;
   const tone = getStreakTone(currentWeekStreak);
+  const hasWeekStreak = currentWeekStreak > 0;
   const completedStreakMonths = Math.floor(currentWeekStreak / WEEKS_PER_STREAK_MONTH);
   const bestWeekStreak = Math.max(longestWeekStreak, currentWeekStreak);
   const recordProgress = bestWeekStreak > 0 ? Math.min(100, Math.max(12, (currentWeekStreak / bestWeekStreak) * 100)) : 0;
@@ -264,22 +266,12 @@ export function KuvertHeroCard({
       <section
         className="relative w-full overflow-hidden bg-transparent"
       >
-        <div className="pb-5 pt-3">
-        <div className="flex items-start justify-between gap-3">
-          <span className="inline-flex min-h-[48px] items-center rounded-full border border-foreground/7 bg-white/52 px-5 py-1 text-[10px] font-medium uppercase tracking-widest text-foreground/44">
-            {currentMonthLabel}
-          </span>
-          {showStreak && completedStreakMonths > 0 && (
-            <span className={cn('inline-flex min-h-[48px] items-center rounded-full border px-5 py-1 text-xs font-semibold leading-none opacity-90', tone.badge)}>
-              X{completedStreakMonths} {completedStreakMonths === 1 ? 'måned' : 'mdr.'}
-            </span>
-          )}
-        </div>
+        <div className="pb-5 pt-2 sm:pt-3">
 
         {showStreak && (
           <>
             {showScoreInHero ? (
-              <div className={cn(isNativeHero ? 'mt-8' : 'mt-1')}>
+              <div className={cn(isNativeHero ? 'mt-7 sm:mt-8' : 'mt-1')}>
                 <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
                   <defs>
                     <linearGradient id="kuvert-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
@@ -290,47 +282,61 @@ export function KuvertHeroCard({
                   </defs>
                 </svg>
 
-                <div className={cn('grid gap-4', isNativeHero ? 'items-start sm:grid-cols-[minmax(0,1fr)_13rem] sm:gap-6' : 'items-end sm:grid-cols-[minmax(0,1fr)_15rem]')}>
-                  <div className={cn('min-w-0', isNativeHero ? 'pt-0' : 'pt-4')}>
+                <div className={cn(
+                  'grid gap-x-4 gap-y-3',
+                  isNativeHero
+                    ? hasWeekStreak
+                      ? 'grid-cols-[minmax(0,1fr)_8.75rem] items-start sm:grid-cols-[minmax(0,1fr)_13rem] sm:gap-x-6'
+                      : 'grid-cols-1 items-start'
+                    : 'items-end sm:grid-cols-[minmax(0,1fr)_15rem]'
+                )}>
+                  <button
+                    type="button"
+                    onClick={() => setShowScoreInfo(true)}
+                    className={cn('min-w-0 text-left outline-none transition-transform duration-200 active:scale-[0.99]', isNativeHero ? 'pt-0' : 'pt-4')}
+                    aria-label="Læs om Kuvert Score"
+                  >
                     <div className={cn(isNativeHero ? 'mt-0' : 'mt-1')}>
-                      <p className={cn(isNativeHero ? 'mb-[-0.2rem] text-[0.9rem] font-medium leading-none text-foreground/68' : 'mb-3 text-base font-medium text-muted-foreground/75')}>
+                      <p className={cn(isNativeHero ? 'mb-[-0.35rem] text-[0.85rem] font-medium leading-none text-foreground/68 sm:text-[0.9rem]' : 'mb-3 text-base font-medium text-muted-foreground/75')}>
                         Din score
                       </p>
-                      <p className={cn('font-semibold leading-[0.88] tracking-tight tabular-nums text-[#0E3B43]', isNativeHero ? 'text-left text-[4.15rem] sm:text-[5rem]' : 'text-7xl sm:text-8xl')}>
+                      <p className={cn('font-semibold leading-[0.84] tracking-tight tabular-nums text-[#0E3B43]', isNativeHero ? 'text-left text-[4.55rem] sm:text-[5rem]' : 'text-7xl sm:text-8xl')}>
                         {cumulativeScore}
                       </p>
                     </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowStreakInfo(true)}
-                    className={cn(
-                      'group flex flex-col outline-none transition-transform duration-200 active:scale-[0.99]',
-                      isNativeHero ? 'items-end text-right' : 'items-center text-center'
-                    )}
-                    aria-label="Læs om streak-funktionen"
-                  >
-                    <div className={cn('flex w-full items-start', isNativeHero ? 'h-[8.5rem] justify-end' : 'justify-center h-[10rem]')}>
-                      <div className={cn('relative', isNativeHero ? 'h-[8.5rem] w-[8.5rem]' : 'h-[10rem] w-[10rem]')}>
-                        <Flame
-                          className={cn('transition-transform duration-200 group-hover:scale-[1.02]', isNativeHero ? 'h-[8.5rem] w-[8.5rem]' : 'h-[10rem] w-[10rem] drop-shadow-sm')}
-                          fill="url(#kuvert-flame-gradient)"
-                          stroke="url(#kuvert-flame-gradient)"
-                          strokeWidth={1.5}
-                        />
-                        <span className={cn('absolute inset-0 flex items-center justify-center font-semibold tabular-nums leading-none tracking-normal text-[#0E3B43]', isNativeHero ? 'translate-x-[0.12rem] translate-y-[0.2rem] text-[3.2rem]' : 'pt-6 text-6xl drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]')}>
-                          {currentWeekStreak}
-                        </span>
-                      </div>
-                    </div>
-                    <p className={cn('font-semibold tracking-normal text-[#111827]', isNativeHero ? '-mt-0.5 text-[0.95rem]' : '-mt-2 text-lg')}>
-                      {currentWeekStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
-                    </p>
                   </button>
+
+                  {hasWeekStreak && (
+                    <button
+                      type="button"
+                      onClick={() => setShowStreakInfo(true)}
+                      className={cn(
+                        'group flex flex-col outline-none transition-transform duration-200 active:scale-[0.99]',
+                        isNativeHero ? 'w-[8.75rem] justify-self-end items-center text-center sm:w-auto sm:items-end sm:text-right' : 'items-center text-center'
+                      )}
+                      aria-label="Læs om streak-funktionen"
+                    >
+                      <div className={cn('flex w-full items-start', isNativeHero ? 'h-[7.5rem] justify-center sm:h-[8.5rem] sm:justify-end' : 'justify-center h-[10rem]')}>
+                        <div className={cn('relative', isNativeHero ? 'h-[7.5rem] w-[7.5rem] sm:h-[8.5rem] sm:w-[8.5rem]' : 'h-[10rem] w-[10rem]')}>
+                          <Flame
+                            className={cn('transition-transform duration-200 group-hover:scale-[1.02]', isNativeHero ? 'h-[7.5rem] w-[7.5rem] sm:h-[8.5rem] sm:w-[8.5rem]' : 'h-[10rem] w-[10rem] drop-shadow-sm')}
+                            fill="url(#kuvert-flame-gradient)"
+                            stroke="url(#kuvert-flame-gradient)"
+                            strokeWidth={1.5}
+                          />
+                          <span className={cn('absolute inset-0 flex items-center justify-center font-semibold tabular-nums leading-none tracking-normal text-[#0E3B43]', isNativeHero ? 'translate-x-[0.08rem] translate-y-[0.38rem] text-[2.8rem] sm:translate-x-[0.12rem] sm:translate-y-[0.2rem] sm:text-[3.2rem]' : 'pt-6 text-6xl drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]')}>
+                            {currentWeekStreak}
+                          </span>
+                        </div>
+                      </div>
+                      <p className={cn('font-semibold tracking-normal text-[#111827]', isNativeHero ? 'mt-1 text-[0.95rem] leading-tight sm:-mt-0.5' : '-mt-2 text-lg')}>
+                        {currentWeekStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
+                      </p>
+                    </button>
+                  )}
                 </div>
 
-                <div className={cn(isNativeHero ? 'mt-3' : 'mt-4')}>
+                <div className={cn(isNativeHero ? 'mt-4 sm:mt-3' : 'mt-4')}>
                   <div className="flex items-end justify-between">
                     <p className={cn(isNativeHero ? 'text-[11px] font-medium tracking-[0.08em] text-foreground/46' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>
                       Kuvert niveauer
@@ -402,7 +408,7 @@ export function KuvertHeroCard({
 
             <div
               className={cn(
-                'mt-4 px-1 py-2',
+                'mt-5 px-1 py-2 sm:mt-4',
                 isNativeHero
                   ? 'bg-transparent'
                   : 'border border-foreground/6 bg-white/55'
@@ -472,7 +478,7 @@ export function KuvertHeroCard({
         {showQuickExpense && (
           <div
             className={cn(
-              isNativeHero ? 'mt-8 overflow-hidden' : 'mt-5 overflow-hidden',
+              isNativeHero ? 'mt-10 overflow-hidden sm:mt-8' : 'mt-5 overflow-hidden',
               isNativeHero
                 ? 'bg-transparent'
                 : statusCardStyle.className
@@ -669,6 +675,120 @@ export function KuvertHeroCard({
               <button
                 type="button"
                 onClick={() => setShowStreakInfo(false)}
+                className="nuvio-action-button w-full rounded-full text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
+                style={{ height: '52px' }}
+              >
+                Forstået
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showScoreInfo && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end"
+          style={{ left: 'var(--sidebar-offset-global, 0px)' }}
+        >
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowScoreInfo(false)}
+          />
+          <div
+            className="relative flex max-h-[92dvh] w-full flex-col rounded-t-3xl bg-white shadow-2xl"
+            style={{ animation: 'kuvertSlideUp 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards' }}
+          >
+            <div className="mx-auto mb-1 mt-3 h-1 w-10 shrink-0 rounded-full bg-foreground/15" />
+
+            <button
+              type="button"
+              onClick={() => setShowScoreInfo(false)}
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-secondary/80 text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Luk"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="border-b border-foreground/5 bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white px-5 pb-5 pt-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-300 to-emerald-400 ring-2 ring-white/40">
+                  <Zap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                    Kuvert Score
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="text-3xl font-semibold tracking-tight text-foreground">
+                      {cumulativeScore.toLocaleString('da-DK')}
+                    </h2>
+                    <span className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold', cumulativeScoreTier.badge)}>
+                      {cumulativeScoreTier.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
+              <div>
+                <p className="mb-1.5 text-sm font-semibold text-foreground">Hvad er Kuvert Score?</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Din Kuvert Score er et akkumulerende pointsystem der vokser over tid, når du holder dit budget. Jo bedre du klarer dig, og jo længere din gode rytme varer, jo stærkere bliver din score.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-100/70 bg-emerald-50/80 px-4 py-3">
+                <p className="mb-1 text-sm font-semibold text-emerald-950">Sådan stiger din score</p>
+                <p className="text-sm leading-relaxed text-emerald-900/75">
+                  Hver måned du holder dig indenfor budget, lægger nye point ovenpå. Måneder med bedre økonomisk rytme giver også en stærkere belønning.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-amber-100/70 bg-amber-50/80 px-4 py-3">
+                <p className="mb-1 text-sm font-semibold text-amber-900">Hvis en måned glider</p>
+                <p className="text-sm leading-relaxed text-amber-900/75">
+                  Går du over budget, mister du en del af din Kuvert Score. Derfor er scoren både et pejlemærke og en lille beskytter af dine vaner.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-end justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-foreground/48">Kuvert niveauer</p>
+                  <span className="text-xs text-muted-foreground">
+                    {nextCumulativeMilestone
+                      ? `${Math.max(0, nextCumulativeMilestone.min - cumulativeScore)} point til næste niveau`
+                      : 'Højeste niveau nået'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {cumulativeScoreSegments.map((segment, index) => {
+                    const nextMin = cumulativeScoreSegments[index + 1]?.min ?? Number.POSITIVE_INFINITY;
+                    const active = cumulativeScore >= segment.min;
+                    const current = cumulativeScore >= segment.min && cumulativeScore < nextMin;
+                    return (
+                      <div key={segment.label} className="space-y-1">
+                        <div
+                          className={cn(
+                            'h-2 rounded-full transition-all duration-500',
+                            active ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]'
+                          )}
+                          style={current ? { boxShadow: '0 0 10px rgba(46,211,167,0.22)' } : undefined}
+                        />
+                        <p className={cn('text-[10px] font-semibold', active ? 'text-[#0E3B43]' : 'text-foreground/32')}>
+                          {segment.label}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 border-t border-foreground/5 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3">
+              <button
+                type="button"
+                onClick={() => setShowScoreInfo(false)}
                 className="nuvio-action-button w-full rounded-full text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
                 style={{ height: '52px' }}
               >
