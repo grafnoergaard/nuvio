@@ -637,9 +637,6 @@ export function KuvertHeroCard({
                   <p className={cn('text-[2.65rem] font-semibold leading-none tracking-tight tabular-nums sm:text-4xl', flowStatus.amountColor)}>
                     {formatDKK(Math.abs(remaining))}
                   </p>
-                  <p className={cn(isNativeHero ? 'mt-0.5 text-[0.92rem] text-foreground/46' : 'mt-1 text-xs text-muted-foreground')}>
-                    {overBudget ? 'over budget' : `tilbage af ${formatDKK(activeBudget)}`}
-                  </p>
                 </div>
 
                 <div className="flex shrink-0 gap-2 text-center">
@@ -702,7 +699,7 @@ export function KuvertHeroCard({
                   </div>
                 </div>
                 <p className={cn(isNativeHero ? 'text-[0.84rem] leading-snug text-foreground/46' : 'text-label leading-snug text-muted-foreground/60')}>
-                  {formatDKK(flowMonthlySpent)} brugt · {formatDKK(Math.round(monthlyDailyAvailable))} pr. dag
+                  {formatDKK(flowMonthlySpent)} brugt af {formatDKK(activeBudget)}
                 </p>
               </div>
             </div>
