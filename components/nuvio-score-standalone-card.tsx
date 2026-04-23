@@ -8,6 +8,7 @@ import type { QuickExpenseStreak } from '@/lib/quick-expense-service';
 
 interface Props {
   streak: QuickExpenseStreak | null;
+  displayScore?: number;
   className?: string;
 }
 
@@ -75,11 +76,11 @@ function TierProgressBar({ score }: { score: number }) {
   );
 }
 
-export default function NuvioScoreStandaloneCard({ streak, className }: Props) {
+export default function NuvioScoreStandaloneCard({ streak, displayScore, className }: Props) {
   const { design } = useSettings();
   const [showInfo, setShowInfo] = useState(false);
 
-  const cumulativeScore = streak?.cumulative_score ?? 0;
+  const cumulativeScore = displayScore ?? streak?.cumulative_score ?? 0;
   const tier = getScoreTier(cumulativeScore);
   const nextTierIndex = TIERS.findIndex(t => cumulativeScore < t.min);
   const nextTier = nextTierIndex > 0 ? TIERS[nextTierIndex] : null;
@@ -179,6 +180,16 @@ export default function NuvioScoreStandaloneCard({ streak, className }: Props) {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Din Kuvert Score er et akkumulerende pointsystem der vokser for hver måned du holder dit budget. Jo bedre du klarer dig, og jo længere din streak er, jo hurtigere stiger den.
                 </p>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-2xl bg-teal-50/80 border border-teal-100/60 px-4 py-3">
+                <Zap className="h-4 w-4 text-teal-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-teal-800 mb-0.5">Scoren lever i hverdagen</p>
+                  <p className="text-xs text-teal-700/80 leading-relaxed">
+                    Den viste score bevæger sig lidt gennem måneden ud fra månedsscore og ugens rytme. Bonus og straf bliver stadig låst fast ved månedsskifte.
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2.5">

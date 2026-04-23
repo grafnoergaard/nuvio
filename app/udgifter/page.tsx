@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Check, Trash2, Settings2, X, ChevronLeft, ChevronRight, Receipt, CalendarDays, TrendingDown, TriangleAlert as AlertTriangle, Info, Crown, Sparkles, Star, Gauge, Flame, Award } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Trash2, Settings2, X, ChevronLeft, ChevronRight, Receipt, CalendarDays, TrendingDown, TriangleAlert as AlertTriangle, Info, Crown, Sparkles, Star, Gauge, Flame, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { useSettings, getCardStyle, getTopBarStyle } from '@/lib/settings-context';
@@ -9,7 +9,6 @@ import { type FlowAiContext } from '@/components/ai-assistant-button';
 import { useAiContext } from '@/lib/ai-context';
 import {
   getQuickExpensesForMonth,
-  addQuickExpense,
   deleteQuickExpense,
   getMonthlyBudget,
   upsertMonthlyBudget,
@@ -32,7 +31,6 @@ import MonthTransitionModal from '@/components/month-transition-modal';
 import StreakBadge from '@/components/streak-badge';
 import EditExpenseModal from '@/components/edit-expense-modal';
 import NuvioFlowGuideModal from '@/components/nuvio-flow-guide-modal';
-import NuvioScoreStandaloneCard from '@/components/nuvio-score-standalone-card';
 import { toKuvertCopy } from '@/lib/kuvert-copy';
 
 const GUIDE_SEEN_KEY = 'nuvio_flow_guide_seen_v1';
@@ -191,18 +189,12 @@ export default function NuvioFlowPage() {
   const [expenses, setExpenses] = useState<QuickExpense[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [amountRaw, setAmountRaw] = useState('');
-  const [note, setNote] = useState('');
-  const [spreadOverMonth, setSpreadOverMonth] = useState(false);
   const [showBudgetEditor, setShowBudgetEditor] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<QuickExpense | null>(null);
   const [variableEstimate, setVariableEstimate] = useState<number | null>(null);
-  const amountRef = useRef<HTMLInputElement>(null);
 
   const [showTransitionModal, setShowTransitionModal] = useState(false);
   const [prevSummary, setPrevSummary] = useState<MonthSummary | null>(null);
@@ -211,7 +203,6 @@ export default function NuvioFlowPage() {
   const [flowScoreThreshold, setFlowScoreThreshold] = useState<number>(0.15);
   const [flowStatusConfig, setFlowStatusConfig] = useState<FlowStatusConfig>(FLOW_STATUS_DEFAULTS);
   const [weeklyStatus, setWeeklyStatus] = useState<WeeklyCarryOverSummary | null>(null);
-  const [weeklyExpanded, setWeeklyExpanded] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState<number>(1);
@@ -418,39 +409,6 @@ export default function NuvioFlowPage() {
   }
 
   const isNextDisabled = viewYear === now.getFullYear() && viewMonth === now.getMonth() + 1;
-
-  async function handleAdd() {
-    const parsed = parseFloat(amountRaw.replace(',', '.'));
-    if (!parsed || parsed <= 0 || parsed > 999999) {
-      setError('Indtast et gyldigt beløb (1 – 999.999 kr.)');
-      amountRef.current?.focus();
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      const exp = await addQuickExpense(parsed, note.trim() || null, spreadOverMonth);
-      if (isCurrentMonth) {
-        const newExpenses = [exp, ...expenses];
-        setExpenses(newExpenses);
-        if (monthlyBudget > 0) {
-          const weekly = computeWeeklyCarryOver(monthlyBudget, viewYear, viewMonth, newExpenses, now, weekStartDay);
-          setWeeklyStatus(weekly);
-          updateWeeklyCarryOver(viewYear, viewMonth, weekly.accumulatedCarryOver).catch(() => null);
-        }
-      }
-      setAmountRaw('');
-      setNote('');
-      setSpreadOverMonth(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1800);
-      amountRef.current?.focus();
-    } catch {
-      setError('Kunne ikke gemme. Prøv igen.');
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -675,7 +633,6 @@ export default function NuvioFlowPage() {
   }, [cfg.cardBg, cfg.badgeBg, monthlyBudget, overBudget, healthPct]);
 
   const currentWeek = weeklyStatus?.weeks.find(w => w.isCurrentWeek);
-
   const weeklyTransactionCount = useMemo(() => {
     if (!isCurrentMonth) return 0;
     const weekStart = new Date(now);
@@ -963,10 +920,7 @@ export default function NuvioFlowPage() {
               {/* Ugebudget — integrated */}
               {weeklyStatus && (
                 <div className="-mx-5 -mb-5 border-t border-black/5">
-                  <button
-                    onClick={() => setWeeklyExpanded(o => !o)}
-                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-black/[0.02] transition-colors"
-                  >
+                  <div className="w-full flex items-center justify-between px-5 py-3">
                     <div className="flex items-center gap-2.5">
                       <CalendarDays className="h-4 w-4 text-emerald-600 shrink-0" />
                       <div className="text-left">
@@ -986,12 +940,10 @@ export default function NuvioFlowPage() {
                       {currentWeek && isCurrentMonth && (
                         <WeekPill week={currentWeek} effectiveBudget={weeklyStatus.effectiveWeeklyBudget} />
                       )}
-                      <ChevronRight className={cn('h-4 w-4 text-muted-foreground/50 transition-transform duration-200', weeklyExpanded && 'rotate-90')} />
                     </div>
-                  </button>
+                  </div>
 
-                  {weeklyExpanded && (
-                    <div className="border-t border-border/40 divide-y divide-border/30">
+                  <div className="border-t border-border/40 divide-y divide-border/30">
                       <div className="px-5 py-3 bg-secondary/10">
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           Dagligt budget: {formatDKK(monthlyBudget)} / {new Date(viewYear, viewMonth, 0).getDate()} dage = {formatDKK(Math.round((monthlyBudget / new Date(viewYear, viewMonth, 0).getDate()) * 100) / 100)} pr. dag.
@@ -1116,110 +1068,11 @@ export default function NuvioFlowPage() {
                 });
                 })()}
                     </div>
-                  )}
                 </div>
               )}
             </div>
           )}
         </div>
-
-        <NuvioScoreStandaloneCard streak={streak} className="mb-4" />
-
-        {/* Entry Form */}
-        {isCurrentMonth && (
-          <div className="rounded-2xl bg-white/80 backdrop-blur border border-white/30 shadow-sm p-4 mb-4">
-            <p className="text-sm font-semibold text-foreground mb-3">Tilføj udgift</p>
-
-            <div className="space-y-2.5">
-              <div className="relative">
-                <input
-                  ref={amountRef}
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={amountRaw}
-                  onChange={e => { setAmountRaw(e.target.value); setError(null); }}
-                  onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                  className={cn(
-                    'w-full h-12 rounded-xl border bg-background px-4 pr-16 text-xl font-semibold tracking-tight',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2',
-                    'transition-all duration-200',
-                    error ? 'border-red-300' : 'border-border'
-                  )}
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground pointer-events-none">
-                  kr.
-                </span>
-              </div>
-
-              <input
-                type="text"
-                placeholder="Note (valgfri)"
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                maxLength={120}
-                className={cn(
-                  'w-full h-11 rounded-xl border border-border bg-background px-4 text-sm',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2',
-                  'transition-all duration-200 placeholder:text-muted-foreground/50'
-                )}
-              />
-
-              <label className="flex cursor-pointer items-center gap-2.5 px-1 py-1.5 text-sm text-foreground/75">
-                <input
-                  type="checkbox"
-                  checked={spreadOverMonth}
-                  onChange={(e) => setSpreadOverMonth(e.target.checked)}
-                  className="sr-only"
-                />
-                <span
-                  className={cn(
-                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
-                    spreadOverMonth
-                      ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
-                      : 'border-foreground/18 bg-white text-transparent'
-                  )}
-                  aria-hidden="true"
-                >
-                  <Check className="h-3.5 w-3.5 stroke-[3]" />
-                </span>
-                <span className="font-semibold text-foreground/84">
-                  Særlig udgift <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
-                </span>
-              </label>
-
-              {error && (
-                <p className="text-xs text-red-600 flex items-center gap-1.5">
-                  <X className="h-3.5 w-3.5 shrink-0" />
-                  {error}
-                </p>
-              )}
-
-              <button
-                onClick={handleAdd}
-                disabled={saving || !amountRaw}
-                className={cn(
-                  'nuvio-action-button w-full h-11 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2',
-                  saved
-                    ? 'bg-emerald-500 text-white scale-[0.98]'
-                    : 'hover:shadow-md active:scale-[0.97]'
-                )}
-              >
-                {saved ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Gemt
-                  </>
-                ) : saving ? (
-                  <span className="animate-pulse">Gemmer…</span>
-                ) : (
-                  'Gem udgift'
-                )}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Month Navigator + History */}
         <div className="rounded-2xl bg-white/80 backdrop-blur border border-white/30 shadow-sm overflow-hidden">
@@ -1232,7 +1085,7 @@ export default function NuvioFlowPage() {
             </button>
             <div className="text-center">
               <p className="text-sm font-semibold capitalize">
-                {DANISH_MONTHS[viewMonth - 1]} {viewYear}
+                Udgifter {DANISH_MONTHS[viewMonth - 1]} {viewYear}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {expenses.length} poster · {formatDKK(totalSpent)}

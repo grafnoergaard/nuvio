@@ -204,7 +204,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         </label>
       </div>
 
-      <label className="flex cursor-pointer items-center gap-2 py-0.5 text-[0.86rem] text-foreground/72">
+      <label className="flex cursor-pointer items-center gap-1.5 py-0.5 text-[0.8rem] text-foreground/70">
         <input
           type="checkbox"
           checked={spreadOverMonth}
@@ -213,16 +213,16 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         />
         <span
           className={cn(
-            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
+            'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
             spreadOverMonth
               ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
               : 'border-foreground/18 bg-white/50 text-transparent'
           )}
           aria-hidden="true"
         >
-          <Check className="h-3.5 w-3.5 stroke-[3]" />
+          <Check className="h-3 w-3 stroke-[3]" />
         </span>
-        <span className={cn('font-semibold text-foreground/84', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}>
+        <span className={cn('text-[0.8rem] font-semibold text-foreground/82', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}>
           Særlig udgift <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
         </span>
       </label>

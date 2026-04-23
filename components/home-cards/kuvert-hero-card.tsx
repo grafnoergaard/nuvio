@@ -7,6 +7,7 @@ import type { QuickExpenseStreak, QuickExpenseWeeklyStreak, WeeklyCarryOverSumma
 import type { FlowStatusConfig } from '@/hooks/use-home-data';
 import type { KuvertHomeVariant } from '@/lib/kuvert-home-variant';
 import { QuickExpenseInlineForm } from '@/components/quick-expense-inline-form';
+import { computeKuvertLiveScore } from '@/lib/kuvert-live-score';
 
 interface KuvertHeroCardProps {
   quickStreak: QuickExpenseStreak | null;
@@ -147,8 +148,6 @@ export function KuvertHeroCard({
         is_current: false,
       }));
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const cumulativeScore = quickStreak?.cumulative_score ?? 0;
-  const cumulativeScoreTier = getCumulativeScoreTier(cumulativeScore);
   const cumulativeScoreSegments = [
     { label: 'Begynder', min: 0 },
     { label: 'Aktiv', min: 150 },
@@ -156,7 +155,6 @@ export function KuvertHeroCard({
     { label: 'Mester', min: 900 },
     { label: 'Legendarisk', min: 2000 },
   ];
-  const nextCumulativeMilestone = cumulativeScoreSegments.find((segment) => segment.min > cumulativeScore) ?? null;
   const currentWeekStatus = flowWeeklyStatus?.weeks.find(week => week.isCurrentWeek) ?? null;
   const budgetPeriodLabel = currentWeekStatus ? 'Ugebudget' : 'Budget';
   const activeBudget = currentWeekStatus?.effectiveBudget ?? flowMonthlyBudget;
@@ -204,6 +202,17 @@ export function KuvertHeroCard({
     })();
     return Math.round(baseScore * penaltyFactor);
   })();
+  const cumulativeScore = computeKuvertLiveScore({
+    permanentScore: quickStreak?.cumulative_score ?? 0,
+    monthScore,
+    currentWeekBudget: currentWeekStatus?.effectiveBudget,
+    currentWeekSpent: currentWeekStatus?.spent,
+    currentWeekDaysInPeriod: currentWeekStatus?.daysInMonth,
+    currentWeekDaysRemaining: currentWeekStatus ? remainingDays : null,
+    flowScoreThreshold,
+  }).displayScore;
+  const nextCumulativeMilestone = cumulativeScoreSegments.find((segment) => segment.min > cumulativeScore) ?? null;
+  const cumulativeScoreTier = getCumulativeScoreTier(cumulativeScore);
   const monthScoreBarPct = Math.min(100, Math.max(4, monthScore));
   const monthScoreBarColor = monthScore >= 60 ? 'from-emerald-400 to-teal-400' : monthScore >= 30 ? 'from-amber-400 to-orange-300' : 'from-red-400 to-rose-400';
   const monthScoreGlow = monthScore >= 60 ? 'shadow-emerald-300/60' : monthScore >= 30 ? 'shadow-amber-300/60' : 'shadow-red-300/60';
@@ -737,6 +746,13 @@ export function KuvertHeroCard({
                 <p className="mb-1.5 text-sm font-semibold text-foreground">Hvad er Kuvert Score?</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   Din Kuvert Score er et akkumulerende pointsystem der vokser over tid, når du holder dit budget. Jo bedre du klarer dig, og jo længere din gode rytme varer, jo stærkere bliver din score.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-teal-100/70 bg-teal-50/80 px-4 py-3">
+                <p className="mb-1 text-sm font-semibold text-teal-950">Scoren lever gennem måneden</p>
+                <p className="text-sm leading-relaxed text-teal-900/75">
+                  Tallet du ser i appen bevæger sig lidt op og ned ud fra månedsscore og ugens rytme. Ved månedsskifte bliver de rigtige bonuspoint og straffe låst fast i din langsigtede score.
                 </p>
               </div>
 
