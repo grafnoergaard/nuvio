@@ -204,7 +204,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         </label>
       </div>
 
-      <label className="flex cursor-pointer items-center gap-2 py-0.5 text-[0.94rem] text-foreground/72">
+      <label className="flex cursor-pointer items-center gap-2 py-0.5 text-[0.86rem] text-foreground/72">
         <input
           type="checkbox"
           checked={spreadOverMonth}
