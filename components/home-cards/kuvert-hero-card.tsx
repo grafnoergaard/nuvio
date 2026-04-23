@@ -266,12 +266,12 @@ export function KuvertHeroCard({
       <section
         className="relative w-full overflow-hidden bg-transparent"
       >
-        <div className="pb-4 pt-1 sm:pb-5 sm:pt-3">
+        <div className="pb-3 pt-0 sm:pb-4 sm:pt-1">
 
         {showStreak && (
           <>
             {showScoreInHero ? (
-              <div className={cn(isNativeHero ? 'mt-3 sm:mt-8' : 'mt-1')}>
+              <div className={cn(isNativeHero ? 'mt-0.5 sm:mt-4' : 'mt-1')}>
                 <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
                   <defs>
                     <linearGradient id="kuvert-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
@@ -408,7 +408,7 @@ export function KuvertHeroCard({
 
             <div
               className={cn(
-                'mt-4 px-1 py-1.5 sm:mt-4 sm:py-2',
+                'mt-3 px-1 py-1 sm:mt-3 sm:py-1.5',
                 isNativeHero
                   ? 'bg-transparent'
                   : 'border border-foreground/6 bg-white/55'
@@ -478,7 +478,7 @@ export function KuvertHeroCard({
         {showQuickExpense && (
           <div
             className={cn(
-              isNativeHero ? 'mt-5 overflow-hidden border-t border-foreground/8 pt-4 sm:mt-6 sm:pt-5' : 'mt-5 overflow-hidden',
+              isNativeHero ? 'mt-3 overflow-hidden border-t border-foreground/8 pt-3 sm:mt-4 sm:pt-4' : 'mt-5 overflow-hidden',
               isNativeHero
                 ? 'bg-transparent'
                 : statusCardStyle.className
@@ -565,7 +565,7 @@ export function KuvertHeroCard({
             </div>
 
             {isNativeHero ? (
-              <div className="mt-3 border-t border-foreground/8 px-2 pb-0 pt-3 sm:mt-4 sm:pt-4">
+              <div className="mt-2 border-t border-foreground/8 px-2 pb-0 pt-2.5 sm:mt-3 sm:pt-3">
                 <div className="inline-expense-form-shell">
                   <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
                 </div>

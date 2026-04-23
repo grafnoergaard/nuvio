@@ -1185,7 +1185,7 @@ export default function NuvioFlowPage() {
                   <Check className="h-3.5 w-3.5 stroke-[3]" />
                 </span>
                 <span className="font-semibold text-foreground/84">
-                  Gave <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
+                  Særlig udgift <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
                 </span>
               </label>
 

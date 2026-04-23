@@ -320,7 +320,7 @@ export default function HomePage() {
           <div
             ref={homeContentRef}
             className={`max-w-lg mx-auto px-4 sm:pb-16 ${needsBottomScrollSpace ? 'pb-24' : 'pb-3'}`}
-            style={{ paddingTop: 'max(calc(env(safe-area-inset-top) + 1.15rem), 2.55rem)' }}
+            style={{ paddingTop: 'max(calc(env(safe-area-inset-top) + 0.55rem), 1.7rem)' }}
           >
             <div className="flex flex-col gap-2 sm:gap-4">
               <DynamicSections {...slotProps} sortedCardKeys={sortedCardKeys} cardWidth={cardWidth} />

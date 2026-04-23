@@ -138,7 +138,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
   return (
     <div
       ref={formRef}
-      className={cn('space-y-2', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}
+      className={cn('space-y-1.5', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}
       onFocusCapture={() => setInlineExpenseFocusState(true)}
       onBlurCapture={(event) => {
         const nextTarget = event.relatedTarget;
@@ -150,7 +150,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         }, 0);
       }}
     >
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <label className="block">
           <span className={cn(
             'mb-1 block text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/58',
@@ -159,7 +159,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
             Tilføj udgift
           </span>
           <div className={cn(
-            'flex items-end gap-2.5 border-b border-foreground/10 pb-1.5',
+            'flex items-end gap-2.5 border-b border-foreground/10 pb-1',
             CENTER_INLINE_EXPENSE_LAYOUT && 'justify-center'
           )}>
             <input
@@ -185,7 +185,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
 
         <label className="block">
           <div className={cn(
-            'flex items-end gap-3 border-b border-foreground/8 pb-1.5',
+            'flex items-end gap-3 border-b border-foreground/8 pb-1',
             CENTER_INLINE_EXPENSE_LAYOUT && 'justify-center'
           )}>
             <input
@@ -204,7 +204,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         </label>
       </div>
 
-      <label className="flex cursor-pointer items-center gap-2.5 py-1 text-sm text-foreground/72">
+      <label className="flex cursor-pointer items-center gap-2 py-0.5 text-[0.94rem] text-foreground/72">
         <input
           type="checkbox"
           checked={spreadOverMonth}
@@ -223,7 +223,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
           <Check className="h-3.5 w-3.5 stroke-[3]" />
         </span>
         <span className={cn('font-semibold text-foreground/84', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}>
-          Gave <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
+          Særlig udgift <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
         </span>
       </label>
 
