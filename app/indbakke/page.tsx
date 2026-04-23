@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCheck, ChevronRight, Info, Mail, X } from 'lucide-react';
+import { Bell, CheckCheck, ChevronRight, Info, Mail, Trash2, X } from 'lucide-react';
 import { useNotificationCenter } from '@/lib/notification-center-context';
 import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
 import { cn } from '@/lib/utils';
@@ -20,7 +20,15 @@ function formatNotificationTime(value: string) {
 export default function IndbakkePage() {
   const router = useRouter();
   const { design } = useSettings();
-  const { notifications, unreadCount, loading, markRead, markAllRead } = useNotificationCenter();
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markRead,
+    markAllRead,
+    deleteNotification,
+    deleteAllNotifications,
+  } = useNotificationCenter();
   const autoMarkedRef = useRef(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const cardMedium = design.cardMedium;
@@ -43,6 +51,10 @@ export default function IndbakkePage() {
   async function openNotification(notificationId: string, href: string) {
     await markRead(notificationId).catch(() => null);
     router.push(href);
+  }
+
+  async function removeNotification(notificationId: string) {
+    await deleteNotification(notificationId).catch(() => null);
   }
 
   return (
@@ -78,7 +90,7 @@ export default function IndbakkePage() {
         </p>
 
         {!loading && notifications.length > 0 && (
-          <div className="mb-3 flex justify-end">
+          <div className="mb-3 flex justify-end gap-2">
             <button
               type="button"
               onClick={() => markAllRead()}
@@ -86,6 +98,14 @@ export default function IndbakkePage() {
             >
               <CheckCheck className="h-4 w-4" />
               Markér alle som læst
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteAllNotifications()}
+              className="inline-flex items-center gap-2 rounded-full border border-foreground/8 bg-white/70 px-3 py-2 text-sm font-medium text-foreground/64 transition-colors hover:text-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+              Slet alle
             </button>
           </div>
         )}
@@ -126,39 +146,52 @@ export default function IndbakkePage() {
               {notifications.map((notification) => {
                 const isUnread = !notification.readAt;
                 return (
-                  <button
+                  <div
                     key={notification.id}
-                    type="button"
-                    onClick={() => openNotification(notification.id, notification.url)}
                     className={cn(
                       'flex w-full items-start gap-4 px-4 py-4 text-left transition-colors duration-200 active:scale-[0.995]',
                       isUnread ? 'bg-white/70' : 'bg-white/40 hover:bg-white/60'
                     )}
                   >
-                    <div
-                      className={cn(
-                        'mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
-                        isUnread ? 'bg-[#2ED3A7]/14 text-[#0E3B43]' : 'bg-foreground/[0.04] text-foreground/50'
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => openNotification(notification.id, notification.url)}
+                      className="flex min-w-0 flex-1 items-start gap-4 text-left"
                     >
-                      <Mail className="h-5 w-5" />
-                    </div>
+                      <div
+                        className={cn(
+                          'mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+                          isUnread ? 'bg-[#2ED3A7]/14 text-[#0E3B43]' : 'bg-foreground/[0.04] text-foreground/50'
+                        )}
+                      >
+                        <Mail className="h-5 w-5" />
+                      </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-base font-semibold leading-tight text-[#0E3B43]">{notification.title}</p>
-                          <p className="mt-1 text-sm leading-relaxed text-foreground/64">{notification.body}</p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          {isUnread && <span className="mb-1 ml-auto block h-2.5 w-2.5 rounded-full bg-[#E5484D]" />}
-                          <p className="text-[11px] font-medium text-foreground/42">{formatNotificationTime(notification.createdAt)}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-base font-semibold leading-tight text-[#0E3B43]">{notification.title}</p>
+                            <p className="mt-1 text-sm leading-relaxed text-foreground/64">{notification.body}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            {isUnread && <span className="mb-1 ml-auto block h-2.5 w-2.5 rounded-full bg-[#E5484D]" />}
+                            <p className="text-[11px] font-medium text-foreground/42">{formatNotificationTime(notification.createdAt)}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-foreground/32" />
-                  </button>
+                      <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-foreground/32" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removeNotification(notification.id)}
+                      className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground/36 transition-colors hover:bg-white/70 hover:text-foreground/70"
+                      aria-label={`Slet besked: ${notification.title}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 );
               })}
             </div>

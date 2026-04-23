@@ -190,6 +190,50 @@ export async function markNotificationRead(notificationId: string) {
   return nextUnread;
 }
 
+export async function deleteStoredNotification(notificationId: string) {
+  if (!isBrowser()) return 0;
+
+  const db = await openNotificationCenterDb();
+  const transaction = db.transaction([NOTIFICATIONS_STORE, META_STORE], 'readwrite');
+  const notificationsStore = transaction.objectStore(NOTIFICATIONS_STORE);
+  const metaStore = transaction.objectStore(META_STORE);
+  const notification = await requestToPromise<StoredPushNotification | undefined>(notificationsStore.get(notificationId));
+  const unreadRecord = await requestToPromise<MetaRecord | undefined>(metaStore.get(UNREAD_META_KEY));
+
+  let nextUnread = typeof unreadRecord?.value === 'number' ? unreadRecord.value : 0;
+
+  if (notification) {
+    notificationsStore.delete(notificationId);
+    if (!notification.readAt) {
+      nextUnread = Math.max(0, nextUnread - 1);
+      metaStore.put({ key: UNREAD_META_KEY, value: nextUnread } satisfies MetaRecord);
+    }
+  }
+
+  await transactionDone(transaction);
+  db.close();
+  await applyAppBadgeCount(nextUnread);
+  broadcastNotificationCenterUpdate(nextUnread);
+  return nextUnread;
+}
+
+export async function deleteAllStoredNotifications() {
+  if (!isBrowser()) return;
+
+  const db = await openNotificationCenterDb();
+  const transaction = db.transaction([NOTIFICATIONS_STORE, META_STORE], 'readwrite');
+  const notificationsStore = transaction.objectStore(NOTIFICATIONS_STORE);
+  const metaStore = transaction.objectStore(META_STORE);
+
+  notificationsStore.clear();
+  metaStore.put({ key: UNREAD_META_KEY, value: 0 } satisfies MetaRecord);
+
+  await transactionDone(transaction);
+  db.close();
+  await applyAppBadgeCount(0);
+  broadcastNotificationCenterUpdate(0);
+}
+
 export async function markAllNotificationsRead() {
   if (!isBrowser()) return;
 

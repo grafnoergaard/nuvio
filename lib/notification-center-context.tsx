@@ -8,6 +8,8 @@ import {
   type StoredPushNotification,
   getStoredNotifications,
   getUnreadNotificationCount,
+  deleteAllStoredNotifications,
+  deleteStoredNotification,
   markAllNotificationsRead,
   markNotificationRead,
   syncAppBadgeFromNotificationCenter,
@@ -20,6 +22,8 @@ type NotificationCenterContextValue = {
   refresh: () => Promise<void>;
   markRead: (notificationId: string) => Promise<void>;
   markAllRead: () => Promise<void>;
+  deleteNotification: (notificationId: string) => Promise<void>;
+  deleteAllNotifications: () => Promise<void>;
 };
 
 const NotificationCenterContext = createContext<NotificationCenterContextValue>({
@@ -29,6 +33,8 @@ const NotificationCenterContext = createContext<NotificationCenterContextValue>(
   refresh: async () => {},
   markRead: async () => {},
   markAllRead: async () => {},
+  deleteNotification: async () => {},
+  deleteAllNotifications: async () => {},
 });
 
 export function NotificationCenterProvider({ children }: { children: React.ReactNode }) {
@@ -100,6 +106,19 @@ export function NotificationCenterProvider({ children }: { children: React.React
     await refresh();
   }, [refresh]);
 
+  const deleteNotification = useCallback(
+    async (notificationId: string) => {
+      await deleteStoredNotification(notificationId);
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const deleteAllNotifications = useCallback(async () => {
+    await deleteAllStoredNotifications();
+    await refresh();
+  }, [refresh]);
+
   const value = useMemo(
     () => ({
       notifications,
@@ -108,8 +127,10 @@ export function NotificationCenterProvider({ children }: { children: React.React
       refresh,
       markRead,
       markAllRead,
+      deleteNotification,
+      deleteAllNotifications,
     }),
-    [loading, markAllRead, markRead, notifications, refresh, unreadCount]
+    [deleteAllNotifications, deleteNotification, loading, markAllRead, markRead, notifications, refresh, unreadCount]
   );
 
   return <NotificationCenterContext.Provider value={value}>{children}</NotificationCenterContext.Provider>;
