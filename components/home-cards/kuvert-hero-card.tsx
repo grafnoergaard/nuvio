@@ -706,13 +706,13 @@ export function KuvertHeroCard({
             </div>
 
             {isSplitCards ? (
-              <div className={cn(nativeCardClass, 'px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-3.5')}>
+              <div className={cn('inline-expense-card-shell', nativeCardClass, 'px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-3.5')}>
                 <div className="inline-expense-form-shell">
                   <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
                 </div>
               </div>
             ) : isNativeHero ? (
-              <div className="mt-2 border-t border-foreground/8 px-2 pb-0 pt-2.5 sm:mt-3 sm:pt-3">
+              <div className="inline-expense-card-shell mt-2 border-t border-foreground/8 px-2 pb-0 pt-2.5 sm:mt-3 sm:pt-3">
                 <div className="inline-expense-form-shell">
                   <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
                 </div>
