@@ -182,12 +182,8 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
             <span className="pb-0.5 text-[1.35rem] font-semibold text-muted-foreground/60 sm:text-[1.5rem]">kr.</span>
           </div>
         </label>
-
-        <label className="block">
-          <div className={cn(
-            'flex items-end gap-3 border-b border-foreground/8 pb-1',
-            CENTER_INLINE_EXPENSE_LAYOUT && 'justify-center'
-          )}>
+        <div className="flex items-end gap-3 border-b border-foreground/8 pb-1">
+          <label className="min-w-0 flex-1">
             <input
               type="text"
               placeholder="Note (valgfri)"
@@ -196,36 +192,36 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
               onKeyDown={(e) => e.key === 'Enter' && handleAddExpense()}
               maxLength={120}
               className={cn(
-                'min-w-0 flex-1 bg-transparent text-[0.95rem] font-medium text-foreground/82 placeholder:text-muted-foreground/42 focus:outline-none',
+                'min-w-0 w-full bg-transparent text-[0.95rem] font-medium text-foreground/82 placeholder:text-muted-foreground/42 focus:outline-none',
                 CENTER_INLINE_EXPENSE_LAYOUT && 'text-center'
               )}
             />
-          </div>
-        </label>
-      </div>
+          </label>
 
-      <label className="flex cursor-pointer items-center gap-1.5 py-0.5 text-[0.8rem] text-foreground/70">
-        <input
-          type="checkbox"
-          checked={spreadOverMonth}
-          onChange={(e) => setSpreadOverMonth(e.target.checked)}
-          className="sr-only"
-        />
-        <span
-          className={cn(
-            'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
-            spreadOverMonth
-              ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
-              : 'border-foreground/18 bg-white/50 text-transparent'
-          )}
-          aria-hidden="true"
-        >
-          <Check className="h-3 w-3 stroke-[3]" />
-        </span>
-        <span className={cn('text-[0.8rem] font-semibold text-foreground/82', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}>
-          Særlig udgift <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
-        </span>
-      </label>
+          <label className="flex shrink-0 cursor-pointer items-center gap-1.5 py-0.5 text-[0.75rem] text-foreground/70">
+            <input
+              type="checkbox"
+              checked={spreadOverMonth}
+              onChange={(e) => setSpreadOverMonth(e.target.checked)}
+              className="sr-only"
+            />
+            <span
+              className={cn(
+                'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
+                spreadOverMonth
+                  ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
+                  : 'border-foreground/18 bg-white/50 text-transparent'
+              )}
+              aria-hidden="true"
+            >
+              <Check className="h-2.5 w-2.5 stroke-[3]" />
+            </span>
+            <span className="whitespace-nowrap text-[0.75rem] font-semibold text-foreground/78">
+              Særlig udgift <span className="font-medium text-foreground/56">(Fordel over måneden)</span>
+            </span>
+          </label>
+        </div>
+      </div>
 
       {expenseError && (
         <p className="flex items-center gap-1.5 text-xs text-red-600">
