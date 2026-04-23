@@ -73,7 +73,8 @@ export function useAdminLabel() {
 }
 
 const PAGE_NAMES: Record<string, string> = {
-  '/': 'Kuvert',
+  '/': 'Hjem',
+  '/indbakke': 'Indbakke',
   '/budgets': 'Budgetter',
   '/plan': 'Plan',
   '/variable-forbrug': 'Variable forbrug',

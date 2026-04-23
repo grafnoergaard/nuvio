@@ -10,14 +10,16 @@ import { DEFAULT_MOBILE_NAV_OPTIONS, RELEASE_NAV_HREFS, getNavGroupsWithItems, g
 import { useUIStrings } from '@/lib/ui-strings-context';
 import { VERSION } from '@/lib/version';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from '@/lib/database.types';
+import { useNotificationCenter } from '@/lib/notification-center-context';
 
 const DEFAULT_BURGER_SECTIONS = [
   {
     label: 'Kuvert',
     items: [
-      { label: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Kuvert'] },
+      { label: 'Hjem', href: '/', icon: NAV_ICON_MAP['House'] },
       { label: 'Udgifter', href: '/udgifter', icon: NAV_ICON_MAP['Coins'] },
       { label: 'Sparet', href: '/opsparing', icon: NAV_ICON_MAP['PiggyBank'] },
+      { label: 'Indbakke', href: '/indbakke', icon: NAV_ICON_MAP['Mail'] },
       { label: 'Indstillinger', href: '/indstillinger', icon: Settings },
     ],
   },
@@ -56,9 +58,10 @@ export function MobileNav() {
   const router = useRouter();
   const { design } = useSettings();
   const { user, signOut } = useAuth();
+  const { unreadCount } = useNotificationCenter();
   const { getString } = useUIStrings();
   const navHeight = parseInt(getString('mobile_nav_height', '68'), 10) || 68;
-  const slotCount = Math.min(4, Math.max(2, parseInt(getString('mobile_nav_slot_count', '4'), 10) || 4));
+  const slotCount = 5;
   const [burgerOpen, setBurgerOpen] = useState(false);
   const [dbGroups, setDbGroups] = useState<NavGroupWithItems[]>([]);
   const [mobileSlots, setMobileSlots] = useState<MobileNavSlotWithItem[]>([]);
@@ -221,7 +224,7 @@ export function MobileNav() {
       )}
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden"
+        className="mobile-nav-shell fixed bottom-0 left-0 right-0 z-[60] transition-[transform,opacity] duration-200 lg:hidden"
         style={{ pointerEvents: 'none' }}
       >
         <div className="px-4 pb-5" style={{ pointerEvents: 'none' }}>
@@ -331,6 +334,8 @@ export function MobileNav() {
 
                 const Icon = slot.icon;
                 const active = displayedActiveSlotIndex === index;
+                const showBadge = slot.href === '/indbakke' && unreadCount > 0;
+                const badgeLabel = unreadCount > 9 ? '9+' : `${unreadCount}`;
                 return (
                   <button
                     key={slot.key}
@@ -340,15 +345,20 @@ export function MobileNav() {
                       router.push(slot.href);
                     }}
                     className={cn(
-                      'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 self-stretch px-2 py-2 rounded-full transition-colors duration-300',
+                      'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 self-stretch px-1.5 py-2 rounded-full transition-colors duration-300',
                       active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                     )}
                   >
-                    <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
+                    <div className="relative flex h-7 w-12 items-center justify-center rounded-full transition-all duration-300">
                       <Icon className={cn('h-5 w-5', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
+                      {showBadge && (
+                        <span className="absolute -right-1 -top-1 flex min-h-[1.05rem] min-w-[1.05rem] items-center justify-center rounded-full bg-[#E5484D] px-1 text-[0.58rem] font-bold leading-none text-white shadow-sm">
+                          {badgeLabel}
+                        </span>
+                      )}
                     </div>
                     <span className={cn(
-                      'text-[10px] font-semibold leading-none tracking-wide',
+                      'text-[9px] font-medium leading-none tracking-wide',
                       active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
                     )}>
                       {slot.label}

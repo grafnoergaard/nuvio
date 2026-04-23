@@ -7,6 +7,7 @@ import { AuthGuard } from './auth-guard';
 import { AiAssistantButton } from '@/components/ai-assistant-button';
 import { AiContextProvider, useAiContext } from '@/lib/ai-context';
 import { useGlobalModalThemeColor } from '@/lib/use-modal-theme-color';
+import { NotificationCenterUrlSync } from '@/components/notification-center-url-sync';
 
 function AiAssistantButtonWithContext() {
   const { aiContext, wizardActive } = useAiContext();
@@ -30,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <AuthGuard>
       {!loading && user ? (
         <AiContextProvider>
+          <NotificationCenterUrlSync />
           <SidebarLayout>
             {children}
             <AiAssistantButtonWithContext />

@@ -98,6 +98,21 @@ function wasAlreadySentThisSlot(config: PushNotificationConfigRow, now: Date) {
   );
 }
 
+function getSpecialPushRoute(key: PushNotificationKey) {
+  const routes: Partial<Record<PushNotificationKey, string>> = {
+    streak_risk: '/api/push/send-streak-risk',
+    weekly_budget_low: '/api/push/send-weekly-budget-low',
+    month_close: '/api/push/send-month-close',
+    score_drop: '/api/push/send-score-drop',
+    score_strong: '/api/push/send-score-strong',
+    good_grip: '/api/push/send-good-grip',
+    honest_entries: '/api/push/send-honest-entries',
+    single_account_method: '/api/push/send-single-account-method',
+  };
+
+  return routes[key] ?? null;
+}
+
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Ikke autoriseret' }, { status: 401 });
@@ -141,41 +156,17 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const isSpecialRoute =
-      config.key === 'streak_risk' ||
-      config.key === 'month_close' ||
-      config.key === 'score_drop' ||
-      config.key === 'score_strong' ||
-      config.key === 'good_grip' ||
-      config.key === 'honest_entries' ||
-      config.key === 'single_account_method';
+    const specialRoute = getSpecialPushRoute(config.key);
     const payload = resolvePushNotificationMessage(definition, config);
     const response = await fetch(
-        new URL(
-        config.key === 'streak_risk'
-          ? '/api/push/send-streak-risk'
-          : config.key === 'month_close'
-            ? '/api/push/send-month-close'
-              : config.key === 'score_drop'
-                ? '/api/push/send-score-drop'
-                : config.key === 'score_strong'
-                  ? '/api/push/send-score-strong'
-                  : config.key === 'good_grip'
-                    ? '/api/push/send-good-grip'
-                    : config.key === 'honest_entries'
-                      ? '/api/push/send-honest-entries'
-                      : config.key === 'single_account_method'
-                        ? '/api/push/send-single-account-method'
-            : '/api/push/send',
-        appUrl
-      ),
+      new URL(specialRoute ?? '/api/push/send', appUrl),
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-kuvert-push-secret': secret,
         },
-        body: isSpecialRoute ? undefined : JSON.stringify(payload),
+        body: specialRoute ? undefined : JSON.stringify(payload),
       }
     );
 

@@ -565,7 +565,7 @@ export function KuvertHeroCard({
             </div>
 
             {isNativeHero ? (
-              <div className="mt-2.5 px-2 pb-0">
+              <div className="inline-expense-form-shell mt-2.5 px-2 pb-0">
                 <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
               </div>
             ) : (

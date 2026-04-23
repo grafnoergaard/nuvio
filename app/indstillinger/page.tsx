@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSettings } from '@/lib/settings-context';
 import { useAuth } from '@/lib/auth-context';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RotateCcw, CalendarDays, LogOut, Settings, TriangleAlert, Info, X } from 'lucide-react';
+import { CalendarDays, LogOut, Settings, TriangleAlert, Info, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { EditableText } from '@/components/editable-text';
 import UserDataResetWizard from '@/components/user-data-reset-wizard';
@@ -14,7 +12,6 @@ import { VERSION } from '@/lib/version';
 import { PushNotificationSettings } from '@/components/push-notification-settings';
 
 export default function IndstillingerPage() {
-  const { settings, updateSetting, resetSettings } = useSettings();
   const { user, signOut } = useAuth();
   const [weekStartDay, setWeekStartDayState] = useState<number>(1);
   const [savingWeekStartDay, setSavingWeekStartDay] = useState(false);
@@ -44,11 +41,6 @@ export default function IndstillingerPage() {
     } finally {
       setSavingWeekStartDay(false);
     }
-  }
-
-  function handleReset() {
-    resetSettings();
-    toast.success('Indstillinger nulstillet');
   }
 
   return (
@@ -100,55 +92,6 @@ export default function IndstillingerPage() {
             </button>
           </div>
         )}
-
-        <section>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 px-1 mb-2 flex items-center gap-1.5">
-            <Settings className="h-3 w-3" />
-            Visning
-          </p>
-          <div className="rounded-2xl bg-white border border-foreground/6 shadow-sm divide-y divide-foreground/5">
-            <SettingRow
-              label="Afrund beløb"
-              description="Runder op til nærmeste 100 kr."
-            >
-              <Switch
-                id="round-toggle"
-                checked={settings.roundToHundreds}
-                onCheckedChange={(checked) => updateSetting('roundToHundreds', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Skjul decimaler"
-              description="Viser kun hele kroner uden ører"
-            >
-              <Switch
-                id="decimals-toggle"
-                checked={settings.hideDecimals}
-                onCheckedChange={(checked) => updateSetting('hideDecimals', checked)}
-              />
-            </SettingRow>
-            <SettingRow
-              label="Farvekod beløb"
-              description="Udgifter røde, indtægter grønne"
-            >
-              <Switch
-                id="color-toggle"
-                checked={settings.colorizeAmounts}
-                onCheckedChange={(checked) => updateSetting('colorizeAmounts', checked)}
-              />
-            </SettingRow>
-            <div className="px-4 py-3.5">
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Nulstil visningsindstillinger
-              </button>
-            </div>
-
-          </div>
-        </section>
 
         <section>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 px-1 mb-2 flex items-center gap-1.5">
@@ -259,26 +202,6 @@ function IndstillingerInfoModal({ onClose }: { onClose: () => void }) {
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-    </div>
-  );
-}
-
-function SettingRow({
-  label,
-  description,
-  children,
-}: {
-  label: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="px-4 py-3.5 flex items-center justify-between gap-4">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
-      </div>
-      <div className="shrink-0">{children}</div>
     </div>
   );
 }

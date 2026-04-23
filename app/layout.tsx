@@ -12,6 +12,7 @@ import { AdminLabelProvider } from '@/components/admin-page-label';
 import { TypographyInspectorProvider } from '@/lib/typography-inspector-context';
 import { TypographyInspector } from '@/components/typography-inspector';
 import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar';
+import { NotificationCenterProvider } from '@/lib/notification-center-context';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -47,23 +48,25 @@ export default function RootLayout({
       </head>
       <body className="font-sans">
         <AuthProvider>
-          <UIStringsProvider>
-            <SettingsProvider>
-              <TypographyProvider>
-                <TypographyInspectorProvider>
-                  <DesignApplier />
-                  <ServiceWorkerRegistrar />
-                  <AdminLabelProvider>
-                    <AppShell>
-                      {children}
-                    </AppShell>
-                  </AdminLabelProvider>
-                  <TypographyInspector />
-                  <Toaster />
-                </TypographyInspectorProvider>
-              </TypographyProvider>
-            </SettingsProvider>
-          </UIStringsProvider>
+          <NotificationCenterProvider>
+            <UIStringsProvider>
+              <SettingsProvider>
+                <TypographyProvider>
+                  <TypographyInspectorProvider>
+                    <DesignApplier />
+                    <ServiceWorkerRegistrar />
+                    <AdminLabelProvider>
+                      <AppShell>
+                        {children}
+                      </AppShell>
+                    </AdminLabelProvider>
+                    <TypographyInspector />
+                    <Toaster />
+                  </TypographyInspectorProvider>
+                </TypographyProvider>
+              </SettingsProvider>
+            </UIStringsProvider>
+          </NotificationCenterProvider>
         </AuthProvider>
       </body>
     </html>

@@ -1,6 +1,7 @@
 export type PushNotificationKey =
   | 'test_all_users'
   | 'weekly_budget_reminder'
+  | 'weekly_budget_low'
   | 'streak_risk'
   | 'month_close'
   | 'score_drop'
@@ -105,6 +106,31 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
     automationMode: 'scheduled',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
+  },
+  {
+    key: 'weekly_budget_low',
+    title: 'Ugebudget er lavt',
+    description: 'En konkret besked når der kun er lidt luft tilbage i ugens Kuvert.',
+    audience: 'Brugere med lavt ugebudget',
+    status: 'Klar',
+    defaultMessageTitle: 'Dit ugebudget er lavt',
+    defaultMessageBody: 'Der er ikke meget luft tilbage i denne uge. Et roligt tjek nu kan hjælpe dig med at vælge bedre.',
+    defaultUrl: '/?flow=weekly-budget-low',
+    previewUrl: '/?flow=weekly-budget-low',
+    supportsAuto: true,
+    supportedScheduleTypes: ['weekly'],
+    defaultScheduleType: 'weekly',
+    defaultEnabled: true,
+    defaultAutoSendEnabled: false,
+    defaultSendDayOfWeek: 4,
+    defaultSendDayOfMonth: null,
+    defaultSendHour: 12,
+    defaultSendMinute: 0,
+    defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'event',
     defaultTriggerCondition: 'both',
     defaultDeliveryWindowStartHour: 9,
     defaultDeliveryWindowEndHour: 20,

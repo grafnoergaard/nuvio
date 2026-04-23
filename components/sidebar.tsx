@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth-context';
 import { VERSION } from '@/lib/version';
 import { getNavGroupsWithItems, NAV_ICON_MAP, RELEASE_NAV_HREFS } from '@/lib/nav-config';
 import type { NavGroupWithItems, NavItem } from '@/lib/database.types';
+import { useNotificationCenter } from '@/lib/notification-center-context';
 
 interface FlatNavItem {
   name: string;
@@ -95,6 +96,7 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
   const pathname = usePathname();
   const { design } = useSettings();
   const { user, signOut, isAdmin } = useAuth();
+  const { unreadCount } = useNotificationCenter();
   const [currentBudgetId, setCurrentBudgetId] = useState<string | null>(null);
   const [hasTransactions, setHasTransactions] = useState(false);
   const [dbGroups, setDbGroups] = useState<NavGroupWithItems[]>([]);
@@ -142,20 +144,38 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
     }
   }
 
-  const dynamicGroups: FlatNavGroup[] =
-    dbGroups.length > 0
-      ? dbGroupsToFlatGroups(dbGroups, currentBudgetId, hasTransactions, isAdmin)
-      : [
-          {
-            label: 'Økonomi',
+  const dynamicGroups: FlatNavGroup[] = (() => {
+    const fallbackGroups: FlatNavGroup[] = [
+      {
+        label: 'Økonomi',
+        items: [
+          { name: 'Hjem', href: '/', icon: NAV_ICON_MAP['Home'] },
+          { name: 'Udgifter', href: '/udgifter', icon: NAV_ICON_MAP['Coins'] },
+          { name: 'Sparet', href: '/opsparing', icon: NAV_ICON_MAP['PiggyBank'] },
+          { name: 'Indbakke', href: '/indbakke', icon: NAV_ICON_MAP['Mail'] },
+          { name: 'Indstillinger', href: '/indstillinger', icon: NAV_ICON_MAP['Settings'] },
+        ],
+      },
+    ];
+
+    if (dbGroups.length === 0) return fallbackGroups;
+
+    const groups = dbGroupsToFlatGroups(dbGroups, currentBudgetId, hasTransactions, isAdmin);
+    const hasInbox = groups.some((group) => group.items.some((item) => item.href === '/indbakke'));
+    if (hasInbox) return groups;
+
+    return groups.map((group, index) =>
+      index === 0
+        ? {
+            ...group,
             items: [
-              { name: 'Kuvert', href: '/', icon: NAV_ICON_MAP['Home'] },
-              { name: 'Udgifter', href: '/udgifter', icon: NAV_ICON_MAP['Coins'] },
-              { name: 'Sparet', href: '/opsparing', icon: NAV_ICON_MAP['PiggyBank'] },
-              { name: 'Indstillinger', href: '/indstillinger', icon: NAV_ICON_MAP['Settings'] },
+              ...group.items,
+              { name: 'Indbakke', href: '/indbakke', icon: NAV_ICON_MAP['Mail'] },
             ],
-          },
-        ];
+          }
+        : group
+    );
+  })();
 
   const allGroups: FlatNavGroup[] = isAdmin
     ? [
@@ -228,6 +248,11 @@ export function Sidebar({ pinned, onTogglePin, visible }: SidebarProps) {
                     >
                       <Icon className="h-5 w-5" />
                       <span>{item.name}</span>
+                      {item.href === '/indbakke' && unreadCount > 0 && (
+                        <span className="ml-auto inline-flex min-h-[1.2rem] min-w-[1.2rem] items-center justify-center rounded-full bg-[#E5484D] px-1.5 text-[0.68rem] font-bold leading-none text-white">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

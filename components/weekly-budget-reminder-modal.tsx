@@ -11,7 +11,7 @@ import { getDaysLeftInRange, getWeeklyBudgetSituation, toSafeDate } from '@/lib/
 interface WeeklyBudgetReminderModalProps {
   week: WeeklyBudgetStatus;
   weeklyStreak: QuickExpenseWeeklyStreak | null;
-  mode?: 'weekly-budget-reminder' | 'streak-risk';
+  mode?: 'weekly-budget-reminder' | 'weekly-budget-low' | 'streak-risk';
   onClose: () => void;
   onAddExpense: () => void;
 }
@@ -56,6 +56,67 @@ export function WeeklyBudgetReminderModal({
   const situation = getWeeklyBudgetSituation(week, daysLeft);
 
   const steps = useMemo(() => {
+    if (mode === 'weekly-budget-low') {
+      const lowBudgetCopy = {
+        close: {
+          title: 'Der er ikke meget luft tilbage i denne uge',
+          body: `Du har ${formatDKK(Math.max(remaining, 0))} tilbage. Det er stadig til at styre, men de næste køb betyder mere end normalt.`,
+          actionTitle: 'Gør de næste køb lidt langsommere',
+          actionBody: daysLeft > 0
+            ? `Der er ${daysLeft} ${daysLeft === 1 ? 'dag' : 'dage'} tilbage. Prøv at holde dig tæt på ${dailyAmount > 0 ? formatDKK(dailyAmount) : 'det nødvendige'} pr. dag, så ugen kan lande roligt.`
+            : 'Ugen er næsten lukket. Brug et øjeblik på at se, hvad der helst skal vente til næste uge.',
+        },
+        over: {
+          title: `Ugebudgettet er brugt op`,
+          body: `Du er ${formatDKK(Math.abs(remaining))} over. Det vigtigste nu er ikke dårlig samvittighed, men at stoppe lækket mens ugen stadig er i gang.`,
+          actionTitle: 'Tag et roligt tjek nu',
+          actionBody: daysLeft > 0
+            ? `Der er stadig ${daysLeft} ${daysLeft === 1 ? 'dag' : 'dage'} tilbage. Hvis du holder igen resten af ugen, bliver næste start meget lettere.`
+            : 'Ugen lukker snart. Se hvad der trak dig over, og tag læringen med ind i næste uge.',
+        },
+        ahead: {
+          title: 'Ugebudgettet ser stadig roligt ud',
+          body: `Du har ${formatDKK(remaining)} tilbage. Den her besked er mest et lille tjek, så du ikke mister overblikket.`,
+          actionTitle: 'Hold den gode retning',
+          actionBody: daysLeft > 0
+            ? `Med cirka ${formatDKK(dailyAmount)} pr. dag tilbage har du stadig en fin ramme. Hold øje med de variable køb.`
+            : 'Ugen er næsten lukket, og du står stadig godt.',
+        },
+      }[situation];
+
+      return [
+        {
+          eyebrow: 'Lavt ugebudget',
+          title: lowBudgetCopy.title,
+          body: lowBudgetCopy.body,
+          highlightLabel: 'Tilbage i denne uge',
+          highlightValue: formatDKK(Math.max(remaining, 0)),
+          icon: <Wallet className="h-5 w-5" />,
+        },
+        {
+          eyebrow: 'Næste valg',
+          title: lowBudgetCopy.actionTitle,
+          body: lowBudgetCopy.actionBody,
+          highlightLabel: 'Per dag resten af ugen',
+          highlightValue:
+            situation === 'over'
+              ? 'Hold igen'
+              : dailyAmount > 0
+                ? formatDKK(dailyAmount)
+                : 'Pas godt på resten',
+          icon: <Coins className="h-5 w-5" />,
+        },
+        {
+          eyebrow: 'Kuvert-princippet',
+          title: 'Når kuverten er lav, skal valgene være tydelige',
+          body: 'Det er hele pointen: du skal kunne se, om der er plads, uden at regne i hovedet. Nu har du signalet, før ugen løber fra dig.',
+          highlightLabel: 'Ugens ramme',
+          highlightValue: `${formatDKK(spent)} af ${formatDKK(effectiveBudget)}`,
+          icon: <CalendarDays className="h-5 w-5" />,
+        },
+      ];
+    }
+
     if (mode === 'streak-risk') {
       const streakValue = currentStreak > 0
         ? `${currentStreak} ${currentStreak === 1 ? 'uge i træk' : 'uger i træk'}`
@@ -191,12 +252,16 @@ export function WeeklyBudgetReminderModal({
         icon: <CalendarDays className="h-5 w-5" />,
       },
     ];
-  }, [currentStreak, dailyAmount, daysLeft, effectiveBudget, nextStreak, remaining, situation, spent, week]);
+  }, [currentStreak, dailyAmount, daysLeft, effectiveBudget, mode, nextStreak, remaining, situation, spent, week]);
 
   const current = steps[step];
   const isLast = step === steps.length - 1;
   const closeCtaLabel =
-    mode === 'streak-risk' ? 'Jeg passer på rytmen' : 'Det giver mening';
+    mode === 'streak-risk'
+      ? 'Jeg passer på rytmen'
+      : mode === 'weekly-budget-low'
+        ? 'Det er godt at vide'
+        : 'Det giver mening';
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 30);

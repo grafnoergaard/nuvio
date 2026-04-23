@@ -1,14 +1,15 @@
-import { Chrome as Home, LayoutDashboard, TrendingUp, Target, Users, Activity, Settings, Navigation, ShieldCheck, Calculator, ClipboardCheck, Zap, FileText, Upload, Shuffle, List, PiggyBank, Coins } from 'lucide-react';
+import { House, LayoutDashboard, TrendingUp, Target, Users, Activity, Settings, Navigation, ShieldCheck, Calculator, ClipboardCheck, Zap, FileText, Upload, Shuffle, List, PiggyBank, Coins, Mail } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { supabase } from './supabase';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from './database.types';
 import { KuvertIcon } from '@/components/icons/kuvert-icon';
 
 export const NAV_ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
-  Home: KuvertIcon,
+  Home: House,
   Kuvert: KuvertIcon,
   EnvelopeCoin: KuvertIcon,
-  House: Home,
+  House,
+  Mail,
   LayoutDashboard,
   TrendingUp,
   Target,
@@ -29,9 +30,10 @@ export const NAV_ICON_MAP: Record<string, ComponentType<{ className?: string }>>
 };
 
 export const DEFAULT_MOBILE_NAV_OPTIONS: { id: string; icon: ComponentType<{ className?: string }>; href: string; label: string; isBurger?: boolean }[] = [
-  { id: 'kuvert', icon: KuvertIcon, href: '/', label: 'Kuvert' },
+  { id: 'hjem', icon: House, href: '/', label: 'Hjem' },
   { id: 'udgifter', icon: Coins, href: '/udgifter', label: 'Udgifter' },
   { id: 'sparet', icon: PiggyBank, href: '/opsparing', label: 'Sparet' },
+  { id: 'indbakke', icon: Mail, href: '/indbakke', label: 'Indbakke' },
   { id: 'indstillinger', icon: Settings, href: '/indstillinger', label: 'Indstillinger' },
 ];
 
@@ -42,17 +44,19 @@ export const RELEASE_NAV_HREFS = new Set(
 );
 
 export function getDisplayNavName(name: string, href?: string | null): string {
-  if (href === '/') return 'Kuvert';
+  if (href === '/') return 'Hjem';
   if (href === '/udgifter') return 'Udgifter';
   if (href === '/maal' || href === '/opsparing') return 'Sparet';
-  if (name === 'Oversigt' || name === 'Overblik') return 'Kuvert';
+  if (href === '/indbakke') return 'Indbakke';
+  if (name === 'Oversigt' || name === 'Overblik') return 'Hjem';
   if (name === 'Nuvio Flow' || name === 'Flow' || name === 'Kuvert') return 'Udgifter';
   if (name === 'Opsparing' || name === 'Flow Opsparing' || name === 'Flow-opsparing') return 'Sparet';
   return name;
 }
 
 export function getDisplayNavIconName(iconName: string, href?: string | null): string {
-  if (href === '/') return 'Kuvert';
+  if (href === '/') return 'House';
+  if (href === '/indbakke') return 'Mail';
   return iconName;
 }
 

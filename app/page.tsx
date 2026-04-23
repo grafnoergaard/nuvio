@@ -66,7 +66,7 @@ export default function HomePage() {
   const [showGoodGripReminder, setShowGoodGripReminder] = useState(false);
   const [showHonestEntriesReminder, setShowHonestEntriesReminder] = useState(false);
   const [showSingleAccountMethodReminder, setShowSingleAccountMethodReminder] = useState(false);
-  const [weeklyReminderMode, setWeeklyReminderMode] = useState<'weekly-budget-reminder' | 'streak-risk'>('weekly-budget-reminder');
+  const [weeklyReminderMode, setWeeklyReminderMode] = useState<'weekly-budget-reminder' | 'weekly-budget-low' | 'streak-risk'>('weekly-budget-reminder');
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
   const [needsBottomScrollSpace, setNeedsBottomScrollSpace] = useState(false);
@@ -188,8 +188,14 @@ export default function HomePage() {
   useEffect(() => {
     if (loading) return;
     const flow = searchParams.get('flow');
-    if ((flow === 'weekly-budget-reminder' || flow === 'streak-risk') && currentWeekReminder) {
-      setWeeklyReminderMode(flow === 'streak-risk' ? 'streak-risk' : 'weekly-budget-reminder');
+    if ((flow === 'weekly-budget-reminder' || flow === 'weekly-budget-low' || flow === 'streak-risk') && currentWeekReminder) {
+      setWeeklyReminderMode(
+        flow === 'streak-risk'
+          ? 'streak-risk'
+          : flow === 'weekly-budget-low'
+            ? 'weekly-budget-low'
+            : 'weekly-budget-reminder'
+      );
       setShowWeeklyBudgetReminder(true);
     }
     if (flow === 'month-close' && flowMonthlyBudget > 0) {
@@ -314,7 +320,7 @@ export default function HomePage() {
           <div
             ref={homeContentRef}
             className={`max-w-lg mx-auto px-4 sm:pb-16 ${needsBottomScrollSpace ? 'pb-24' : 'pb-3'}`}
-            style={{ paddingTop: 'max(calc(env(safe-area-inset-top) + 1rem), 2.35rem)' }}
+            style={{ paddingTop: 'max(calc(env(safe-area-inset-top) + 1.15rem), 2.55rem)' }}
           >
             <div className="flex flex-col gap-2 sm:gap-4">
               <DynamicSections {...slotProps} sortedCardKeys={sortedCardKeys} cardWidth={cardWidth} />

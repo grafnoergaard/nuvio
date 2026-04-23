@@ -1,4 +1,4 @@
-export const BUILD_NUMBER = 1283;
+export const BUILD_NUMBER = 1286;
 
 const VERSION_MINOR = Math.floor(BUILD_NUMBER / 100);
 const VERSION_PATCH = BUILD_NUMBER % 100;

@@ -137,6 +137,10 @@ export default function AdminPushPage() {
     await sendPushAction('/api/admin/push/send-weekly-reminder', 'Ugebudget-påmindelse sendt');
   }
 
+  async function sendWeeklyBudgetLow() {
+    await sendPushAction('/api/admin/push/send-weekly-budget-low', 'Lavt ugebudget sendt');
+  }
+
   async function sendStreakRisk() {
     await sendPushAction('/api/admin/push/send-streak-risk', 'Streak i fare sendt');
   }
@@ -417,8 +421,8 @@ export default function AdminPushPage() {
                       {notification.supportsAuto ? (
                         notification.automationMode === 'event' ? (
                           <div className="mt-3 space-y-3">
-                            <div className={`grid gap-3 ${notification.key === 'streak_risk' ? 'md:grid-cols-[1.2fr_120px_120px]' : 'md:grid-cols-[1fr_120px_120px]'}`}>
-                              {notification.key === 'streak_risk' ? (
+                            <div className={`grid gap-3 ${notification.key === 'streak_risk' || notification.key === 'weekly_budget_low' ? 'md:grid-cols-[1.2fr_120px_120px]' : 'md:grid-cols-[1fr_120px_120px]'}`}>
+                              {notification.key === 'streak_risk' || notification.key === 'weekly_budget_low' ? (
                                 <div>
                                   <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
                                     Trigger når
@@ -434,9 +438,21 @@ export default function AdminPushPage() {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="both">Tæt på grænsen eller over budget</SelectItem>
-                                      <SelectItem value="close">Kun tæt på grænsen</SelectItem>
-                                      <SelectItem value="over">Kun over budget</SelectItem>
+                                      <SelectItem value="both">
+                                        {notification.key === 'weekly_budget_low'
+                                          ? 'Lavt eller brugt op'
+                                          : 'Tæt på grænsen eller over budget'}
+                                      </SelectItem>
+                                      <SelectItem value="close">
+                                        {notification.key === 'weekly_budget_low'
+                                          ? 'Kun lavt'
+                                          : 'Kun tæt på grænsen'}
+                                      </SelectItem>
+                                      <SelectItem value="over">
+                                        {notification.key === 'weekly_budget_low'
+                                          ? 'Kun brugt op'
+                                          : 'Kun over budget'}
+                                      </SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -490,6 +506,8 @@ export default function AdminPushPage() {
                             <p className="text-xs text-muted-foreground">
                               {notification.key === 'streak_risk'
                                 ? 'Tjekkes løbende, men sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.'
+                                : notification.key === 'weekly_budget_low'
+                                  ? 'Tjekkes løbende, men sendes højst én gang pr. uge. Hvis ugebudgettet går fra lavt til brugt op, må den gerne sende igen.'
                                 : notification.key === 'score_drop'
                                   ? 'Tjekkes løbende, men sendes højst én gang pr. måned. Hvis scoren falder fra gul til rød zone, må den gerne sende igen.'
                                   : notification.key === 'score_strong'
@@ -607,6 +625,15 @@ export default function AdminPushPage() {
                       <Button
                         className="shrink-0"
                         onClick={sendWeeklyBudgetReminder}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'weekly_budget_low' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendWeeklyBudgetLow}
                         disabled={sending || loading}
                       >
                         <Send className="mr-2 h-4 w-4" />
@@ -735,6 +762,7 @@ export default function AdminPushPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <SuggestionRow title="Ugebudget-påmindelse" copy="Åbner et lille uge-flow med status og et nyttigt næste skridt." />
+                <SuggestionRow title="Ugebudget er lavt" copy="Sendes når ugens Kuvert er ved at være presset, før brugeren mister overblikket." />
                 <SuggestionRow title="Streak i fare" copy="Du er tæt på at bryde din uge-streak." />
                 <SuggestionRow title="Måneden lukker snart" copy="Nu er det tid til at lande blødt i slutningen af måneden." />
                 <SuggestionRow title="Din score er stærk" copy="En positiv besked der forstærker, når det brugeren gør faktisk virker." />
