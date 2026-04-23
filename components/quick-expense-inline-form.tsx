@@ -153,7 +153,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
       <div className="space-y-1">
         <label className="block">
           <span className={cn(
-            'mb-1 block text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/58',
+            'mb-0.5 block text-[0.95rem] font-medium leading-snug text-foreground/82',
             CENTER_INLINE_EXPENSE_LAYOUT && 'text-center'
           )}>
             Tilføj udgift
