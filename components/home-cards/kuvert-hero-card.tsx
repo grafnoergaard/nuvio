@@ -420,13 +420,6 @@ export function KuvertHeroCard({
                     <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/44' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>
                       Kuvert niveauer
                     </p>
-                    <div className="flex max-w-[9rem] flex-col items-end text-right sm:max-w-[11rem]">
-                      <span className={cn(isNativeHero ? 'text-[10px] font-medium leading-tight text-foreground/44' : 'text-xs text-muted-foreground/60')}>
-                        {nextCumulativeMilestone
-                          ? `${Math.max(0, nextCumulativeMilestone.min - cumulativeScore)} point til næste niveau`
-                          : 'Du er på højeste niveau'}
-                      </span>
-                    </div>
                   </div>
                   <div className="mt-1.5 grid grid-cols-5 gap-1">
                     {cumulativeScoreSegments.map((segment, index) => {
@@ -434,17 +427,18 @@ export function KuvertHeroCard({
                       const active = cumulativeScore >= segment.min;
                       const current = cumulativeScore >= segment.min && cumulativeScore < nextMin;
                       return (
-                        <div key={segment.label} className="space-y-1">
+                        <div key={segment.label}>
                           <div
                             className={cn(
-                              'h-1.5 rounded-full transition-all duration-500 sm:h-2',
+                              'flex h-7 items-center justify-center rounded-full px-1 text-center transition-all duration-500 sm:h-8',
                               active ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]',
                               current && !isNativeHero && 'shadow-[0_0_10px_rgba(46,211,167,0.22)]'
                             )}
-                          />
-                          <p className={cn('text-[9px] font-semibold sm:text-[10px]', active ? 'text-[#0E3B43]' : 'text-foreground/32')}>
-                            {segment.label}
-                          </p>
+                          >
+                            <span className={cn('text-[9px] font-semibold leading-none sm:text-[10px]', active ? 'text-[#0E3B43]' : 'text-foreground/42')}>
+                              {segment.label}
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
@@ -453,7 +447,7 @@ export function KuvertHeroCard({
 
                 {isSplitCards && (
                   <div
-                    className="mt-3 border-t border-foreground/6 px-1 pt-3 sm:mt-3.5 sm:pt-3.5"
+                    className="mt-3 px-1 pt-1 sm:mt-3.5 sm:pt-1.5"
                     style={streakPanelStyle}
                   >
                     <div
@@ -635,7 +629,7 @@ export function KuvertHeroCard({
               style={isSplitCards ? undefined : budgetPanelStyle}
             >
             <div className={cn(isSplitCards ? 'px-0 pb-0 pt-0' : isNativeHero ? 'px-2 pb-2 pt-1 sm:pb-3 sm:pt-2' : 'px-4 pb-4 pt-4')}>
-              <div className={cn('flex justify-between gap-4', isNativeHero ? 'items-start' : 'items-end')}>
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className={cn(isSplitCards ? cardHeadingClass : isNativeHero ? cardHeadingClass : 'mb-1 text-xs font-medium leading-snug', !isNativeHero && !isSplitCards && flowStatus.headlineColor)}>
                     {budgetPeriodLabel}
@@ -648,28 +642,28 @@ export function KuvertHeroCard({
                   </p>
                 </div>
 
-                <div className={cn('flex shrink-0 gap-2 text-center', isNativeHero && 'pt-0.5')}>
+                <div className="flex shrink-0 gap-2 text-center">
                   <div
                     className={cn(
                       'min-w-[54px] px-2 py-1.5 sm:min-w-[56px] sm:px-3 sm:py-2',
-                      isNativeHero ? 'rounded-none border-0 bg-transparent' : 'rounded-xl border border-black/5 bg-white/60'
+                      isNativeHero ? 'rounded-none border-0 bg-transparent !py-0' : 'rounded-xl border border-black/5 bg-white/60'
                     )}
                   >
-                    <p className={cn(isNativeHero ? 'mb-0.5 text-[0.9rem] font-medium leading-snug text-foreground/46' : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Dage tilbage</p>
+                    <p className={cn(isNativeHero ? cardHeadingClass : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Dage tilbage</p>
                     <p className={cn(isNativeHero ? 'text-[1.05rem] font-semibold tracking-tight text-[#111827]' : 'text-sm font-semibold tracking-tight text-foreground')}>{remainingDays}</p>
                   </div>
                   <div
                     className={cn(
                       'min-w-[54px] px-2 py-1.5 sm:min-w-[56px] sm:px-3 sm:py-2',
                       isNativeHero
-                        ? 'rounded-none border-0 bg-transparent'
+                        ? 'rounded-none border-0 bg-transparent !py-0'
                         : cn(
                             'rounded-xl border',
                             overBudget ? 'border-red-100/60 bg-red-50/80' : 'border-emerald-100/60 bg-emerald-50/80'
                           )
                     )}
                   >
-                    <p className={cn(isNativeHero ? 'mb-0.5 text-[0.9rem] font-medium leading-snug text-foreground/46' : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Per dag</p>
+                    <p className={cn(isNativeHero ? cardHeadingClass : 'mb-0.5 text-xs font-medium leading-snug text-muted-foreground/70')}>Per dag</p>
                     <p className={cn(isNativeHero ? 'text-[1.05rem] font-semibold tracking-tight tabular-nums text-[#0E3B43]' : 'text-sm font-semibold tracking-tight tabular-nums', !isNativeHero && flowStatus.amountColor)}>{formatDKK(Math.round(dailyAvailable))}</p>
                   </div>
                 </div>
