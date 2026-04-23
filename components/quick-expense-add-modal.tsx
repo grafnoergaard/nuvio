@@ -20,6 +20,7 @@ interface QuickExpenseAddModalProps {
 export function QuickExpenseAddModal({ onComplete, onDismiss }: QuickExpenseAddModalProps) {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseNote, setExpenseNote] = useState('');
+  const [spreadOverMonth, setSpreadOverMonth] = useState(false);
   const [expenseSaving, setExpenseSaving] = useState(false);
   const [expenseSaved, setExpenseSaved] = useState(false);
   const [expenseError, setExpenseError] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function QuickExpenseAddModal({ onComplete, onDismiss }: QuickExpenseAddM
     setExpenseError(null);
 
     try {
-      await addQuickExpense(parsed, expenseNote.trim() || null);
+      await addQuickExpense(parsed, expenseNote.trim() || null, spreadOverMonth);
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
@@ -63,6 +64,7 @@ export function QuickExpenseAddModal({ onComplete, onDismiss }: QuickExpenseAddM
         setExpenseSaved(false);
         setExpenseAmount('');
         setExpenseNote('');
+        setSpreadOverMonth(false);
         onComplete();
       }, 900);
     } catch {
@@ -133,6 +135,29 @@ export function QuickExpenseAddModal({ onComplete, onDismiss }: QuickExpenseAddM
                 'transition-all duration-200 placeholder:text-muted-foreground/50'
               )}
             />
+
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-2xl px-1 py-1.5 text-sm text-foreground/75">
+              <input
+                type="checkbox"
+                checked={spreadOverMonth}
+                onChange={(e) => setSpreadOverMonth(e.target.checked)}
+                className="sr-only"
+              />
+              <span
+                className={cn(
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
+                  spreadOverMonth
+                    ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
+                    : 'border-foreground/18 bg-white text-transparent'
+                )}
+                aria-hidden="true"
+              >
+                <Check className="h-3.5 w-3.5 stroke-[3]" />
+              </span>
+              <span className="font-semibold text-foreground/84">
+                Gave <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
+              </span>
+            </label>
 
             {expenseError && (
               <p className="text-xs text-red-600 flex items-center gap-1.5 px-1">

@@ -201,6 +201,7 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
   const [amountRaw, setAmountRaw] = useState(String(Number(expense.amount)));
   const [dayIndex, setDayIndex] = useState(initDay);
   const [monthIndex, setMonthIndex] = useState(initMonth);
+  const [spreadOverMonth, setSpreadOverMonth] = useState(Boolean(expense.spread_over_month));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -226,7 +227,7 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
     setSaving(true);
     setError(null);
     try {
-      const updated = await updateQuickExpense(expense.id, parsed, newDate);
+      const updated = await updateQuickExpense(expense.id, parsed, newDate, spreadOverMonth);
       onSave(updated);
     } catch {
       setError('Kunne ikke gemme ændringen. Prøv igen.');
@@ -295,6 +296,31 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
               onSelect={setMonthIndex}
             />
           </div>
+        </div>
+
+        <div className="px-5 pt-2 pb-2">
+          <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border/60 bg-secondary/20 px-3 py-2.5 text-sm text-foreground/75">
+            <input
+              type="checkbox"
+              checked={spreadOverMonth}
+              onChange={(e) => setSpreadOverMonth(e.target.checked)}
+              className="sr-only"
+            />
+            <span
+              className={cn(
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
+                spreadOverMonth
+                  ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
+                  : 'border-foreground/18 bg-white text-transparent'
+              )}
+              aria-hidden="true"
+            >
+              <Check className="h-3.5 w-3.5 stroke-[3]" />
+            </span>
+            <span className="font-semibold text-foreground/84">
+              Gave <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
+            </span>
+          </label>
         </div>
 
         {error && (

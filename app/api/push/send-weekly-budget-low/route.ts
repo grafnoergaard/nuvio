@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       .gt('budget_amount', 0),
     supabase
       .from('quick_expenses')
-      .select('user_id,amount,expense_date')
+      .select('user_id,amount,expense_date,spread_over_month')
       .in('user_id', subscribedUserIds)
       .gte('expense_date', monthStart)
       .lte('expense_date', monthEnd),
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
   }
 
   const expensesByUser = new Map<string, QuickExpense[]>();
-  for (const row of (expenseRows ?? []) as Array<{ user_id: string; amount: number; expense_date: string }>) {
+  for (const row of (expenseRows ?? []) as Array<{ user_id: string; amount: number; expense_date: string; spread_over_month?: boolean | null }>) {
     const existing = expensesByUser.get(row.user_id) ?? [];
     existing.push({
       id: '',
@@ -170,6 +170,7 @@ export async function POST(request: NextRequest) {
       note: null,
       expense_date: row.expense_date,
       created_at: row.expense_date,
+      spread_over_month: Boolean(row.spread_over_month),
     });
     expensesByUser.set(row.user_id, existing);
   }

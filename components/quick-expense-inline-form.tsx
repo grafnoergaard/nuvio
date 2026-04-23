@@ -12,6 +12,9 @@ import {
   updateWeeklyCarryOver,
 } from '@/lib/quick-expense-service';
 
+// Design experiment: keep false for the default left-aligned layout.
+const CENTER_INLINE_EXPENSE_LAYOUT = false;
+
 interface QuickExpenseInlineFormProps {
   onComplete: () => void;
 }
@@ -19,6 +22,7 @@ interface QuickExpenseInlineFormProps {
 export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormProps) {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseNote, setExpenseNote] = useState('');
+  const [spreadOverMonth, setSpreadOverMonth] = useState(false);
   const [expenseSaving, setExpenseSaving] = useState(false);
   const [expenseSaved, setExpenseSaved] = useState(false);
   const [expenseError, setExpenseError] = useState<string | null>(null);
@@ -97,7 +101,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
     setExpenseError(null);
 
     try {
-      await addQuickExpense(parsed, expenseNote.trim() || null);
+      await addQuickExpense(parsed, expenseNote.trim() || null, spreadOverMonth);
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
@@ -121,6 +125,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         setExpenseSaved(false);
         setExpenseAmount('');
         setExpenseNote('');
+        setSpreadOverMonth(false);
         onComplete();
       }, 900);
     } catch {
@@ -133,7 +138,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
   return (
     <div
       ref={formRef}
-      className="space-y-2"
+      className={cn('space-y-2', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}
       onFocusCapture={() => setInlineExpenseFocusState(true)}
       onBlurCapture={(event) => {
         const nextTarget = event.relatedTarget;
@@ -147,10 +152,16 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
     >
       <div className="space-y-1.5">
         <label className="block">
-          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/58">
+          <span className={cn(
+            'mb-1 block text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/58',
+            CENTER_INLINE_EXPENSE_LAYOUT && 'text-center'
+          )}>
             Tilføj udgift
           </span>
-          <div className="flex items-end gap-2.5 border-b border-foreground/10 pb-1.5">
+          <div className={cn(
+            'flex items-end gap-2.5 border-b border-foreground/10 pb-1.5',
+            CENTER_INLINE_EXPENSE_LAYOUT && 'justify-center'
+          )}>
             <input
               ref={amountRef}
               type="number"
@@ -164,6 +175,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
               onKeyDown={(e) => e.key === 'Enter' && handleAddExpense()}
               className={cn(
                 'min-w-0 flex-1 bg-transparent text-[2.2rem] font-semibold leading-none tracking-tight text-[#0E3B43] placeholder:text-muted-foreground/35 focus:outline-none sm:text-[2.5rem]',
+                CENTER_INLINE_EXPENSE_LAYOUT && 'text-center',
                 expenseError && 'text-red-600'
               )}
             />
@@ -172,7 +184,10 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         </label>
 
         <label className="block">
-          <div className="flex items-end gap-3 border-b border-foreground/8 pb-1.5">
+          <div className={cn(
+            'flex items-end gap-3 border-b border-foreground/8 pb-1.5',
+            CENTER_INLINE_EXPENSE_LAYOUT && 'justify-center'
+          )}>
             <input
               type="text"
               placeholder="Note (valgfri)"
@@ -180,11 +195,37 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
               onChange={(e) => setExpenseNote(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddExpense()}
               maxLength={120}
-              className="min-w-0 flex-1 bg-transparent text-[0.95rem] font-medium text-foreground/82 placeholder:text-muted-foreground/42 focus:outline-none"
+              className={cn(
+                'min-w-0 flex-1 bg-transparent text-[0.95rem] font-medium text-foreground/82 placeholder:text-muted-foreground/42 focus:outline-none',
+                CENTER_INLINE_EXPENSE_LAYOUT && 'text-center'
+              )}
             />
           </div>
         </label>
       </div>
+
+      <label className="flex cursor-pointer items-center gap-2.5 py-1 text-sm text-foreground/72">
+        <input
+          type="checkbox"
+          checked={spreadOverMonth}
+          onChange={(e) => setSpreadOverMonth(e.target.checked)}
+          className="sr-only"
+        />
+        <span
+          className={cn(
+            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
+            spreadOverMonth
+              ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
+              : 'border-foreground/18 bg-white/50 text-transparent'
+          )}
+          aria-hidden="true"
+        >
+          <Check className="h-3.5 w-3.5 stroke-[3]" />
+        </span>
+        <span className={cn('font-semibold text-foreground/84', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}>
+          Gave <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
+        </span>
+      </label>
 
       {expenseError && (
         <p className="flex items-center gap-1.5 text-xs text-red-600">

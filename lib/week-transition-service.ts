@@ -230,7 +230,7 @@ export async function computeWeekSummaryData(
   const weekExpenses = expenses.filter(
     e => e.expense_date >= startStr && e.expense_date <= endStr
   );
-  const totalSpent = weekExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const actualTotalSpent = weekExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
   const transactionCount = weekExpenses.length;
 
   const summary = computeWeeklyCarryOver(
@@ -244,6 +244,7 @@ export async function computeWeekSummaryData(
 
   const thisWeek = summary.weeks.find(w => w.weekNumber === weekNumber);
   const weekBudget = thisWeek?.effectiveBudget ?? summary.weeklyBase;
+  const totalSpent = thisWeek?.spent ?? actualTotalSpent;
   const carryOver = weekBudget - totalSpent;
 
   const weeks = getWeeksInMonth(year, month, weekStartDay);

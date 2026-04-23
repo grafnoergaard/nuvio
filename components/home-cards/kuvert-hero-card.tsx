@@ -478,7 +478,7 @@ export function KuvertHeroCard({
         {showQuickExpense && (
           <div
             className={cn(
-              isNativeHero ? 'mt-5 overflow-hidden sm:mt-7' : 'mt-5 overflow-hidden',
+              isNativeHero ? 'mt-5 overflow-hidden border-t border-foreground/8 pt-4 sm:mt-6 sm:pt-5' : 'mt-5 overflow-hidden',
               isNativeHero
                 ? 'bg-transparent'
                 : statusCardStyle.className
@@ -565,8 +565,10 @@ export function KuvertHeroCard({
             </div>
 
             {isNativeHero ? (
-              <div className="inline-expense-form-shell mt-2.5 px-2 pb-0">
-                <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
+              <div className="mt-3 border-t border-foreground/8 px-2 pb-0 pt-3 sm:mt-4 sm:pt-4">
+                <div className="inline-expense-form-shell">
+                  <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
+                </div>
               </div>
             ) : (
               <button

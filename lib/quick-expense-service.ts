@@ -70,6 +70,7 @@ export interface QuickExpense {
   note: string | null;
   expense_date: string;
   created_at: string;
+  spread_over_month?: boolean | null;
 }
 
 export interface QuickExpenseBudget {
@@ -274,12 +275,21 @@ export function computeWeeklyCarryOver(
 
   const basePerWeek: number[] = daysPerWeek.map(days => dailyRate * days);
 
-  const spentPerWeek: number[] = weeks.map(({ start, end }) => {
+  const spentPerWeek: number[] = weeks.map(({ start, end }, i) => {
     const startStr = toDateString(start);
     const endStr = toDateString(end);
-    return expenses
-      .filter(e => e.expense_date >= startStr && e.expense_date <= endStr)
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+    const daysInWeek = daysPerWeek[i];
+
+    return expenses.reduce((sum, e) => {
+      const amount = Number(e.amount);
+      if (Boolean(e.spread_over_month)) {
+        return sum + (amount / daysInMonth) * daysInWeek;
+      }
+      if (e.expense_date >= startStr && e.expense_date <= endStr) {
+        return sum + amount;
+      }
+      return sum;
+    }, 0);
   });
 
   const todayStr = toDateString(today);
@@ -388,13 +398,19 @@ export async function getQuickExpensesForMonth(year: number, month: number): Pro
   return (data ?? []) as QuickExpense[];
 }
 
-export async function addQuickExpense(amount: number, note: string | null): Promise<QuickExpense> {
+export async function addQuickExpense(amount: number, note: string | null, spreadOverMonth: boolean = false): Promise<QuickExpense> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
     .from('quick_expenses')
-    .insert({ user_id: user.id, amount, note, expense_date: new Date().toISOString().slice(0, 10) })
+    .insert({
+      user_id: user.id,
+      amount,
+      note,
+      spread_over_month: spreadOverMonth,
+      expense_date: new Date().toISOString().slice(0, 10),
+    })
     .select()
     .single();
 
@@ -402,10 +418,24 @@ export async function addQuickExpense(amount: number, note: string | null): Prom
   return data as QuickExpense;
 }
 
-export async function updateQuickExpense(id: string, amount: number, expenseDate: string): Promise<QuickExpense> {
+export async function updateQuickExpense(
+  id: string,
+  amount: number,
+  expenseDate: string,
+  spreadOverMonth?: boolean
+): Promise<QuickExpense> {
+  const updatePayload: Record<string, unknown> = {
+    amount,
+    expense_date: expenseDate,
+  };
+
+  if (typeof spreadOverMonth === 'boolean') {
+    updatePayload.spread_over_month = spreadOverMonth;
+  }
+
   const { data, error } = await supabase
     .from('quick_expenses')
-    .update({ amount, expense_date: expenseDate })
+    .update(updatePayload)
     .eq('id', id)
     .select()
     .single();

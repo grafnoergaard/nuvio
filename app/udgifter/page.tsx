@@ -196,6 +196,7 @@ export default function NuvioFlowPage() {
   const [error, setError] = useState<string | null>(null);
   const [amountRaw, setAmountRaw] = useState('');
   const [note, setNote] = useState('');
+  const [spreadOverMonth, setSpreadOverMonth] = useState(false);
   const [showBudgetEditor, setShowBudgetEditor] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -428,7 +429,7 @@ export default function NuvioFlowPage() {
     setSaving(true);
     setError(null);
     try {
-      const exp = await addQuickExpense(parsed, note.trim() || null);
+      const exp = await addQuickExpense(parsed, note.trim() || null, spreadOverMonth);
       if (isCurrentMonth) {
         const newExpenses = [exp, ...expenses];
         setExpenses(newExpenses);
@@ -440,6 +441,7 @@ export default function NuvioFlowPage() {
       }
       setAmountRaw('');
       setNote('');
+      setSpreadOverMonth(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
       amountRef.current?.focus();
@@ -1164,6 +1166,29 @@ export default function NuvioFlowPage() {
                 )}
               />
 
+              <label className="flex cursor-pointer items-center gap-2.5 px-1 py-1.5 text-sm text-foreground/75">
+                <input
+                  type="checkbox"
+                  checked={spreadOverMonth}
+                  onChange={(e) => setSpreadOverMonth(e.target.checked)}
+                  className="sr-only"
+                />
+                <span
+                  className={cn(
+                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
+                    spreadOverMonth
+                      ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
+                      : 'border-foreground/18 bg-white text-transparent'
+                  )}
+                  aria-hidden="true"
+                >
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                </span>
+                <span className="font-semibold text-foreground/84">
+                  Gave <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
+                </span>
+              </label>
+
               {error && (
                 <p className="text-xs text-red-600 flex items-center gap-1.5">
                   <X className="h-3.5 w-3.5 shrink-0" />
@@ -1258,7 +1283,14 @@ export default function NuvioFlowPage() {
                     <p className="text-sm font-medium text-foreground truncate">
                       {exp.note ?? 'Udgift'}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{formatDate(exp.expense_date)}</p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <p className="text-xs text-muted-foreground">{formatDate(exp.expense_date)}</p>
+                      {exp.spread_over_month && (
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                          Fordelt
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm font-semibold text-foreground shrink-0">{formatDKK(Number(exp.amount))}</p>
                   <button
