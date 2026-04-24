@@ -706,9 +706,13 @@ export function KuvertHeroCard({
             </div>
 
             {isSplitCards ? (
-              <div className={cn('inline-expense-card-shell', nativeCardClass, 'px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-3.5')}>
+              <div className={cn('inline-expense-card-shell relative overflow-hidden', nativeCardClass, 'px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-3.5')}>
                 <div className="inline-expense-form-shell">
-                  <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
+                  <QuickExpenseInlineForm
+                    onComplete={onQuickExpenseSaved}
+                    successMode="card"
+                    successOverlayClassName="-inset-x-4 -top-3 -bottom-4 sm:-inset-x-5 sm:-top-3.5 sm:-bottom-5"
+                  />
                 </div>
               </div>
             ) : isNativeHero ? (

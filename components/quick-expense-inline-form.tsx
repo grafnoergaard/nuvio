@@ -17,9 +17,15 @@ const CENTER_INLINE_EXPENSE_LAYOUT = false;
 
 interface QuickExpenseInlineFormProps {
   onComplete: () => void;
+  successMode?: 'button' | 'card';
+  successOverlayClassName?: string;
 }
 
-export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormProps) {
+export function QuickExpenseInlineForm({
+  onComplete,
+  successMode = 'button',
+  successOverlayClassName,
+}: QuickExpenseInlineFormProps) {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseNote, setExpenseNote] = useState('');
   const [spreadOverMonth, setSpreadOverMonth] = useState(false);
@@ -138,7 +144,7 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
   return (
     <div
       ref={formRef}
-      className={cn('space-y-1.5', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}
+      className={cn('relative space-y-1.5', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}
       onFocusCapture={() => setInlineExpenseFocusState(true)}
       onBlurCapture={(event) => {
         const nextTarget = event.relatedTarget;
@@ -150,6 +156,29 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         }, 0);
       }}
     >
+      {expenseSaved && successMode === 'card' && (
+        <div
+          className={cn(
+            'pointer-events-none absolute z-10 flex items-center justify-center rounded-[28px] border border-foreground/8 bg-white shadow-[0_20px_60px_rgba(14,59,67,0.08)] transition-all duration-300',
+            successOverlayClassName
+          )}
+          style={{
+            backgroundImage: 'linear-gradient(to bottom right, rgba(236,253,245,0.92), rgba(240,253,250,0.72), rgba(255,255,255,1))',
+          }}
+          aria-hidden="true"
+        >
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2ED3A7] text-[#0E3B43] shadow-[0_10px_24px_rgba(46,211,167,0.28)]">
+              <Check className="h-7 w-7" />
+            </span>
+            <div className="space-y-1">
+              <p className="text-[1.25rem] font-semibold leading-none text-[#003C44]">Udgift gemt</p>
+              <p className="text-sm font-medium text-[#003C44]/74">Kuvert er opdateret</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-1">
         <label className="block">
           <span className={cn(
@@ -236,11 +265,11 @@ export function QuickExpenseInlineForm({ onComplete }: QuickExpenseInlineFormPro
         disabled={expenseSaving || (!expenseAmount && !expenseSaved)}
         className={cn(
           'group flex w-full items-center justify-center gap-2 rounded-full bg-[#0E3B43] px-4 py-2.5 text-[0.95rem] font-semibold text-white transition-all duration-200 active:scale-[0.99]',
-          expenseSaved && 'bg-emerald-500',
+          expenseSaved && successMode !== 'card' && 'bg-emerald-500',
           (!expenseAmount && !expenseSaved) || expenseSaving ? 'opacity-80' : 'hover:bg-[#092F35]'
         )}
       >
-        {expenseSaved ? (
+        {expenseSaved && successMode !== 'card' ? (
           <>
             <Check className="h-4 w-4" />
             Gemt
