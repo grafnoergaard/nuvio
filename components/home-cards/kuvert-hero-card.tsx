@@ -275,7 +275,7 @@ export function KuvertHeroCard({
   const nativeBadgeRgb = badgeHex ? hexToRgbString(badgeHex) : nativeToneRgb;
   const streakPanelStyle: CSSProperties | undefined = isNativeHero ? { background: 'transparent' } : undefined;
   const budgetPanelStyle: CSSProperties | undefined = isNativeHero ? { background: 'transparent' } : statusCardStyle.inlineStyle;
-  const nativeCardClass = 'rounded-[28px] border border-foreground/8 bg-white/78 shadow-[0_10px_30px_rgba(14,59,67,0.06)] backdrop-blur';
+  const nativeCardClass = 'rounded-[28px] border border-foreground/8 bg-white';
   const cardHeadingClass = 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82';
 
   return (
@@ -706,12 +706,12 @@ export function KuvertHeroCard({
             </div>
 
             {isSplitCards ? (
-              <div className={cn('inline-expense-card-shell relative overflow-hidden', nativeCardClass, 'px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-3.5')}>
+              <div className={cn('inline-expense-card-shell relative overflow-hidden', nativeCardClass, 'px-4 pb-5 pt-4 sm:px-5 sm:pb-6 sm:pt-4.5')}>
                 <div className="inline-expense-form-shell">
                   <QuickExpenseInlineForm
                     onComplete={onQuickExpenseSaved}
                     successMode="card"
-                    successOverlayClassName="-inset-x-4 -top-3 -bottom-4 sm:-inset-x-5 sm:-top-3.5 sm:-bottom-5"
+                    successOverlayClassName="-inset-x-4 -top-4 -bottom-5 sm:-inset-x-5 sm:-top-4.5 sm:-bottom-6"
                   />
                 </div>
               </div>

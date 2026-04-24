@@ -318,7 +318,7 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
               <Check className="h-3.5 w-3.5 stroke-[3]" />
             </span>
             <span className="font-semibold text-foreground/84">
-              Særlig udgift <span className="font-medium text-foreground/58">(Fordel over måneden)</span>
+              Månedlig fordelt udgift
             </span>
           </label>
         </div>

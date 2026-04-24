@@ -144,7 +144,7 @@ export function QuickExpenseInlineForm({
   return (
     <div
       ref={formRef}
-      className={cn('relative space-y-1.5', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}
+      className={cn('relative space-y-2.5', CENTER_INLINE_EXPENSE_LAYOUT && 'text-center')}
       onFocusCapture={() => setInlineExpenseFocusState(true)}
       onBlurCapture={(event) => {
         const nextTarget = event.relatedTarget;
@@ -167,7 +167,7 @@ export function QuickExpenseInlineForm({
           }}
           aria-hidden="true"
         >
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-3.5 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2ED3A7] text-[#0E3B43] shadow-[0_10px_24px_rgba(46,211,167,0.28)]">
               <Check className="h-7 w-7" />
             </span>
@@ -179,16 +179,16 @@ export function QuickExpenseInlineForm({
         </div>
       )}
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <label className="block">
           <span className={cn(
-            'mb-0.5 block text-[0.95rem] font-medium leading-snug text-foreground/82',
+            'mb-1 block text-[0.95rem] font-medium leading-snug text-foreground/82',
             CENTER_INLINE_EXPENSE_LAYOUT && 'text-center'
           )}>
             Tilføj udgift
           </span>
           <div className={cn(
-            'flex items-end gap-2.5 border-b border-foreground/10 pb-1',
+            'flex items-end gap-2.5 border-b border-foreground/10 pb-1.5',
             CENTER_INLINE_EXPENSE_LAYOUT && 'justify-center'
           )}>
             <input
@@ -211,7 +211,7 @@ export function QuickExpenseInlineForm({
             <span className="pb-0.5 text-[1.35rem] font-semibold text-muted-foreground/60 sm:text-[1.5rem]">kr.</span>
           </div>
         </label>
-        <div className="flex items-end gap-3 border-b border-foreground/8 pb-1">
+        <div className="flex items-end gap-3 border-b border-foreground/8 pb-1.5">
           <label className="min-w-0 flex-1">
             <input
               type="text"
@@ -227,7 +227,7 @@ export function QuickExpenseInlineForm({
             />
           </label>
 
-          <label className="flex shrink-0 cursor-pointer items-center gap-1.5 py-0.5 text-[0.75rem] text-foreground/70">
+          <label className="flex shrink-0 cursor-pointer items-center gap-1.5 py-1 text-[0.75rem] text-foreground/70">
             <input
               type="checkbox"
               checked={spreadOverMonth}
@@ -246,7 +246,7 @@ export function QuickExpenseInlineForm({
               <Check className="h-2.5 w-2.5 stroke-[3]" />
             </span>
             <span className="whitespace-nowrap text-[0.75rem] font-semibold text-foreground/78">
-              Særlig udgift <span className="font-medium text-foreground/56">(Fordel over måneden)</span>
+              Månedlig fordelt udgift
             </span>
           </label>
         </div>
@@ -264,7 +264,7 @@ export function QuickExpenseInlineForm({
         onClick={handleAddExpense}
         disabled={expenseSaving || (!expenseAmount && !expenseSaved)}
         className={cn(
-          'group flex w-full items-center justify-center gap-2 rounded-full bg-[#0E3B43] px-4 py-2.5 text-[0.95rem] font-semibold text-white transition-all duration-200 active:scale-[0.99]',
+          'group flex w-full items-center justify-center gap-2 rounded-full bg-[#0E3B43] px-4 py-3 text-[0.95rem] font-semibold text-white transition-all duration-200 active:scale-[0.99]',
           expenseSaved && successMode !== 'card' && 'bg-emerald-500',
           (!expenseAmount && !expenseSaved) || expenseSaving ? 'opacity-80' : 'hover:bg-[#092F35]'
         )}
