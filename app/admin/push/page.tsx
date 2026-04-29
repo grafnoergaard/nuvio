@@ -77,6 +77,8 @@ const WEEKDAY_OPTIONS = [
   { value: '6', label: 'Lørdag' },
 ];
 
+const GLOBAL_CRON_COPY = 'Automatikken kører én gang om dagen via Vercel Cron omkring kl. 11 dansk tid (09:00 UTC på Hobby). De aktive auto-pushes bliver vurderet i det daglige sweep.';
+
 export default function AdminPushPage() {
   const { session } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -310,6 +312,46 @@ export default function AdminPushPage() {
             tone="text-amber-700"
           />
         </div>
+
+        <Card className="rounded-2xl border-border/70 bg-card">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Clock3 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                      Global styring
+                    </p>
+                    <CardTitle className="mt-1 text-base">Daglig automatik</CardTitle>
+                  </div>
+                </div>
+                <CardDescription className="max-w-3xl text-sm leading-relaxed">
+                  {GLOBAL_CRON_COPY}
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="rounded-full self-start px-3 py-1 text-xs font-medium">
+                Vercel Hobby
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3 pt-0 md:grid-cols-2">
+            <div className="rounded-2xl border border-border/60 bg-secondary/10 px-4 py-3">
+              <p className="text-sm font-medium text-foreground">Globalt</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Ét dagligt sweep via <span className="font-medium text-foreground">/api/push/cron</span>. Klokkeslættet styres i Vercel, ikke pr. push.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-secondary/10 px-4 py-3">
+              <p className="text-sm font-medium text-foreground">Pr. push</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Her styrer du stadig <span className="font-medium text-foreground">aktiv</span>, <span className="font-medium text-foreground">automatisk</span> og den konkrete dag eller trigger.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <Card className="rounded-2xl">
@@ -558,7 +600,7 @@ export default function AdminPushPage() {
                                   <SelectTrigger className="h-10 rounded-xl bg-white/80">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                              <SelectContent>
                                     {WEEKDAY_OPTIONS.map((option) => (
                                       <SelectItem key={option.value} value={option.value}>
                                         {option.label}
@@ -568,22 +610,6 @@ export default function AdminPushPage() {
                                 </Select>
                               </div>
                             )}
-
-                            <NumberField
-                              label="Time"
-                              min={0}
-                              max={23}
-                              value={configs[notification.key]?.sendHour ?? notification.sendHour}
-                              onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendHour: value }))}
-                            />
-
-                            <NumberField
-                              label="Minut"
-                              min={0}
-                              max={59}
-                              value={configs[notification.key]?.sendMinute ?? notification.sendMinute}
-                              onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, sendMinute: value }))}
-                            />
                           </div>
                         )
                       ) : (
@@ -745,7 +771,7 @@ export default function AdminPushPage() {
                   Det giver os et klart skel mellem teknisk test og rigtige brugerbeskeder.
                 </p>
                 <p>
-                  Automatikken læser de gemte tider fra admin og kører via <span className="font-medium text-foreground">/api/push/cron</span>. På Vercel Hobby kører den dagligt, så de aktive auto-pushes bliver vurderet én gang om dagen, når <span className="font-medium text-foreground">CRON_SECRET</span> er sat op.
+                  Automatikken kører via <span className="font-medium text-foreground">/api/push/cron</span>. På Vercel Hobby bliver de aktive auto-pushes vurderet én gang om dagen, når <span className="font-medium text-foreground">CRON_SECRET</span> er sat op.
                 </p>
               </CardContent>
             </Card>
