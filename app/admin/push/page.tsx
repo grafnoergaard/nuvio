@@ -529,7 +529,8 @@ export default function AdminPushPage() {
                               )}
 
                               <NumberField
-                                label="Fra"
+                                sectionLabel="Leveringsvindue"
+                                label="Fra kl."
                                 min={0}
                                 max={23}
                                 value={configs[notification.key]?.deliveryWindowStartHour ?? notification.deliveryWindowStartHour}
@@ -537,7 +538,7 @@ export default function AdminPushPage() {
                               />
 
                               <NumberField
-                                label="Til"
+                                label="Til kl."
                                 min={0}
                                 max={23}
                                 value={configs[notification.key]?.deliveryWindowEndHour ?? notification.deliveryWindowEndHour}
@@ -546,6 +547,9 @@ export default function AdminPushPage() {
                             </div>
 
                             <p className="text-xs text-muted-foreground">
+                              Pushen må kun lande i dette tidsrum:
+                              <span className="font-medium text-foreground"> kl. {String(configs[notification.key]?.deliveryWindowStartHour ?? notification.deliveryWindowStartHour).padStart(2, '0')}–{String(configs[notification.key]?.deliveryWindowEndHour ?? notification.deliveryWindowEndHour).padStart(2, '0')}</span>.
+                              {' '}
                               {notification.key === 'streak_risk'
                                 ? 'Tjekkes løbende, men sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.'
                                 : notification.key === 'weekly_budget_low'
@@ -839,12 +843,14 @@ function SuggestionRow({ title, copy }: { title: string; copy: string }) {
 }
 
 function NumberField({
+  sectionLabel,
   label,
   value,
   min,
   max,
   onChange,
 }: {
+  sectionLabel?: string;
   label: string;
   value: number;
   min: number;
@@ -853,6 +859,11 @@ function NumberField({
 }) {
   return (
     <div>
+      {sectionLabel ? (
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+          {sectionLabel}
+        </p>
+      ) : null}
       <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
         {label}
       </p>
