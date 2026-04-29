@@ -745,7 +745,7 @@ export default function AdminPushPage() {
                   Det giver os et klart skel mellem teknisk test og rigtige brugerbeskeder.
                 </p>
                 <p>
-                  Automatikken læser de gemte tider fra admin og kører via <span className="font-medium text-foreground">/api/push/cron</span>, så næste praktiske step efter UI er at koble den route til Vercel Cron eller en anden scheduler.
+                  Automatikken læser de gemte tider fra admin og kører via <span className="font-medium text-foreground">/api/push/cron</span>. På Vercel Hobby kører den dagligt, så de aktive auto-pushes bliver vurderet én gang om dagen, når <span className="font-medium text-foreground">CRON_SECRET</span> er sat op.
                 </p>
               </CardContent>
             </Card>

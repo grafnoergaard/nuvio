@@ -68,10 +68,6 @@ function isDue(config: PushNotificationConfigRow, now: Date) {
 
   const localNow = getLocalTimeParts(now, config.timezone);
 
-  if (localNow.hour !== config.send_hour || localNow.minute !== config.send_minute) {
-    return false;
-  }
-
   if (config.schedule_type === 'weekly') {
     return config.send_day_of_week === localNow.dayOfWeek;
   }
@@ -83,7 +79,7 @@ function isDue(config: PushNotificationConfigRow, now: Date) {
   return false;
 }
 
-function wasAlreadySentThisSlot(config: PushNotificationConfigRow, now: Date) {
+function wasAlreadySentToday(config: PushNotificationConfigRow, now: Date) {
   if (!config.last_sent_at) return false;
 
   const lastLocal = getLocalTimeParts(new Date(config.last_sent_at), config.timezone);
@@ -92,9 +88,7 @@ function wasAlreadySentThisSlot(config: PushNotificationConfigRow, now: Date) {
   return (
     lastLocal.year === nowLocal.year &&
     lastLocal.month === nowLocal.month &&
-    lastLocal.day === nowLocal.day &&
-    lastLocal.hour === nowLocal.hour &&
-    lastLocal.minute === nowLocal.minute
+    lastLocal.day === nowLocal.day
   );
 }
 
@@ -140,9 +134,9 @@ export async function GET(request: NextRequest) {
     const definition = getPushNotificationDefinition(config.key);
     if (!definition?.supportsAuto) return false;
     if (definition.automationMode === 'event') {
-      return config.is_enabled && config.auto_send_enabled;
+      return config.is_enabled && config.auto_send_enabled && !wasAlreadySentToday(config, now);
     }
-    return isDue(config, now) && !wasAlreadySentThisSlot(config, now);
+    return isDue(config, now) && !wasAlreadySentToday(config, now);
   });
 
   const results = await Promise.all(dueConfigs.map(async (config) => {
