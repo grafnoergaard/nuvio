@@ -70,6 +70,10 @@ function getStatusLabel(status: DiagnosticStatus) {
   }
 }
 
+function getReadyLabel(supportsAuto: boolean) {
+  return supportsAuto ? 'Klar til cron' : 'Klar til manuel';
+}
+
 export async function GET(request: NextRequest) {
   const env = envSnapshot();
   const missingEnv = getMissingEnv(env);
@@ -252,13 +256,27 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    if (!env.CRON_SECRET && definition.supportsAuto && config.auto_send_enabled) {
+      return {
+        key: definition.key,
+        title: definition.title,
+        status: 'warning' as DiagnosticStatus,
+        statusLabel: 'Cron-secret mangler',
+        detail: 'Pushen er sat til automatisk, men CRON_SECRET/KUVERT_PUSH_SECRET mangler. Manuel send kan stadig virke.',
+        route: ADMIN_PUSH_ROUTES[definition.key],
+        enabled: config.is_enabled,
+        autoSendEnabled: config.auto_send_enabled,
+        checks,
+      };
+    }
+
     if (definition.supportsAuto && !config.auto_send_enabled) {
       return {
         key: definition.key,
         title: definition.title,
         status: 'warning' as DiagnosticStatus,
-        statusLabel: getStatusLabel('warning'),
-        detail: 'Teknisk klar til manuel send, men automatisk udsendelse er slået fra.',
+        statusLabel: 'Auto slået fra',
+        detail: 'Klar til manuel send, men den bliver ikke sendt af sig selv via cron.',
         route: ADMIN_PUSH_ROUTES[definition.key],
         enabled: config.is_enabled,
         autoSendEnabled: config.auto_send_enabled,
@@ -271,7 +289,7 @@ export async function GET(request: NextRequest) {
         key: definition.key,
         title: definition.title,
         status: 'warning' as DiagnosticStatus,
-        statusLabel: getStatusLabel('warning'),
+        statusLabel: 'Sidste send fejlede',
         detail: `Teknisk klar, men sidste registrerede resultat var: ${config.last_result}`,
         route: ADMIN_PUSH_ROUTES[definition.key],
         enabled: config.is_enabled,
@@ -284,7 +302,7 @@ export async function GET(request: NextRequest) {
       key: definition.key,
       title: definition.title,
       status: 'ready' as DiagnosticStatus,
-      statusLabel: getStatusLabel('ready'),
+      statusLabel: getReadyLabel(definition.supportsAuto),
       detail: definition.automationMode === 'event'
         ? 'Teknisk klar. Matchende brugere beregnes først i den konkrete push-rute, men dry run fandt ingen opsætningsfejl.'
         : 'Klar. Dry run fandt env, database, route og aktive subscriptions.',
