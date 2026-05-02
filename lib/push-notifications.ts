@@ -2,6 +2,7 @@ export type PushNotificationKey =
   | 'test_all_users'
   | 'weekly_budget_reminder'
   | 'week_transition'
+  | 'flow_savings'
   | 'weekly_budget_low'
   | 'streak_risk'
   | 'month_close'
@@ -121,6 +122,31 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultMessageBody: 'Se hvordan sidste uge landede - og hvad dit bedste næste skridt er.',
     defaultUrl: '/?flow=week-transition',
     previewUrl: '/?flow=week-transition',
+    supportsAuto: true,
+    supportedScheduleTypes: ['weekly'],
+    defaultScheduleType: 'weekly',
+    defaultEnabled: true,
+    defaultAutoSendEnabled: false,
+    defaultSendDayOfWeek: 1,
+    defaultSendDayOfMonth: null,
+    defaultSendHour: 11,
+    defaultSendMinute: 0,
+    defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'event',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
+  },
+  {
+    key: 'flow_savings',
+    title: 'Der er penge til Sparet',
+    description: 'Sender når en afsluttet uge har overskud, som brugeren kan flytte til Sparet.',
+    audience: 'Brugere med positivt ugeoverskud, som endnu ikke er gemt i Sparet',
+    status: 'Klar',
+    defaultMessageTitle: 'Der er penge til Sparet',
+    defaultMessageBody: 'Sidste uge landede med overskud. Flyt beløbet til Sparet, mens rytmen stadig er frisk.',
+    defaultUrl: '/?flow=flow-savings',
+    previewUrl: '/?flow=flow-savings',
     supportsAuto: true,
     supportedScheduleTypes: ['weekly'],
     defaultScheduleType: 'weekly',

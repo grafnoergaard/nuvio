@@ -143,6 +143,10 @@ export default function AdminPushPage() {
     await sendPushAction('/api/admin/push/send-week-transition', 'Ugeovergang sendt');
   }
 
+  async function sendFlowSavings() {
+    await sendPushAction('/api/admin/push/send-flow-savings', 'Sparet-flow sendt');
+  }
+
   async function sendWeeklyBudgetLow() {
     await sendPushAction('/api/admin/push/send-weekly-budget-low', 'Lavt ugebudget sendt');
   }
@@ -509,6 +513,13 @@ export default function AdminPushPage() {
                                     Sendes når sidste uge er klar til gennemgang, og brugeren endnu ikke har åbnet ugeflowet.
                                   </p>
                                 </div>
+                              ) : notification.key === 'flow_savings' ? (
+                                <div className="rounded-xl bg-white/80 px-3 py-2">
+                                  <p className="text-sm font-medium text-foreground">Trigger</p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Sendes når en afsluttet uge har overskud, ugeflowet er gennemgået, og beløbet endnu ikke er flyttet til Sparet.
+                                  </p>
+                                </div>
                               ) : notification.key === 'score_drop' ? (
                                 <div className="rounded-xl bg-white/80 px-3 py-2">
                                   <p className="text-sm font-medium text-foreground">Trigger</p>
@@ -549,6 +560,8 @@ export default function AdminPushPage() {
                                   ? 'Sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.'
                                   : notification.key === 'week_transition'
                                     ? 'Sendes højst én gang pr. afsluttet uge og kun hvis ugeflowet stadig venter på brugeren.'
+                                  : notification.key === 'flow_savings'
+                                    ? 'Sendes højst én gang pr. afsluttet uge og kun når der er et ubehandlet overskud til Sparet.'
                                   : notification.key === 'weekly_budget_low'
                                     ? 'Sendes højst én gang pr. uge. Hvis ugebudgettet går fra lavt til brugt op, må den gerne sende igen.'
                                     : notification.key === 'score_drop'
@@ -662,6 +675,15 @@ export default function AdminPushPage() {
                       <Button
                         className="shrink-0"
                         onClick={sendWeekTransition}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'flow_savings' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendFlowSavings}
                         disabled={sending || loading}
                       >
                         <Send className="mr-2 h-4 w-4" />
