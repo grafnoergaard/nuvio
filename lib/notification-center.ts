@@ -7,7 +7,7 @@ export type StoredPushNotification = {
   url: string;
   createdAt: string;
   readAt: string | null;
-  source: 'push';
+  source: 'push' | 'system';
 };
 
 const DB_NAME = 'kuvert-notification-center';
@@ -107,6 +107,43 @@ export async function getStoredNotifications() {
 
 export async function getUnreadNotificationCount() {
   return getUnreadCountFromMeta();
+}
+
+export async function addSystemNotification(notification: {
+  id: string;
+  title: string;
+  body: string;
+  url: string;
+}) {
+  if (!isBrowser()) return 0;
+
+  const db = await openNotificationCenterDb();
+  const transaction = db.transaction([NOTIFICATIONS_STORE, META_STORE], 'readwrite');
+  const notificationsStore = transaction.objectStore(NOTIFICATIONS_STORE);
+  const metaStore = transaction.objectStore(META_STORE);
+  const existing = await requestToPromise<StoredPushNotification | undefined>(notificationsStore.get(notification.id));
+  const unreadRecord = await requestToPromise<MetaRecord | undefined>(metaStore.get(UNREAD_META_KEY));
+  let nextUnread = typeof unreadRecord?.value === 'number' ? Math.max(0, unreadRecord.value) : 0;
+
+  if (!existing) {
+    notificationsStore.put({
+      id: notification.id,
+      title: notification.title,
+      body: notification.body,
+      url: notification.url,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+      source: 'system',
+    } satisfies StoredPushNotification);
+    nextUnread += 1;
+    metaStore.put({ key: UNREAD_META_KEY, value: nextUnread } satisfies MetaRecord);
+  }
+
+  await transactionDone(transaction);
+  db.close();
+  await applyAppBadgeCount(nextUnread);
+  broadcastNotificationCenterUpdate(nextUnread);
+  return nextUnread;
 }
 
 export function supportsAppBadge() {

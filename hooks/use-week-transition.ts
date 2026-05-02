@@ -24,6 +24,7 @@ import {
   recordFlowSavingsWeek,
   type FlowSavingsTotals,
 } from '@/lib/flow-savings-service';
+import { addSystemNotification } from '@/lib/notification-center';
 
 interface UseWeekTransitionResult {
   showBottomSheet: boolean;
@@ -35,6 +36,8 @@ interface UseWeekTransitionResult {
   dismissCount: number;
   monthlySavings: number;
   flowSavingsTotals: FlowSavingsTotals | null;
+  openBottomSheet: () => void;
+  openFlowSavingsModal: () => void;
   onOpenWizard: () => void;
   onAcknowledge: (aiSummary: string | null) => Promise<void>;
   onDismiss: () => void;
@@ -88,7 +91,6 @@ export function useWeekTransition(): UseWeekTransitionResult {
         prevWeekInfo.month,
         prevWeekInfo.weekNumber
       );
-      if (alreadyAcknowledged) return;
 
       const [expenses, monthlyBudget] = await Promise.all([
         getQuickExpensesForMonth(prevWeekInfo.year, prevWeekInfo.month),
@@ -137,7 +139,41 @@ export function useWeekTransition(): UseWeekTransitionResult {
       setMonthlySavings(accumulated);
       setFlowSavingsTotals(currentFlowTotals);
 
-      setTimeout(() => setShowBottomSheet(true), 800);
+      if (!alreadyAcknowledged) {
+        await addSystemNotification({
+          id: `week-transition:${data.year}:${data.month}:${data.weekNumber}`,
+          title: 'Ugens Kuvert er klar',
+          body:
+            data.carryOver >= 0
+              ? `Du sparede ${Math.round(data.carryOver).toLocaleString('da-DK')} kr. i uge ${data.isoWeekNumber}.`
+              : `Uge ${data.isoWeekNumber} gik ${Math.round(Math.abs(data.carryOver)).toLocaleString('da-DK')} kr. over budget.`,
+          url: '/?flow=week-transition',
+        });
+      }
+
+      await addFlowSavingsNotificationIfRelevant(data);
+    } catch {
+    }
+  }
+
+  async function addFlowSavingsNotificationIfRelevant(data: WeekSummaryData) {
+    const carryOver = data.budgetAmount - data.totalSpent;
+    if (carryOver <= 0) return;
+
+    try {
+      const alreadyRecorded = await hasFlowSavingsEntryForWeek(
+        data.year,
+        data.month,
+        data.weekNumber
+      );
+      if (alreadyRecorded) return;
+
+      await addSystemNotification({
+        id: `flow-savings:${data.year}:${data.month}:${data.weekNumber}`,
+        title: 'Der er penge til Sparet',
+        body: `${Math.round(carryOver).toLocaleString('da-DK')} kr. fra uge ${data.isoWeekNumber} kan flyttes til Sparet.`,
+        url: '/?flow=flow-savings',
+      });
     } catch {
     }
   }
@@ -154,6 +190,21 @@ export function useWeekTransition(): UseWeekTransitionResult {
   function onOpenWizard() {
     setShowBottomSheet(false);
     setShowWizard(true);
+  }
+
+  function openBottomSheet() {
+    if (!summaryData) return;
+    setShowWizard(false);
+    setShowFlowSavingsModal(false);
+    setShowBottomSheet(true);
+  }
+
+  function openFlowSavingsModal() {
+    if (!summaryData) return;
+    if (summaryData.budgetAmount - summaryData.totalSpent <= 0) return;
+    setShowBottomSheet(false);
+    setShowWizard(false);
+    setShowFlowSavingsModal(true);
   }
 
   async function onAcknowledge(aiSummary: string | null) {
@@ -175,16 +226,8 @@ export function useWeekTransition(): UseWeekTransitionResult {
       setShowBottomSheet(false);
     }
 
-    try {
-      const alreadyRecorded = await hasFlowSavingsEntryForWeek(
-        pending.year,
-        pending.month,
-        pending.weekNumber
-      );
-      if (!alreadyRecorded) {
-        setTimeout(() => setShowFlowSavingsModal(true), 400);
-      }
-    } catch {
+    if (summaryData) {
+      await addFlowSavingsNotificationIfRelevant(summaryData);
     }
   }
 
@@ -286,6 +329,8 @@ export function useWeekTransition(): UseWeekTransitionResult {
     dismissCount,
     monthlySavings,
     flowSavingsTotals,
+    openBottomSheet,
+    openFlowSavingsModal,
     onOpenWizard,
     onAcknowledge,
     onDismiss,

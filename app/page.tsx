@@ -216,7 +216,31 @@ export default function HomePage() {
     if (flow === 'single-account-method') {
       setShowSingleAccountMethodReminder(true);
     }
-  }, [currentWeekReminder, flowMonthlyBudget, loading, searchParams]);
+    if (
+      flow === 'week-transition' &&
+      weekTransition.summaryData &&
+      !weekTransition.showBottomSheet &&
+      !weekTransition.showWizard
+    ) {
+      weekTransition.openBottomSheet();
+    }
+    if (
+      flow === 'flow-savings' &&
+      weekTransition.summaryData &&
+      !weekTransition.showFlowSavingsModal
+    ) {
+      weekTransition.openFlowSavingsModal();
+    }
+  }, [
+    currentWeekReminder,
+    flowMonthlyBudget,
+    loading,
+    searchParams,
+    weekTransition.summaryData,
+    weekTransition.showBottomSheet,
+    weekTransition.showFlowSavingsModal,
+    weekTransition.showWizard,
+  ]);
 
   function clearReminderQuery() {
     const next = new URLSearchParams(searchParams.toString());
@@ -264,6 +288,26 @@ export default function HomePage() {
     setShowWeeklyBudgetReminder(false);
     clearReminderQuery();
     setShowQuickExpenseModal(true);
+  }
+
+  function dismissWeekTransition() {
+    weekTransition.onDismiss();
+    clearReminderQuery();
+  }
+
+  async function acknowledgeWeekTransition(aiSummary: string | null) {
+    await weekTransition.onAcknowledge(aiSummary);
+    clearReminderQuery();
+  }
+
+  function dismissFlowSavingsModal() {
+    weekTransition.onFlowSavingsDismiss();
+    clearReminderQuery();
+  }
+
+  async function confirmFlowSavingsModal() {
+    await weekTransition.onFlowSavingsConfirm();
+    clearReminderQuery();
   }
 
   if (loading) {
@@ -440,7 +484,7 @@ export default function HomePage() {
           summaryData={weekTransition.summaryData}
           dismissCount={weekTransition.dismissCount}
           onOpen={weekTransition.onOpenWizard}
-          onDismiss={weekTransition.onDismiss}
+          onDismiss={dismissWeekTransition}
         />
       )}
 
@@ -449,8 +493,8 @@ export default function HomePage() {
           summaryData={weekTransition.summaryData}
           cachedAiSummary={weekTransition.cachedAiSummary}
           monthlySavings={weekTransition.monthlySavings}
-          onAcknowledge={weekTransition.onAcknowledge}
-          onDismiss={weekTransition.onDismiss}
+          onAcknowledge={acknowledgeWeekTransition}
+          onDismiss={dismissWeekTransition}
           onExpenseAdded={weekTransition.recomputeSummary}
         />
       )}
@@ -461,8 +505,8 @@ export default function HomePage() {
           currentBalance={weekTransition.flowSavingsTotals?.current_balance ?? 0}
           lifetimeTotal={weekTransition.flowSavingsTotals?.lifetime_total ?? 0}
           weekCount={weekTransition.flowSavingsTotals?.week_count ?? 0}
-          onConfirm={weekTransition.onFlowSavingsConfirm}
-          onDismiss={weekTransition.onFlowSavingsDismiss}
+          onConfirm={confirmFlowSavingsModal}
+          onDismiss={dismissFlowSavingsModal}
         />
       )}
     </HomeCardProvider>

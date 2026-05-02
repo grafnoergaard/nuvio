@@ -139,6 +139,10 @@ export default function AdminPushPage() {
     await sendPushAction('/api/admin/push/send-weekly-reminder', 'Ugebudget-påmindelse sendt');
   }
 
+  async function sendWeekTransition() {
+    await sendPushAction('/api/admin/push/send-week-transition', 'Ugeovergang sendt');
+  }
+
   async function sendWeeklyBudgetLow() {
     await sendPushAction('/api/admin/push/send-weekly-budget-low', 'Lavt ugebudget sendt');
   }
@@ -463,7 +467,7 @@ export default function AdminPushPage() {
                       {notification.supportsAuto ? (
                         notification.automationMode === 'event' ? (
                           <div className="mt-3 space-y-3">
-                            <div className={`grid gap-3 ${notification.key === 'streak_risk' || notification.key === 'weekly_budget_low' ? 'md:grid-cols-[1.2fr_120px_120px]' : 'md:grid-cols-[1fr_120px_120px]'}`}>
+                            <div className="grid gap-3">
                               {notification.key === 'streak_risk' || notification.key === 'weekly_budget_low' ? (
                                 <div>
                                   <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
@@ -498,6 +502,13 @@ export default function AdminPushPage() {
                                     </SelectContent>
                                   </Select>
                                 </div>
+                              ) : notification.key === 'week_transition' ? (
+                                <div className="rounded-xl bg-white/80 px-3 py-2">
+                                  <p className="text-sm font-medium text-foreground">Trigger</p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Sendes når sidste uge er klar til gennemgang, og brugeren endnu ikke har åbnet ugeflowet.
+                                  </p>
+                                </div>
                               ) : notification.key === 'score_drop' ? (
                                 <div className="rounded-xl bg-white/80 px-3 py-2">
                                   <p className="text-sm font-medium text-foreground">Trigger</p>
@@ -527,41 +538,28 @@ export default function AdminPushPage() {
                                   </p>
                                 </div>
                               )}
-
-                              <NumberField
-                                sectionLabel="Leveringsvindue"
-                                label="Fra kl."
-                                min={0}
-                                max={23}
-                                value={configs[notification.key]?.deliveryWindowStartHour ?? notification.deliveryWindowStartHour}
-                                onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, deliveryWindowStartHour: value }))}
-                              />
-
-                              <NumberField
-                                label="Til kl."
-                                min={0}
-                                max={23}
-                                value={configs[notification.key]?.deliveryWindowEndHour ?? notification.deliveryWindowEndHour}
-                                onChange={(value) => updateConfig(notification.key, (current) => ({ ...current, deliveryWindowEndHour: value }))}
-                              />
                             </div>
 
-                            <p className="text-xs text-muted-foreground">
-                              Pushen må kun lande i dette tidsrum:
-                              <span className="font-medium text-foreground"> kl. {String(configs[notification.key]?.deliveryWindowStartHour ?? notification.deliveryWindowStartHour).padStart(2, '0')}–{String(configs[notification.key]?.deliveryWindowEndHour ?? notification.deliveryWindowEndHour).padStart(2, '0')}</span>.
-                              {' '}
-                              {notification.key === 'streak_risk'
-                                ? 'Tjekkes løbende, men sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.'
-                                : notification.key === 'weekly_budget_low'
-                                  ? 'Tjekkes løbende, men sendes højst én gang pr. uge. Hvis ugebudgettet går fra lavt til brugt op, må den gerne sende igen.'
-                                : notification.key === 'score_drop'
-                                  ? 'Tjekkes løbende, men sendes højst én gang pr. måned. Hvis scoren falder fra gul til rød zone, må den gerne sende igen.'
-                                  : notification.key === 'score_strong'
-                                    ? 'Tjekkes løbende, men sendes højst én gang pr. måned, når scoren står stærkt.'
-                                    : notification.key === 'good_grip'
-                                      ? 'Tjekkes løbende, men sendes højst én gang pr. måned, når brugeren har et sundt og stabilt greb om måneden.'
-                                      : 'Tjekkes løbende, men sendes højst cirka én gang hver anden til tredje uge pr. bruger.'}
-                            </p>
+                            <div className="rounded-xl border border-border/50 bg-secondary/10 px-3 py-2">
+                              <p className="text-sm font-medium text-foreground">Daglig vurdering</p>
+                              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                Denne push vurderes i det daglige cron-run omkring kl. 11 dansk tid og sendes kun, hvis triggeren matcher den dag.
+                                {' '}
+                                {notification.key === 'streak_risk'
+                                  ? 'Sendes højst én gang pr. uge. Hvis situationen forværres fra tæt på grænsen til over budget, må den gerne sende igen.'
+                                  : notification.key === 'week_transition'
+                                    ? 'Sendes højst én gang pr. afsluttet uge og kun hvis ugeflowet stadig venter på brugeren.'
+                                  : notification.key === 'weekly_budget_low'
+                                    ? 'Sendes højst én gang pr. uge. Hvis ugebudgettet går fra lavt til brugt op, må den gerne sende igen.'
+                                    : notification.key === 'score_drop'
+                                      ? 'Sendes højst én gang pr. måned. Hvis scoren falder fra gul til rød zone, må den gerne sende igen.'
+                                      : notification.key === 'score_strong'
+                                        ? 'Sendes højst én gang pr. måned, når scoren står stærkt.'
+                                        : notification.key === 'good_grip'
+                                          ? 'Sendes højst én gang pr. måned, når brugeren har et sundt og stabilt greb om måneden.'
+                                          : 'Sendes højst cirka én gang hver anden til tredje uge pr. bruger.'}
+                              </p>
+                            </div>
                           </div>
                         ) : (
                           <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px_120px]">
@@ -655,6 +653,15 @@ export default function AdminPushPage() {
                       <Button
                         className="shrink-0"
                         onClick={sendWeeklyBudgetReminder}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'week_transition' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendWeekTransition}
                         disabled={sending || loading}
                       >
                         <Send className="mr-2 h-4 w-4" />
@@ -838,47 +845,6 @@ function SuggestionRow({ title, copy }: { title: string; copy: string }) {
     <div className="rounded-2xl border border-border/60 px-4 py-3">
       <p className="text-sm font-semibold text-foreground">{title}</p>
       <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
-    </div>
-  );
-}
-
-function NumberField({
-  sectionLabel,
-  label,
-  value,
-  min,
-  max,
-  onChange,
-}: {
-  sectionLabel?: string;
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <div>
-      {sectionLabel ? (
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-          {sectionLabel}
-        </p>
-      ) : null}
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-        {label}
-      </p>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(event) => {
-          const next = Number(event.target.value);
-          if (!Number.isFinite(next)) return;
-          onChange(Math.max(min, Math.min(max, next)));
-        }}
-        className="h-10 w-full rounded-xl border border-border/60 bg-white/80 px-3 text-sm outline-none ring-0 focus:border-primary"
-      />
     </div>
   );
 }

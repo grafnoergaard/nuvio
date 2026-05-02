@@ -1,6 +1,7 @@
 export type PushNotificationKey =
   | 'test_all_users'
   | 'weekly_budget_reminder'
+  | 'week_transition'
   | 'weekly_budget_low'
   | 'streak_risk'
   | 'month_close'
@@ -106,6 +107,31 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
     automationMode: 'scheduled',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
+  },
+  {
+    key: 'week_transition',
+    title: 'Ugens Kuvert er klar',
+    description: 'Sender når en afsluttet uge er klar til gennemgang i ugeflowet.',
+    audience: 'Brugere med en afsluttet uge, der ikke er åbnet endnu',
+    status: 'Klar',
+    defaultMessageTitle: 'Ugens Kuvert er klar',
+    defaultMessageBody: 'Se hvordan sidste uge landede - og hvad dit bedste næste skridt er.',
+    defaultUrl: '/?flow=week-transition',
+    previewUrl: '/?flow=week-transition',
+    supportsAuto: true,
+    supportedScheduleTypes: ['weekly'],
+    defaultScheduleType: 'weekly',
+    defaultEnabled: true,
+    defaultAutoSendEnabled: false,
+    defaultSendDayOfWeek: 1,
+    defaultSendDayOfMonth: null,
+    defaultSendHour: 11,
+    defaultSendMinute: 0,
+    defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'event',
     defaultTriggerCondition: 'both',
     defaultDeliveryWindowStartHour: 9,
     defaultDeliveryWindowEndHour: 20,
