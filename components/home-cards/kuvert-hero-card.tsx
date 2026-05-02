@@ -8,6 +8,7 @@ import type { FlowStatusConfig } from '@/hooks/use-home-data';
 import type { KuvertHomeVariant } from '@/lib/kuvert-home-variant';
 import { QuickExpenseInlineForm } from '@/components/quick-expense-inline-form';
 import { computeKuvertLiveScore } from '@/lib/kuvert-live-score';
+import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
 
 interface KuvertHeroCardProps {
   quickStreak: QuickExpenseStreak | null;
@@ -127,6 +128,7 @@ export function KuvertHeroCard({
 }: KuvertHeroCardProps) {
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
+  const { design } = useSettings();
 
   const currentWeekStreak = weeklyStreak?.current_streak ?? 0;
   const longestWeekStreak = weeklyStreak?.longest_streak ?? 0;
@@ -275,8 +277,20 @@ export function KuvertHeroCard({
   const nativeBadgeRgb = badgeHex ? hexToRgbString(badgeHex) : nativeToneRgb;
   const streakPanelStyle: CSSProperties | undefined = isNativeHero ? { background: 'transparent' } : undefined;
   const budgetPanelStyle: CSSProperties | undefined = isNativeHero ? { background: 'transparent' } : statusCardStyle.inlineStyle;
-  const nativeCardClass = 'rounded-[28px] border border-foreground/8 bg-white';
+  const nativeCardClass = 'relative overflow-hidden rounded-[28px] border border-foreground/8 bg-white';
   const cardHeadingClass = 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82';
+  const splitCardBackground =
+    'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,251,251,0.92))';
+  const splitLargeCardStyle: CSSProperties = {
+    ...getCardStyle(design.cardLarge, design.gradientFrom, design.gradientTo),
+    background: splitCardBackground,
+  };
+  const splitMediumCardStyle: CSSProperties = {
+    ...getCardStyle(design.cardMedium, design.gradientFrom, design.gradientTo),
+    background: splitCardBackground,
+  };
+  const splitLargeTopBarStyle = getTopBarStyle(design.cardLarge, design.gradientFrom, design.gradientTo);
+  const splitMediumTopBarStyle = getTopBarStyle(design.cardMedium, design.gradientFrom, design.gradientTo);
 
   return (
     <>
@@ -294,7 +308,14 @@ export function KuvertHeroCard({
                   isSplitCards && nativeCardClass,
                   isSplitCards && 'px-4 pb-3 pt-2.5 sm:px-5 sm:pb-4 sm:pt-3'
                 )}
+                style={isSplitCards ? splitLargeCardStyle : undefined}
               >
+                {isSplitCards && splitLargeTopBarStyle && (
+                  <div
+                    className="pointer-events-none absolute inset-x-0 top-0 z-[1]"
+                    style={splitLargeTopBarStyle}
+                  />
+                )}
                 <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
                   <defs>
                     <linearGradient id="kuvert-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
@@ -626,8 +647,14 @@ export function KuvertHeroCard({
                     ? 'bg-transparent'
                     : statusCardStyle.className
               )}
-              style={isSplitCards ? undefined : budgetPanelStyle}
+              style={isSplitCards ? splitMediumCardStyle : budgetPanelStyle}
             >
+            {isSplitCards && splitMediumTopBarStyle && (
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 z-[1]"
+                style={splitMediumTopBarStyle}
+              />
+            )}
             <div className={cn(isSplitCards ? 'px-0 pb-0 pt-0' : isNativeHero ? 'px-2 pb-2 pt-1 sm:pb-3 sm:pt-2' : 'px-4 pb-4 pt-4')}>
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -706,7 +733,16 @@ export function KuvertHeroCard({
             </div>
 
             {isSplitCards ? (
-              <div className={cn('inline-expense-card-shell relative overflow-hidden', nativeCardClass, 'px-4 pb-5 pt-4 sm:px-5 sm:pb-6 sm:pt-4.5')}>
+              <div
+                className={cn('inline-expense-card-shell', nativeCardClass, 'px-4 pb-5 pt-4 sm:px-5 sm:pb-6 sm:pt-4.5')}
+                style={splitMediumCardStyle}
+              >
+                {splitMediumTopBarStyle && (
+                  <div
+                    className="pointer-events-none absolute inset-x-0 top-0 z-[1]"
+                    style={splitMediumTopBarStyle}
+                  />
+                )}
                 <div className="inline-expense-form-shell">
                   <QuickExpenseInlineForm
                     onComplete={onQuickExpenseSaved}
