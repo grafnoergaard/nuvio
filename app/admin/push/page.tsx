@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Bell, BellRing, Clock3, Rocket, Save, Send, Sparkles, Users, TriangleAlert, RefreshCw } from 'lucide-react';
+import { Activity, Bell, BellRing, Clock3, Rocket, Save, Send, Sparkles, Users, TriangleAlert, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +67,39 @@ type NotificationConfigState = {
   deliveryWindowEndHour: number;
 };
 
+type DiagnosticStatus =
+  | 'ready'
+  | 'warning'
+  | 'disabled'
+  | 'no_match'
+  | 'missing_env'
+  | 'database_error';
+
+type DiagnosticsResponse = {
+  ok: boolean;
+  generatedAt: string;
+  dryRun: boolean;
+  env: Record<string, boolean>;
+  missingEnv: string[];
+  metrics: {
+    activeSubscriptions: number;
+    failingSubscriptions: number;
+    configuredNotifications: number;
+  };
+  summary: Record<DiagnosticStatus | 'total', number>;
+  diagnostics: Array<{
+    key: string;
+    title: string;
+    status: DiagnosticStatus;
+    statusLabel: string;
+    detail: string;
+    route: string;
+    enabled: boolean;
+    autoSendEnabled: boolean;
+    checks: string[];
+  }>;
+};
+
 const WEEKDAY_OPTIONS = [
   { value: '0', label: 'Søndag' },
   { value: '1', label: 'Mandag' },
@@ -84,7 +117,9 @@ export default function AdminPushPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [diagnosing, setDiagnosing] = useState(false);
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsResponse | null>(null);
   const [configs, setConfigs] = useState<Record<string, NotificationConfigState>>({});
 
   const headers = useMemo(() => ({
@@ -133,6 +168,26 @@ export default function AdminPushPage() {
 
   async function sendTestPush() {
     await sendPushAction('/api/admin/push/send-test', 'Test sendt');
+  }
+
+  async function runDiagnostics() {
+    setDiagnosing(true);
+    try {
+      const response = await fetch('/api/admin/push/diagnostics', {
+        headers,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || 'Kunne ikke køre push-diagnose');
+
+      setDiagnostics(data);
+      toast.success(
+        `Diagnose færdig: ${data.summary?.ready ?? 0} klar, ${data.summary?.warning ?? 0} skal tjekkes.`
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kunne ikke køre push-diagnose');
+    } finally {
+      setDiagnosing(false);
+    }
   }
 
   async function sendWeeklyBudgetReminder() {
@@ -287,6 +342,10 @@ export default function AdminPushPage() {
               <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Opdatér
             </Button>
+            <Button variant="outline" onClick={runDiagnostics} disabled={diagnosing || loading}>
+              <Activity className={`mr-2 h-4 w-4 ${diagnosing ? 'animate-pulse' : ''}`} />
+              Diagnose
+            </Button>
             <Button onClick={sendTestPush} disabled={sending || loading}>
               <Send className="mr-2 h-4 w-4" />
               Send test til alle
@@ -360,6 +419,84 @@ export default function AdminPushPage() {
             </div>
           </CardContent>
         </Card>
+
+        {diagnostics ? (
+          <Card className="rounded-2xl border-border/70 bg-card">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    Push-diagnose
+                  </CardTitle>
+                  <CardDescription className="mt-2">
+                    Dry run uden afsendelse. Tjekker env, database, subscriptions, configs og admin-ruter.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-800 hover:bg-emerald-100">
+                    {diagnostics.summary.ready} klar
+                  </Badge>
+                  <Badge variant="outline" className="rounded-full px-3 py-1">
+                    {diagnostics.summary.warning} tjek
+                  </Badge>
+                  <Badge variant="outline" className="rounded-full px-3 py-1">
+                    {diagnostics.metrics.activeSubscriptions} aktive modtagere
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {diagnostics.missingEnv.length > 0 ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <p className="font-semibold">Miljøvariabler mangler</p>
+                  <p className="mt-1">{diagnostics.missingEnv.join(', ')}</p>
+                </div>
+              ) : null}
+
+              <div className="grid gap-3">
+                {diagnostics.diagnostics.map((item) => (
+                  <div key={item.key} className="rounded-2xl border border-border/60 bg-secondary/10 px-4 py-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                          <DiagnosticBadge status={item.status} label={item.statusLabel} />
+                        </div>
+                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                          {item.detail}
+                        </p>
+                        <p className="mt-2 text-xs font-medium text-muted-foreground">
+                          {item.route}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-2 text-xs">
+                        <Badge variant="outline" className="rounded-full">
+                          {item.enabled ? 'Aktiv' : 'Inaktiv'}
+                        </Badge>
+                        <Badge variant="outline" className="rounded-full">
+                          {item.autoSendEnabled ? 'Auto' : 'Manuel'}
+                        </Badge>
+                      </div>
+                    </div>
+                    {item.checks.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.checks.map((check) => (
+                          <span
+                            key={check}
+                            className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] text-muted-foreground"
+                          >
+                            {check}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <Card className="rounded-2xl">
@@ -868,5 +1005,22 @@ function SuggestionRow({ title, copy }: { title: string; copy: string }) {
       <p className="text-sm font-semibold text-foreground">{title}</p>
       <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
     </div>
+  );
+}
+
+function DiagnosticBadge({ status, label }: { status: DiagnosticStatus; label: string }) {
+  const className = {
+    ready: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    warning: 'border-amber-200 bg-amber-50 text-amber-800',
+    disabled: 'border-slate-200 bg-slate-50 text-slate-600',
+    no_match: 'border-sky-200 bg-sky-50 text-sky-800',
+    missing_env: 'border-red-200 bg-red-50 text-red-800',
+    database_error: 'border-red-200 bg-red-50 text-red-800',
+  }[status];
+
+  return (
+    <Badge variant="outline" className={`rounded-full ${className}`}>
+      {label}
+    </Badge>
   );
 }
