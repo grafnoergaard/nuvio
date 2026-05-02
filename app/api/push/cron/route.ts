@@ -38,6 +38,33 @@ function isAuthorized(request: NextRequest) {
   return bearer === expectedSecret || headerSecret === expectedSecret;
 }
 
+async function readJsonResponse(response: Response) {
+  const text = await response.text().catch(() => '');
+
+  if (!text) {
+    return {
+      data: {},
+      errorMessage: `HTTP ${response.status} uden fejltekst`,
+    };
+  }
+
+  try {
+    const data = JSON.parse(text);
+    const errorMessage = typeof data?.error === 'string'
+      ? data.error
+      : typeof data?.message === 'string'
+        ? data.message
+        : `HTTP ${response.status}: ${text.slice(0, 160)}`;
+
+    return { data, errorMessage };
+  } catch {
+    return {
+      data: {},
+      errorMessage: `HTTP ${response.status}: ${text.slice(0, 160)}`,
+    };
+  }
+}
+
 function getLocalTimeParts(date: Date, timeZone: string): LocalTimeParts {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -114,7 +141,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Ikke autoriseret' }, { status: 401 });
   }
 
-  const secret = process.env.KUVERT_PUSH_SECRET || process.env.CRON_SECRET;
+  const secret = process.env.CRON_SECRET || process.env.KUVERT_PUSH_SECRET;
   if (!secret) {
     return NextResponse.json({ error: 'KUVERT_PUSH_SECRET eller CRON_SECRET mangler' }, { status: 500 });
   }
@@ -166,7 +193,7 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const result = await response.json().catch(() => ({}));
+    const { data: result, errorMessage } = await readJsonResponse(response);
     const ok = response.ok;
 
     const targetedCount = Number(result?.targeted ?? result?.targetedUsers ?? 0);
@@ -176,7 +203,7 @@ export async function GET(request: NextRequest) {
       ? targetedCount > 0
         ? `Sendt ${sentCount}/${targetedCount}`
         : 'Ingen brugere matchede triggeren'
-      : `Fejl: ${result?.error || 'Ukendt fejl'}`;
+      : `Fejl: ${errorMessage}`;
 
     await supabase
       .from('push_notification_configs')
