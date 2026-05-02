@@ -284,13 +284,31 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    if (config.last_result?.toLowerCase().includes('fejl')) {
+    const lastResult = config.last_result ?? '';
+    const lowerLastResult = lastResult.toLowerCase();
+    const hasOldUnknownFailure = lowerLastResult.includes('fejl') && lowerLastResult.includes('ukendt fejl');
+
+    if (hasOldUnknownFailure) {
+      return {
+        key: definition.key,
+        title: definition.title,
+        status: 'warning' as DiagnosticStatus,
+        statusLabel: 'Gammel fejl',
+        detail: 'Teknisk klar. Den gemte fejl er fra før cron-logningen blev forbedret og bliver overskrevet næste gang pushen faktisk køres.',
+        route: ADMIN_PUSH_ROUTES[definition.key],
+        enabled: config.is_enabled,
+        autoSendEnabled: config.auto_send_enabled,
+        checks,
+      };
+    }
+
+    if (lowerLastResult.includes('fejl')) {
       return {
         key: definition.key,
         title: definition.title,
         status: 'warning' as DiagnosticStatus,
         statusLabel: 'Sidste send fejlede',
-        detail: `Teknisk klar, men sidste registrerede resultat var: ${config.last_result}`,
+        detail: `Teknisk klar, men sidste registrerede resultat var: ${lastResult}`,
         route: ADMIN_PUSH_ROUTES[definition.key],
         enabled: config.is_enabled,
         autoSendEnabled: config.auto_send_enabled,
