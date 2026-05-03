@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'KUVERT_PUSH_SECRET eller CRON_SECRET mangler' }, { status: 500 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const appUrl = request.nextUrl.origin;
   const supabase = createSupabaseServiceClient();
   const now = new Date();
 

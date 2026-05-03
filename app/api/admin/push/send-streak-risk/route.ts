@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Kun admin har adgang' }, { status: 403 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const appUrl = request.nextUrl.origin;
   const secret = process.env.KUVERT_PUSH_SECRET || process.env.CRON_SECRET;
 
   if (!secret) {

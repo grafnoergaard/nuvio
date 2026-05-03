@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'KUVERT_PUSH_SECRET mangler på serveren' }, { status: 500 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const appUrl = request.nextUrl.origin;
   const definition = getPushNotificationDefinition('score_strong');
   if (!definition) {
     return NextResponse.json({ error: 'Score-styrke-push definition mangler' }, { status: 500 });

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'KUVERT_PUSH_SECRET mangler på serveren' }, { status: 500 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const appUrl = request.nextUrl.origin;
   const definition = getPushNotificationDefinition('streak_risk');
   if (!definition) {
     return NextResponse.json({ error: 'Streak-push definition mangler' }, { status: 500 });
