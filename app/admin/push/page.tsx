@@ -194,6 +194,10 @@ export default function AdminPushPage() {
     await sendPushAction('/api/admin/push/send-weekly-reminder', 'Ugebudget-påmindelse sendt');
   }
 
+  async function sendWeekBudgetSetup() {
+    await sendPushAction('/api/admin/push/send-week-budget-setup', 'Rådighedsbeløb-påmindelse sendt');
+  }
+
   async function sendWeekTransition() {
     await sendPushAction('/api/admin/push/send-week-transition', 'Ugeovergang sendt');
   }
@@ -803,6 +807,15 @@ export default function AdminPushPage() {
                       <Button
                         className="shrink-0"
                         onClick={sendWeeklyBudgetReminder}
+                        disabled={sending || loading}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Send nu
+                      </Button>
+                    ) : notification.key === 'week_budget_setup' ? (
+                      <Button
+                        className="shrink-0"
+                        onClick={sendWeekBudgetSetup}
                         disabled={sending || loading}
                       >
                         <Send className="mr-2 h-4 w-4" />

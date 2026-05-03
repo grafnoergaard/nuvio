@@ -19,6 +19,7 @@ type DiagnosticStatus =
 const ADMIN_PUSH_ROUTES: Record<PushNotificationKey, string> = {
   test_all_users: '/api/admin/push/send-test',
   weekly_budget_reminder: '/api/admin/push/send-weekly-reminder',
+  week_budget_setup: '/api/admin/push/send-week-budget-setup',
   week_transition: '/api/admin/push/send-week-transition',
   flow_savings: '/api/admin/push/send-flow-savings',
   weekly_budget_low: '/api/admin/push/send-weekly-budget-low',

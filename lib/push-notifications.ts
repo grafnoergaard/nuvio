@@ -1,6 +1,7 @@
 export type PushNotificationKey =
   | 'test_all_users'
   | 'weekly_budget_reminder'
+  | 'week_budget_setup'
   | 'week_transition'
   | 'flow_savings'
   | 'weekly_budget_low'
@@ -108,6 +109,31 @@ export const PUSH_NOTIFICATION_DEFINITIONS: PushNotificationDefinition[] = [
     defaultSendMinute: 0,
     defaultTimezone: 'Europe/Copenhagen',
     automationMode: 'scheduled',
+    defaultTriggerCondition: 'both',
+    defaultDeliveryWindowStartHour: 9,
+    defaultDeliveryWindowEndHour: 20,
+  },
+  {
+    key: 'week_budget_setup',
+    title: 'Rådighedsbeløb mangler',
+    description: 'Sender på brugerens ugeskift og igen dagligt, indtil rådighedsbeløbet er sat for ugen.',
+    audience: 'Brugere hvor den nye uge mangler et bekræftet rådighedsbeløb',
+    status: 'Klar',
+    defaultMessageTitle: 'Sæt ugens rådighedsbeløb',
+    defaultMessageBody: 'Din nye uge er i gang. Sæt rådighedsbeløbet, så Kuvert passer med virkeligheden.',
+    defaultUrl: '/?flow=week-budget-setup',
+    previewUrl: '/?flow=week-budget-setup',
+    supportsAuto: true,
+    supportedScheduleTypes: ['weekly'],
+    defaultScheduleType: 'weekly',
+    defaultEnabled: true,
+    defaultAutoSendEnabled: false,
+    defaultSendDayOfWeek: 1,
+    defaultSendDayOfMonth: null,
+    defaultSendHour: 11,
+    defaultSendMinute: 0,
+    defaultTimezone: 'Europe/Copenhagen',
+    automationMode: 'event',
     defaultTriggerCondition: 'both',
     defaultDeliveryWindowStartHour: 9,
     defaultDeliveryWindowEndHour: 20,

@@ -121,6 +121,7 @@ function wasAlreadySentToday(config: PushNotificationConfigRow, now: Date) {
 
 function getSpecialPushRoute(key: PushNotificationKey) {
   const routes: Partial<Record<PushNotificationKey, string>> = {
+    week_budget_setup: '/api/push/send-week-budget-setup',
     week_transition: '/api/push/send-week-transition',
     flow_savings: '/api/push/send-flow-savings',
     streak_risk: '/api/push/send-streak-risk',

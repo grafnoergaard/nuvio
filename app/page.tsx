@@ -20,6 +20,7 @@ import { useWeekTransition } from '@/hooks/use-week-transition';
 import { WeekTransitionBottomSheet, WeekTransitionWizard } from '@/components/week-transition-wizard';
 import { FlowSavingsModal } from '@/components/flow-savings-modal';
 import { WeeklyBudgetReminderModal } from '@/components/weekly-budget-reminder-modal';
+import { WeekBudgetSetupModal } from '@/components/week-budget-setup-modal';
 import { MonthCloseReminderModal } from '@/components/month-close-reminder-modal';
 import { ScoreDropReminderModal } from '@/components/score-drop-reminder-modal';
 import { ScoreStrongReminderModal } from '@/components/score-strong-reminder-modal';
@@ -60,6 +61,7 @@ export default function HomePage() {
   const [editingOpeningBalance, setEditingOpeningBalance] = useState(false);
   const [showQuickExpenseModal, setShowQuickExpenseModal] = useState(false);
   const [showWeeklyBudgetReminder, setShowWeeklyBudgetReminder] = useState(false);
+  const [showWeekBudgetSetup, setShowWeekBudgetSetup] = useState(false);
   const [showMonthCloseReminder, setShowMonthCloseReminder] = useState(false);
   const [showScoreDropReminder, setShowScoreDropReminder] = useState(false);
   const [showScoreStrongReminder, setShowScoreStrongReminder] = useState(false);
@@ -198,6 +200,9 @@ export default function HomePage() {
       );
       setShowWeeklyBudgetReminder(true);
     }
+    if (flow === 'week-budget-setup') {
+      setShowWeekBudgetSetup(true);
+    }
     if (flow === 'month-close' && flowMonthlyBudget > 0) {
       setShowMonthCloseReminder(true);
     }
@@ -252,6 +257,17 @@ export default function HomePage() {
   function dismissWeeklyReminder() {
     setShowWeeklyBudgetReminder(false);
     clearReminderQuery();
+  }
+
+  function dismissWeekBudgetSetup() {
+    setShowWeekBudgetSetup(false);
+    clearReminderQuery();
+  }
+
+  function completeWeekBudgetSetup() {
+    setShowWeekBudgetSetup(false);
+    clearReminderQuery();
+    loadAll();
   }
 
   function dismissMonthCloseReminder() {
@@ -416,6 +432,13 @@ export default function HomePage() {
           mode={weeklyReminderMode}
           onClose={dismissWeeklyReminder}
           onAddExpense={openQuickExpenseFromReminder}
+        />
+      )}
+      {showWeekBudgetSetup && (
+        <WeekBudgetSetupModal
+          currentBudget={flowMonthlyBudget}
+          onClose={dismissWeekBudgetSetup}
+          onSaved={completeWeekBudgetSetup}
         />
       )}
       {showMonthCloseReminder && flowMonthlyBudget > 0 && (
