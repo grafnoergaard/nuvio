@@ -280,7 +280,7 @@ export function KuvertHeroCard({
   const nativeCardClass = 'relative overflow-hidden rounded-[28px] border border-foreground/8 bg-white';
   const cardHeadingClass = 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82';
   const splitCardBackground =
-    'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,251,251,0.92))';
+    'linear-gradient(to bottom right, rgba(236,253,245,0.80), rgba(240,253,250,0.30), #ffffff)';
   const splitLargeCardStyle: CSSProperties = {
     ...getCardStyle(design.cardLarge, design.gradientFrom, design.gradientTo),
     background: splitCardBackground,
