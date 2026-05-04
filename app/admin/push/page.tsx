@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Activity, Bell, BellRing, Clock3, Rocket, Save, Send, Sparkles, Users, TriangleAlert, RefreshCw } from 'lucide-react';
+import { Activity, Bell, BellRing, Clock3, Rocket, Save, Send, Users, TriangleAlert, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -327,7 +327,7 @@ export default function AdminPushPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 py-8 px-4 md:px-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
@@ -502,7 +502,7 @@ export default function AdminPushPage() {
           </Card>
         ) : null}
 
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-6">
           <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -510,7 +510,7 @@ export default function AdminPushPage() {
                 Push-notifikationer
               </CardTitle>
               <CardDescription>
-                Første version: én live test og et tydeligt backlog over de næste beskeder, vi kan bygge.
+                Redigér tekster, automatik, diagnose og flow-preview for hver push.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -931,53 +931,6 @@ export default function AdminPushPage() {
               ))}
             </CardContent>
           </Card>
-
-          <div className="space-y-6">
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  Første setup
-                </CardTitle>
-                <CardDescription>
-                  Sådan giver den her første version mening.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-                <p>
-                  Vi starter med en ren <span className="font-medium text-foreground">testbesked til alle aktive enheder</span>, så du kan se tone, ikon og levering i virkeligheden.
-                </p>
-                <p>
-                  Når den fungerer stabilt, er næste naturlige lag at splitte push op i <span className="font-medium text-foreground">test</span>, <span className="font-medium text-foreground">påmindelser</span> og <span className="font-medium text-foreground">advarsler</span>.
-                </p>
-                <p>
-                  Det giver os et klart skel mellem teknisk test og rigtige brugerbeskeder.
-                </p>
-                <p>
-                  Automatikken kører via <span className="font-medium text-foreground">/api/push/cron</span>. På Vercel Hobby bliver de aktive auto-pushes vurderet én gang om dagen, når <span className="font-medium text-foreground">CRON_SECRET</span> er sat op.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-2xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Rocket className="h-4 w-4 text-primary" />
-                  Mine forslag
-                </CardTitle>
-                <CardDescription>
-                  De næste push-typer jeg synes giver mest værdi.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <SuggestionRow title="Ugebudget-påmindelse" copy="Åbner et lille uge-flow med status og et nyttigt næste skridt." />
-                <SuggestionRow title="Ugebudget er lavt" copy="Sendes når ugens Kuvert er ved at være presset, før brugeren mister overblikket." />
-                <SuggestionRow title="Streak i fare" copy="Du er tæt på at bryde din uge-streak." />
-                <SuggestionRow title="Måneden lukker snart" copy="Nu er det tid til at lande blødt i slutningen af måneden." />
-                <SuggestionRow title="Din score er stærk" copy="En positiv besked der forstærker, når det brugeren gør faktisk virker." />
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </div>
@@ -1009,15 +962,6 @@ function MetricCard({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function SuggestionRow({ title, copy }: { title: string; copy: string }) {
-  return (
-    <div className="rounded-2xl border border-border/60 px-4 py-3">
-      <p className="text-sm font-semibold text-foreground">{title}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
-    </div>
   );
 }
 
