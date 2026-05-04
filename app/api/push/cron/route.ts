@@ -7,6 +7,7 @@ import {
   type PushNotificationConfigRow,
   type PushNotificationKey,
 } from '@/lib/push-notifications';
+import { getInternalAppUrl, getPushInternalHeaders } from '@/lib/push-route-utils';
 import { createSupabaseServiceClient } from '@/lib/supabase-server';
 
 type LocalTimeParts = {
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'KUVERT_PUSH_SECRET eller CRON_SECRET mangler' }, { status: 500 });
   }
 
-  const appUrl = request.nextUrl.origin;
+  const appUrl = getInternalAppUrl(request);
   const supabase = createSupabaseServiceClient();
   const now = new Date();
 
@@ -186,10 +187,7 @@ export async function GET(request: NextRequest) {
       new URL(specialRoute ?? '/api/push/send', appUrl),
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-kuvert-push-secret': secret,
-        },
+        headers: getPushInternalHeaders(secret),
         body: specialRoute ? undefined : JSON.stringify(payload),
       }
     );

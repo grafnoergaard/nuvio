@@ -6,6 +6,7 @@ import {
   type PushNotificationConfigRow,
 } from '@/lib/push-notifications';
 import { createSupabaseServiceClient } from '@/lib/supabase-server';
+import { getInternalAppUrl, getPushInternalHeaders } from '@/lib/push-route-utils';
 
 type WeekBudgetCandidate = {
   userId: string;
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'KUVERT_PUSH_SECRET mangler på serveren' }, { status: 500 });
   }
 
-  const appUrl = request.nextUrl.origin;
+  const appUrl = getInternalAppUrl(request);
   const definition = getPushNotificationDefinition('week_budget_setup');
   if (!definition) {
     return NextResponse.json({ error: 'Rådighedsbeløb-push definition mangler' }, { status: 500 });
@@ -205,10 +206,7 @@ export async function POST(request: NextRequest) {
 
   const response = await fetch(new URL('/api/push/send', appUrl), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-kuvert-push-secret': secret,
-    },
+    headers: getPushInternalHeaders(secret),
     body: JSON.stringify({
       ...payload,
       userIds: targetedUserIds,
