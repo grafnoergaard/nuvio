@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createSupabaseRouteClient } from '@/lib/supabase-server';
+import { getInternalAppUrl, getPushInternalHeaders } from '@/lib/push-route-utils';
 
 function isAdminUser(user: { app_metadata?: Record<string, unknown> | null } | null) {
   return user?.app_metadata?.is_admin === true || user?.app_metadata?.role === 'admin';
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Kun admin har adgang' }, { status: 403 });
   }
 
-  const appUrl = request.nextUrl.origin;
+  const appUrl = getInternalAppUrl(request);
   const secret = process.env.KUVERT_PUSH_SECRET || process.env.CRON_SECRET;
 
   if (!secret) {
@@ -33,10 +34,7 @@ export async function POST(request: NextRequest) {
 
   const response = await fetch(new URL('/api/push/send-score-drop', appUrl), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-kuvert-push-secret': secret,
-    },
+    headers: getPushInternalHeaders(secret),
   });
 
   const data = await response.json().catch(() => ({}));
