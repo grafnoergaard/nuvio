@@ -288,14 +288,16 @@ export async function GET(request: NextRequest) {
     const lastResult = config.last_result ?? '';
     const lowerLastResult = lastResult.toLowerCase();
     const hasOldUnknownFailure = lowerLastResult.includes('fejl') && lowerLastResult.includes('ukendt fejl');
+    const hasOldVercelAuthFailure = lowerLastResult.includes('http 401')
+      && lowerLastResult.includes('authentication required');
 
-    if (hasOldUnknownFailure) {
+    if (hasOldUnknownFailure || hasOldVercelAuthFailure) {
       return {
         key: definition.key,
         title: definition.title,
         status: 'warning' as DiagnosticStatus,
         statusLabel: 'Gammel fejl',
-        detail: 'Teknisk klar. Den gemte fejl er fra før cron-logningen blev forbedret og bliver overskrevet næste gang pushen faktisk køres.',
+        detail: 'Teknisk klar. Den gemte fejl er fra før intern push-kald og cron-logning blev forbedret og bliver overskrevet næste gang pushen faktisk køres.',
         route: ADMIN_PUSH_ROUTES[definition.key],
         enabled: config.is_enabled,
         autoSendEnabled: config.auto_send_enabled,
