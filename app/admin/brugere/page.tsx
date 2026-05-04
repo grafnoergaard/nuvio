@@ -29,14 +29,18 @@ function formatDate(dateStr: string | null) {
 
 async function getAuthHeader() {
   const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Du er ikke logget ind');
+  }
+
   return {
-    Authorization: `Bearer ${session?.access_token ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+    Authorization: `Bearer ${session.access_token}`,
     'Content-Type': 'application/json',
   };
 }
 
-const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-user-list`;
-const BACKFILL_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-backfill-streaks`;
+const USERS_URL = '/api/admin/users';
+const BACKFILL_URL = '/api/admin/users/backfill-streaks';
 
 export default function BrugerePage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -57,12 +61,12 @@ export default function BrugerePage() {
     setLoading(true);
     try {
       const headers = await getAuthHeader();
-      const res = await fetch(FUNCTION_URL, { headers });
+      const res = await fetch(USERS_URL, { headers });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setUsers(json.users ?? []);
-    } catch {
-      toast.error('Kunne ikke hente brugere');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Kunne ikke hente brugere');
     } finally {
       setLoading(false);
     }
@@ -72,7 +76,7 @@ export default function BrugerePage() {
     setToggling(userId);
     try {
       const headers = await getAuthHeader();
-      const res = await fetch(FUNCTION_URL, {
+      const res = await fetch(USERS_URL, {
         method: 'POST',
         headers,
         body: JSON.stringify({ userId, isAdmin: newValue }),
@@ -122,7 +126,7 @@ export default function BrugerePage() {
     setCreating(true);
     try {
       const headers = await getAuthHeader();
-      const res = await fetch(FUNCTION_URL, {
+      const res = await fetch(USERS_URL, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ email: newEmail.trim(), password: newPassword }),

@@ -6,7 +6,7 @@ import DataResetWizard from '@/components/data-reset-wizard';
 import { RotateCcw, Loader as Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const USER_LIST_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-user-list`;
+const USER_LIST_URL = '/api/admin/users';
 
 interface AdminUser {
   id: string;
@@ -15,8 +15,12 @@ interface AdminUser {
 
 async function getAuthHeader() {
   const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Du er ikke logget ind');
+  }
+
   return {
-    Authorization: `Bearer ${session?.access_token ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+    Authorization: `Bearer ${session.access_token}`,
     'Content-Type': 'application/json',
   };
 }
@@ -35,8 +39,8 @@ export default function NulstilPage() {
         setUsers(
           (json.users ?? []).map((u: any) => ({ id: u.id, email: u.email }))
         );
-      } catch {
-        toast.error('Kunne ikke hente brugerliste');
+      } catch (err: any) {
+        toast.error(err.message ?? 'Kunne ikke hente brugerliste');
       } finally {
         setLoading(false);
       }
