@@ -11,6 +11,7 @@ import {
   getUserWeekStartDay,
   updateWeeklyCarryOver,
 } from '@/lib/quick-expense-service';
+import type { ExpenseMode } from '@/lib/vacation-mode-service';
 
 // Design experiment: keep false for the default left-aligned layout.
 const CENTER_INLINE_EXPENSE_LAYOUT = false;
@@ -19,12 +20,20 @@ interface QuickExpenseInlineFormProps {
   onComplete: () => void;
   successMode?: 'button' | 'card';
   successOverlayClassName?: string;
+  expenseMode?: ExpenseMode;
+  vacationModeId?: string | null;
+  accentColor?: string;
+  showMonthlyDistribution?: boolean;
 }
 
 export function QuickExpenseInlineForm({
   onComplete,
   successMode = 'button',
   successOverlayClassName,
+  expenseMode = 'normal',
+  vacationModeId = null,
+  accentColor = '#2ED3A7',
+  showMonthlyDistribution = true,
 }: QuickExpenseInlineFormProps) {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseNote, setExpenseNote] = useState('');
@@ -34,6 +43,7 @@ export function QuickExpenseInlineForm({
   const [expenseError, setExpenseError] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
+  const canSpreadOverMonth = showMonthlyDistribution && expenseMode === 'normal';
 
   useEffect(() => {
     return () => {
@@ -74,6 +84,10 @@ export function QuickExpenseInlineForm({
     };
   }, []);
 
+  useEffect(() => {
+    if (!canSpreadOverMonth) setSpreadOverMonth(false);
+  }, [canSpreadOverMonth]);
+
   function setInlineExpenseFocusState(active: boolean) {
     if (active) {
       document.documentElement.setAttribute('data-inline-expense-focus', 'true');
@@ -107,20 +121,24 @@ export function QuickExpenseInlineForm({
     setExpenseError(null);
 
     try {
-      await addQuickExpense(parsed, expenseNote.trim() || null, spreadOverMonth);
+      const shouldSpreadOverMonth = canSpreadOverMonth ? spreadOverMonth : false;
+      await addQuickExpense(parsed, expenseNote.trim() || null, shouldSpreadOverMonth, expenseMode, vacationModeId);
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
-      const [expenses, monthlyBudget, weekStartDay] = await Promise.all([
-        getQuickExpensesForMonth(currentYear, currentMonth),
-        getMonthlyBudget(currentYear, currentMonth),
-        getUserWeekStartDay(),
-      ]);
 
-      const budgetAmount = monthlyBudget?.budget_amount ?? 0;
-      if (budgetAmount > 0) {
-        const weekly = computeWeeklyCarryOver(budgetAmount, currentYear, currentMonth, expenses, now, weekStartDay);
-        updateWeeklyCarryOver(currentYear, currentMonth, weekly.accumulatedCarryOver).catch(() => null);
+      if (expenseMode === 'normal') {
+        const [expenses, monthlyBudget, weekStartDay] = await Promise.all([
+          getQuickExpensesForMonth(currentYear, currentMonth),
+          getMonthlyBudget(currentYear, currentMonth),
+          getUserWeekStartDay(),
+        ]);
+
+        const budgetAmount = monthlyBudget?.budget_amount ?? 0;
+        if (budgetAmount > 0) {
+          const weekly = computeWeeklyCarryOver(budgetAmount, currentYear, currentMonth, expenses, now, weekStartDay);
+          updateWeeklyCarryOver(currentYear, currentMonth, weekly.accumulatedCarryOver).catch(() => null);
+        }
       }
 
       setExpenseSaved(true);
@@ -168,7 +186,10 @@ export function QuickExpenseInlineForm({
           aria-hidden="true"
         >
           <div className="flex flex-col items-center gap-3.5 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2ED3A7] text-[#0E3B43] shadow-[0_10px_24px_rgba(46,211,167,0.28)]">
+            <span
+              className="flex h-14 w-14 items-center justify-center rounded-full text-[#0E3B43] shadow-[0_10px_24px_rgba(46,211,167,0.28)]"
+              style={{ backgroundColor: accentColor }}
+            >
               <Check className="h-7 w-7" />
             </span>
             <div className="space-y-1">
@@ -227,28 +248,29 @@ export function QuickExpenseInlineForm({
             />
           </label>
 
-          <label className="flex shrink-0 cursor-pointer items-center gap-1.5 py-1 text-[0.75rem] text-foreground/70">
-            <input
-              type="checkbox"
-              checked={spreadOverMonth}
-              onChange={(e) => setSpreadOverMonth(e.target.checked)}
-              className="sr-only"
-            />
-            <span
-              className={cn(
-                'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
-                spreadOverMonth
-                  ? 'border-[#2ED3A7] bg-[#2ED3A7] text-[#0E3B43]'
-                  : 'border-foreground/18 bg-white/50 text-transparent'
-              )}
-              aria-hidden="true"
-            >
-              <Check className="h-2.5 w-2.5 stroke-[3]" />
-            </span>
-            <span className="whitespace-nowrap text-[0.75rem] font-semibold text-foreground/78">
-              Månedlig fordelt udgift
-            </span>
-          </label>
+          {canSpreadOverMonth && (
+            <label className="flex shrink-0 cursor-pointer items-center gap-1.5 py-1 text-[0.75rem] text-foreground/70">
+              <input
+                type="checkbox"
+                checked={spreadOverMonth}
+                onChange={(e) => setSpreadOverMonth(e.target.checked)}
+                className="sr-only"
+              />
+              <span
+                className={cn(
+                  'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-200',
+                  spreadOverMonth ? 'text-[#0E3B43]' : 'border-foreground/18 bg-white/50 text-transparent'
+                )}
+                style={spreadOverMonth ? { borderColor: accentColor, backgroundColor: accentColor } : undefined}
+                aria-hidden="true"
+              >
+                <Check className="h-2.5 w-2.5 stroke-[3]" />
+              </span>
+              <span className="whitespace-nowrap text-[0.75rem] font-semibold text-foreground/78">
+                Månedlig fordelt udgift
+              </span>
+            </label>
+          )}
         </div>
       </div>
 
@@ -278,7 +300,10 @@ export function QuickExpenseInlineForm({
           <span className="animate-pulse">Gemmer...</span>
         ) : (
           <>
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2ED3A7] text-[#0E3B43] transition-transform duration-200 group-hover:scale-105">
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[#0E3B43] transition-transform duration-200 group-hover:scale-105"
+              style={{ backgroundColor: accentColor }}
+            >
               <Plus className="h-3.5 w-3.5" />
             </span>
             Gem udgift

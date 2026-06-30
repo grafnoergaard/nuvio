@@ -28,6 +28,16 @@ import { GoodGripReminderModal } from '@/components/good-grip-reminder-modal';
 import { HonestEntriesReminderModal } from '@/components/honest-entries-reminder-modal';
 import { SingleAccountMethodReminderModal } from '@/components/single-account-method-reminder-modal';
 import { KUVERT_HOME_VARIANT } from '@/lib/kuvert-home-variant';
+import { VacationModeWizard } from '@/components/vacation-mode-wizard';
+import { VacationModeActivationFlow } from '@/components/vacation-mode-activation-flow';
+import { VacationModeCompletionFlow } from '@/components/vacation-mode-completion-flow';
+import {
+  getActiveVacationMode,
+  getReadyVacationMode,
+  isVacationModeReadyToEnd,
+  type VacationMode,
+} from '@/lib/vacation-mode-service';
+import { getQuickExpensesForRange, type QuickExpense } from '@/lib/quick-expense-service';
 
 export default function HomePage() {
   const router = useRouter();
@@ -42,7 +52,7 @@ export default function HomePage() {
     budget, expenses, income, recipientCount, loading,
     householdMonthlyIncome, variableExpenseEstimate, investmentSettings,
     flowMonthlyBudget, flowMonthlySpent, flowScoreThreshold, flowStatusConfig, flowWeeklyStatus,
-    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, quickStreak, weeklyStreak,
+    sdsData, householdAdultCount, householdChildBirthYears, categoryGroupTypes, quickStreak, weeklyStreak, quickExpenses,
     loadData, loadHousehold, setBudget, setUserRef, loadAll,
   } = data;
 
@@ -68,6 +78,14 @@ export default function HomePage() {
   const [showGoodGripReminder, setShowGoodGripReminder] = useState(false);
   const [showHonestEntriesReminder, setShowHonestEntriesReminder] = useState(false);
   const [showSingleAccountMethodReminder, setShowSingleAccountMethodReminder] = useState(false);
+  const [showVacationWizard, setShowVacationWizard] = useState(false);
+  const [activeVacationMode, setActiveVacationMode] = useState<VacationMode | null>(null);
+  const [vacationQuickExpenses, setVacationQuickExpenses] = useState<QuickExpense[]>([]);
+  const [readyVacationMode, setReadyVacationMode] = useState<VacationMode | null>(null);
+  const [showVacationActivation, setShowVacationActivation] = useState(false);
+  const [vacationActivationDismissed, setVacationActivationDismissed] = useState(false);
+  const [showVacationCompletion, setShowVacationCompletion] = useState(false);
+  const [vacationCompletionDismissed, setVacationCompletionDismissed] = useState(false);
   const [weeklyReminderMode, setWeeklyReminderMode] = useState<'weekly-budget-reminder' | 'weekly-budget-low' | 'streak-risk'>('weekly-budget-reminder');
   const homeScrollRef = useRef<HTMLDivElement>(null);
   const homeContentRef = useRef<HTMLDivElement>(null);
@@ -113,11 +131,70 @@ export default function HomePage() {
   useEffect(() => {
     if (!user) {
       markWhyWizardChecked();
+      setActiveVacationMode(null);
+      setVacationQuickExpenses([]);
+      setReadyVacationMode(null);
+      setShowVacationActivation(false);
+      setShowVacationCompletion(false);
       return;
     }
     setUserRef(user.id);
     loadHousehold();
   }, [user]);
+
+  async function loadActiveVacationMode() {
+    if (!user) {
+      setActiveVacationMode(null);
+      setVacationQuickExpenses([]);
+      setShowVacationCompletion(false);
+      return;
+    }
+
+    try {
+      const activeMode = await getActiveVacationMode(user.id);
+      setActiveVacationMode(activeMode);
+      if (!activeMode) {
+        setVacationQuickExpenses([]);
+        setShowVacationCompletion(false);
+        return;
+      }
+
+      const expenses = await getQuickExpensesForRange(activeMode.start_date, activeMode.end_date, 'vacation');
+      setVacationQuickExpenses(expenses);
+      if (isVacationModeReadyToEnd(activeMode) && !vacationCompletionDismissed) {
+        setShowVacationCompletion(true);
+      }
+    } catch (error) {
+      console.warn('Kunne ikke hente aktiv feriekuvert', error);
+      setActiveVacationMode(null);
+      setVacationQuickExpenses([]);
+      setShowVacationCompletion(false);
+    }
+  }
+
+  async function loadReadyVacationMode({ forceOpen = false } = {}) {
+    if (!user) return;
+    try {
+      const readyMode = await getReadyVacationMode(user.id);
+      setReadyVacationMode(readyMode);
+      if (readyMode && (forceOpen || !vacationActivationDismissed)) {
+        setShowVacationActivation(true);
+      }
+    } catch (error) {
+      console.warn('Kunne ikke hente klar feriekuvert', error);
+    }
+  }
+
+  useEffect(() => {
+    setVacationActivationDismissed(false);
+    setVacationCompletionDismissed(false);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || loading || showVacationWizard) return;
+    loadReadyVacationMode();
+    loadActiveVacationMode();
+  }, [user?.id, loading, showVacationWizard]);
 
   async function saveOpeningBalance() {
     if (!budget) return;
@@ -326,6 +403,43 @@ export default function HomePage() {
     clearReminderQuery();
   }
 
+  function dismissVacationActivation() {
+    setShowVacationActivation(false);
+    setVacationActivationDismissed(true);
+  }
+
+  function completeVacationActivation() {
+    setShowVacationActivation(false);
+    setReadyVacationMode(null);
+    setVacationActivationDismissed(false);
+    loadAll();
+    loadActiveVacationMode();
+  }
+
+  function openVacationCompletion() {
+    if (!activeVacationMode) return;
+    setShowVacationCompletion(true);
+  }
+
+  function dismissVacationCompletion() {
+    setShowVacationCompletion(false);
+    setVacationCompletionDismissed(true);
+  }
+
+  function completeVacationCompletion() {
+    setShowVacationCompletion(false);
+    setVacationCompletionDismissed(false);
+    setActiveVacationMode(null);
+    setVacationQuickExpenses([]);
+    loadAll();
+    loadActiveVacationMode();
+  }
+
+  function handleQuickExpenseSaved() {
+    loadAll();
+    loadActiveVacationMode();
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -342,6 +456,8 @@ export default function HomePage() {
     recipientCount,
     quickStreak,
     weeklyStreak,
+    quickExpenses: activeVacationMode ? vacationQuickExpenses : quickExpenses,
+    vacationMode: activeVacationMode,
     flowMonthlyBudget,
     flowMonthlySpent,
     flowScoreThreshold,
@@ -358,7 +474,9 @@ export default function HomePage() {
       setEditingOpeningBalance(true);
     },
     onShowQuickExpense: () => setShowQuickExpenseModal(true),
-    onQuickExpenseSaved: () => loadAll(),
+    onQuickExpenseSaved: handleQuickExpenseSaved,
+    onPlanVacation: () => setShowVacationWizard(true),
+    onEndVacation: activeVacationMode ? openVacationCompletion : undefined,
     heroVariant: KUVERT_HOME_VARIANT,
   };
 
@@ -434,6 +552,27 @@ export default function HomePage() {
           onAddExpense={openQuickExpenseFromReminder}
         />
       )}
+      <VacationModeWizard
+        open={showVacationWizard}
+        onClose={() => setShowVacationWizard(false)}
+        onSaved={() => {
+          loadAll();
+          loadReadyVacationMode({ forceOpen: true });
+        }}
+      />
+      <VacationModeActivationFlow
+        open={showVacationActivation}
+        vacationMode={readyVacationMode}
+        onClose={dismissVacationActivation}
+        onActivated={completeVacationActivation}
+      />
+      <VacationModeCompletionFlow
+        open={showVacationCompletion}
+        vacationMode={activeVacationMode}
+        expenses={vacationQuickExpenses}
+        onClose={dismissVacationCompletion}
+        onCompleted={completeVacationCompletion}
+      />
       {showWeekBudgetSetup && (
         <WeekBudgetSetupModal
           currentBudget={flowMonthlyBudget}

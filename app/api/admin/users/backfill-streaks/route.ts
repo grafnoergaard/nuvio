@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
         .from('quick_expenses')
         .select('amount, expense_date')
         .eq('user_id', userId)
+        .eq('mode', 'normal')
         .gte('expense_date', windowStart)
         .lte('expense_date', windowEnd);
 

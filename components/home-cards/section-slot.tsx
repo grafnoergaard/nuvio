@@ -4,9 +4,10 @@ import React from 'react';
 import { type HomeCardKey } from '@/lib/home-card-config';
 import { KuvertHeroCard } from '@/components/home-cards/kuvert-hero-card';
 import type { HomeDerived } from '@/lib/home-derived';
-import type { QuickExpenseStreak, QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
+import type { QuickExpense, QuickExpenseStreak, QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
 import type { FlowStatusConfig } from '@/hooks/use-home-data';
 import type { KuvertHomeVariant } from '@/lib/kuvert-home-variant';
+import type { VacationMode } from '@/lib/vacation-mode-service';
 
 const HERO_CARD_KEYS = new Set<HomeCardKey>(['streak_count', 'quick_expense_action']);
 
@@ -19,6 +20,8 @@ interface SectionSlotProps {
   recipientCount: number;
   quickStreak: QuickExpenseStreak | null;
   weeklyStreak: QuickExpenseWeeklyStreak | null;
+  quickExpenses: QuickExpense[];
+  vacationMode?: VacationMode | null;
   flowMonthlyBudget: number;
   flowMonthlySpent: number;
   flowScoreThreshold: number;
@@ -33,6 +36,8 @@ interface SectionSlotProps {
   onShowStartBalance: () => void;
   onShowQuickExpense: () => void;
   onQuickExpenseSaved: () => void;
+  onPlanVacation?: () => void;
+  onEndVacation?: () => void;
   heroVariant: KuvertHomeVariant;
 }
 
@@ -45,6 +50,8 @@ export function SectionSlot({
   recipientCount,
   quickStreak,
   weeklyStreak,
+  quickExpenses,
+  vacationMode,
   flowMonthlyBudget,
   flowMonthlySpent,
   flowScoreThreshold,
@@ -59,6 +66,8 @@ export function SectionSlot({
   onShowStartBalance,
   onShowQuickExpense,
   onQuickExpenseSaved,
+  onPlanVacation,
+  onEndVacation,
   heroVariant,
 }: SectionSlotProps) {
   const isHeroCard = cardKey === 'streak_count' && (cardVisibility.streak_count || cardVisibility.quick_expense_action);
@@ -68,6 +77,8 @@ export function SectionSlot({
     <KuvertHeroCard
       quickStreak={quickStreak}
       weeklyStreak={weeklyStreak}
+      quickExpenses={quickExpenses}
+      vacationMode={vacationMode}
       flowMonthlyBudget={flowMonthlyBudget}
       flowMonthlySpent={flowMonthlySpent}
       flowScoreThreshold={flowScoreThreshold}
@@ -77,6 +88,8 @@ export function SectionSlot({
       showQuickExpense={cardVisibility.quick_expense_action}
       onShowQuickExpense={onShowQuickExpense}
       onQuickExpenseSaved={onQuickExpenseSaved}
+      onPlanVacation={onPlanVacation}
+      onEndVacation={onEndVacation}
       variant={heroVariant}
     />
   );

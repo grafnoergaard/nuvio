@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
     supabase
       .from('quick_expenses')
       .select('user_id,expense_date')
+      .eq('mode', 'normal')
       .gte('expense_date', new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)),
     supabase
       .from('push_notification_configs')

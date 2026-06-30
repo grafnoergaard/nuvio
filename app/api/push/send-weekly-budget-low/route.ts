@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
       .from('quick_expenses')
       .select('user_id,amount,expense_date,spread_over_month')
       .in('user_id', subscribedUserIds)
+      .eq('mode', 'normal')
       .gte('expense_date', monthStart)
       .lte('expense_date', monthEnd),
     supabase

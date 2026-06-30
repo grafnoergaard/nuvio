@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
-import { Flame, Plus, Trophy, X, Zap } from 'lucide-react';
+import { Flame, Palmtree, Plus, Trophy, X, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { QuickExpenseStreak, QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
+import type { QuickExpense, QuickExpenseStreak, QuickExpenseWeeklyStreak, WeeklyCarryOverSummary } from '@/lib/quick-expense-service';
+import type { VacationMode } from '@/lib/vacation-mode-service';
 import type { FlowStatusConfig } from '@/hooks/use-home-data';
 import type { KuvertHomeVariant } from '@/lib/kuvert-home-variant';
 import { QuickExpenseInlineForm } from '@/components/quick-expense-inline-form';
@@ -18,14 +19,21 @@ interface KuvertHeroCardProps {
   flowScoreThreshold: number;
   flowStatusConfig: FlowStatusConfig;
   flowWeeklyStatus: WeeklyCarryOverSummary | null;
+  quickExpenses: QuickExpense[];
+  vacationMode?: VacationMode | null;
   showStreak: boolean;
   showQuickExpense: boolean;
   onShowQuickExpense: () => void;
   onQuickExpenseSaved: () => void;
+  onPlanVacation?: () => void;
+  onEndVacation?: () => void;
   variant: KuvertHomeVariant;
 }
 
 const WEEKS_PER_STREAK_MONTH = 4;
+const VACATION_ACCENT = '#F6C126';
+const VACATION_ACCENT_MID = '#F8D76A';
+const VACATION_ACCENT_SOFT = '#FFF8E1';
 
 const DANISH_MONTHS = [
   'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
@@ -112,6 +120,90 @@ function getDaysLeftInRange(end: Date | string, now: Date): number {
   return Math.max(0, Math.floor((rangeEnd.getTime() - today.getTime()) / 86400000) + 1);
 }
 
+function parseDateOnly(value: string): Date {
+  return new Date(`${value}T00:00:00`);
+}
+
+function toIsoDateOnly(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function getInclusiveDays(startDate: string, endDate: string): number {
+  const start = parseDateOnly(startDate);
+  const end = parseDateOnly(endDate);
+  return Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86400000) + 1);
+}
+
+type StreakPeriodItem = {
+  iso_week_number: number;
+  week_start: string;
+  week_end: string;
+  kept_budget?: boolean;
+  is_completed?: boolean;
+  is_current?: boolean;
+  label?: string;
+};
+
+function getVisibleStreakItems<T extends { is_current?: boolean }>(items: T[], maxItems = 5): T[] {
+  if (items.length <= maxItems) return items;
+  const currentIndex = items.findIndex(item => item.is_current);
+  if (currentIndex === -1) return items.slice(0, maxItems);
+  const start = Math.min(Math.max(0, currentIndex - 2), Math.max(0, items.length - maxItems));
+  return items.slice(start, start + maxItems);
+}
+
+function buildVacationDayItems(vacationMode: VacationMode, expenses: QuickExpense[], now: Date): StreakPeriodItem[] {
+  const start = parseDateOnly(vacationMode.start_date);
+  const todayIso = toIsoDateOnly(now);
+  const totalDays = Math.max(1, vacationMode.number_of_days || getInclusiveDays(vacationMode.start_date, vacationMode.end_date));
+  const dailyBudget = totalDays > 0 ? (Number(vacationMode.budget_amount) || 0) / totalDays : 0;
+
+  return Array.from({ length: totalDays }, (_, index) => {
+    const date = addDays(start, index);
+    const isoDate = toIsoDateOnly(date);
+    const spent = expenses
+      .filter(expense => expense.expense_date === isoDate)
+      .reduce((sum, expense) => sum + Number(expense.amount), 0);
+    const isCurrent = isoDate === todayIso;
+    const isPast = isoDate < todayIso;
+    const isFuture = isoDate > todayIso;
+
+    return {
+      iso_week_number: index + 1,
+      week_start: isoDate,
+      week_end: isoDate,
+      label: `Dag ${index + 1}`,
+      is_current: isCurrent,
+      is_completed: isPast,
+      kept_budget: isFuture ? undefined : spent <= dailyBudget,
+    };
+  });
+}
+
+function buildVacationLevelSegments(totalDays: number) {
+  const safeDays = Math.max(1, totalDays);
+  return [
+    { label: 'Begynder', min: 0 },
+    { label: 'Aktiv', min: Math.max(1, Math.ceil(safeDays * 0.25)) },
+    { label: 'Erfaren', min: Math.max(2, Math.ceil(safeDays * 0.5)) },
+    { label: 'Mester', min: Math.max(3, Math.ceil(safeDays * 0.75)) },
+    { label: 'Legendarisk', min: safeDays },
+  ];
+}
+
+function getStreakPeriodLabel(period: { label?: string; iso_week_number: number }): string {
+  return period.label ?? `Uge ${period.iso_week_number}`;
+}
+
 export function KuvertHeroCard({
   quickStreak,
   weeklyStreak,
@@ -120,28 +212,50 @@ export function KuvertHeroCard({
   flowScoreThreshold,
   flowStatusConfig,
   flowWeeklyStatus,
+  quickExpenses,
+  vacationMode,
   showStreak,
   showQuickExpense,
   onShowQuickExpense,
   onQuickExpenseSaved,
+  onPlanVacation,
+  onEndVacation,
   variant,
 }: KuvertHeroCardProps) {
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
   const { design } = useSettings();
 
-  const currentWeekStreak = weeklyStreak?.current_streak ?? 0;
-  const longestWeekStreak = weeklyStreak?.longest_streak ?? 0;
-  const tone = getStreakTone(currentWeekStreak);
-  const hasWeekStreak = currentWeekStreak > 0;
+  const now = new Date();
+  const activeVacation = vacationMode?.status === 'active' ? vacationMode : null;
+  const isVacationMode = Boolean(activeVacation);
+  const vacationExpenses = activeVacation
+    ? quickExpenses.filter(expense => expense.mode === 'vacation' && expense.vacation_mode_id === activeVacation.id)
+    : [];
+  const vacationTotalDays = activeVacation
+    ? Math.max(1, activeVacation.number_of_days || getInclusiveDays(activeVacation.start_date, activeVacation.end_date))
+    : 0;
+  const vacationBudget = activeVacation ? Number(activeVacation.budget_amount) || 0 : 0;
+  const vacationSpent = vacationExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+  const vacationDayItems = activeVacation ? buildVacationDayItems(activeVacation, vacationExpenses, now) : [];
+  const vacationStreakCount = vacationDayItems.filter(day => day.kept_budget === true).length;
+  const vacationVisibleDays = getVisibleStreakItems(vacationDayItems);
+
+  const currentWeekStreak = isVacationMode ? vacationStreakCount : (weeklyStreak?.current_streak ?? 0);
+  const longestWeekStreak = isVacationMode ? Math.max(vacationStreakCount, vacationDayItems.filter(day => day.is_completed || day.is_current).length) : (weeklyStreak?.longest_streak ?? 0);
+  const tone = isVacationMode
+    ? { label: 'Ferie', accent: VACATION_ACCENT, badge: 'bg-[#F6C126]/20 text-[#0E3B43] border-[#F6C126]/45' }
+    : getStreakTone(currentWeekStreak);
+  const hasWeekStreak = isVacationMode ? true : currentWeekStreak > 0;
   const completedStreakMonths = Math.floor(currentWeekStreak / WEEKS_PER_STREAK_MONTH);
   const bestWeekStreak = Math.max(longestWeekStreak, currentWeekStreak);
   const recordProgress = bestWeekStreak > 0 ? Math.min(100, Math.max(12, (currentWeekStreak / bestWeekStreak) * 100)) : 0;
-  const now = new Date();
   const currentMonthIndex = (weeklyStreak?.current_month ?? (now.getMonth() + 1)) - 1;
-  const currentMonthLabel = DANISH_MONTHS[currentMonthIndex] ?? 'Denne måned';
+  const currentMonthLabel = isVacationMode ? 'Ferie' : (DANISH_MONTHS[currentMonthIndex] ?? 'Denne måned');
+  const levelLabel = isVacationMode ? 'Ferie niveauer' : 'Kuvert niveauer';
+  const periodScoreLabel = isVacationMode ? 'Feriescore' : 'Månedsscore';
   const streakWeekKeys = new Set((weeklyStreak?.streak_weeks ?? []).map(week => `${week.week_start}-${week.week_end}`));
-  const monthWeeks = weeklyStreak?.current_month_weeks?.length
+  const normalMonthWeeks = weeklyStreak?.current_month_weeks?.length
     ? weeklyStreak.current_month_weeks
     : (weeklyStreak?.streak_weeks ?? []).slice(-WEEKS_PER_STREAK_MONTH).map(week => ({
         ...week,
@@ -149,6 +263,7 @@ export function KuvertHeroCard({
         is_completed: true,
         is_current: false,
       }));
+  const monthWeeks = isVacationMode ? vacationVisibleDays : normalMonthWeeks;
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const cumulativeScoreSegments = [
     { label: 'Begynder', min: 0 },
@@ -157,17 +272,23 @@ export function KuvertHeroCard({
     { label: 'Mester', min: 900 },
     { label: 'Legendarisk', min: 2000 },
   ];
+  const vacationScoreSegments = buildVacationLevelSegments(vacationTotalDays);
   const currentWeekStatus = flowWeeklyStatus?.weeks.find(week => week.isCurrentWeek) ?? null;
-  const budgetPeriodLabel = currentWeekStatus ? 'Ugebudget' : 'Budget';
-  const activeBudget = currentWeekStatus?.effectiveBudget ?? flowMonthlyBudget;
-  const activeSpent = currentWeekStatus?.spent ?? flowMonthlySpent;
-  const activePeriodDays = currentWeekStatus?.daysInMonth ?? daysInMonth;
-  const monthlyRemaining = flowMonthlyBudget - flowMonthlySpent;
-  const monthlyRemainingDays = daysInMonth - now.getDate() + 1;
+  const budgetPeriodLabel = isVacationMode ? 'Feriebudget' : currentWeekStatus ? 'Ugebudget' : 'Budget';
+  const activeBudget = isVacationMode ? vacationBudget : (currentWeekStatus?.effectiveBudget ?? flowMonthlyBudget);
+  const activeSpent = isVacationMode ? vacationSpent : (currentWeekStatus?.spent ?? flowMonthlySpent);
+  const activePeriodDays = isVacationMode ? vacationTotalDays : (currentWeekStatus?.daysInMonth ?? daysInMonth);
+  const scoreBudget = isVacationMode ? vacationBudget : flowMonthlyBudget;
+  const scoreSpent = isVacationMode ? vacationSpent : flowMonthlySpent;
+  const scoreTotalDays = isVacationMode ? vacationTotalDays : daysInMonth;
+  const monthlyRemaining = scoreBudget - scoreSpent;
+  const monthlyRemainingDays = activeVacation ? getDaysLeftInRange(activeVacation.end_date, now) : daysInMonth - now.getDate() + 1;
   const monthlyDailyAvailable = monthlyRemainingDays > 0 && monthlyRemaining > 0 ? monthlyRemaining / monthlyRemainingDays : 0;
-  const monthlyOverBudget = flowMonthlyBudget > 0 && flowMonthlySpent > flowMonthlyBudget;
-  const carryOverPenalty = flowWeeklyStatus ? Math.abs(Math.min(0, flowWeeklyStatus.accumulatedCarryOver)) : 0;
-  const remainingDays = currentWeekStatus
+  const monthlyOverBudget = scoreBudget > 0 && scoreSpent > scoreBudget;
+  const carryOverPenalty = !isVacationMode && flowWeeklyStatus ? Math.abs(Math.min(0, flowWeeklyStatus.accumulatedCarryOver)) : 0;
+  const remainingDays = activeVacation
+    ? getDaysLeftInRange(activeVacation.end_date, now)
+    : currentWeekStatus
     ? getDaysLeftInRange(currentWeekStatus.weekEnd, now)
     : daysInMonth - now.getDate() + 1;
   const remaining = activeBudget - activeSpent;
@@ -189,13 +310,13 @@ export function KuvertHeroCard({
   const flowBarColor = flowScore >= 60 ? 'from-emerald-400 to-teal-400' : flowScore >= 30 ? 'from-amber-400 to-orange-300' : 'from-red-400 to-rose-400';
   const flowGlow = flowScore >= 60 ? 'shadow-emerald-300/60' : flowScore >= 30 ? 'shadow-amber-300/60' : 'shadow-red-300/60';
   const monthScore = (() => {
-    if (flowMonthlyBudget <= 0) return 0;
+    if (scoreBudget <= 0) return 0;
     if (monthlyOverBudget) return 0;
     if (monthlyRemainingDays <= 0) return monthlyRemaining >= 0 ? 100 : 0;
-    const idealDailyRate = flowMonthlyBudget / daysInMonth;
+    const idealDailyRate = scoreBudget / scoreTotalDays;
     const affordableDailyRate = monthlyRemaining / monthlyRemainingDays;
     const recoveryRatio = idealDailyRate > 0 ? affordableDailyRate / idealDailyRate : 0;
-    const carryOverPenaltyRatio = flowMonthlyBudget > 0 ? carryOverPenalty / flowMonthlyBudget : 0;
+    const carryOverPenaltyRatio = scoreBudget > 0 ? carryOverPenalty / scoreBudget : 0;
     const penaltyFactor = Math.max(0, 1 - carryOverPenaltyRatio * 2);
     const baseScore = (() => {
       if (recoveryRatio >= 1 + flowScoreThreshold) return 100;
@@ -213,8 +334,11 @@ export function KuvertHeroCard({
     currentWeekDaysRemaining: currentWeekStatus ? remainingDays : null,
     flowScoreThreshold,
   }).displayScore;
-  const nextCumulativeMilestone = cumulativeScoreSegments.find((segment) => segment.min > cumulativeScore) ?? null;
-  const cumulativeScoreTier = getCumulativeScoreTier(cumulativeScore);
+  const displayScore = isVacationMode ? monthScore : cumulativeScore;
+  const scoreSegments = isVacationMode ? vacationScoreSegments : cumulativeScoreSegments;
+  const segmentProgressScore = isVacationMode ? currentWeekStreak : cumulativeScore;
+  const nextCumulativeMilestone = scoreSegments.find((segment) => segment.min > segmentProgressScore) ?? null;
+  const cumulativeScoreTier = getCumulativeScoreTier(displayScore);
   const monthScoreBarPct = Math.min(100, Math.max(4, monthScore));
   const monthScoreBarColor = monthScore >= 60 ? 'from-emerald-400 to-teal-400' : monthScore >= 30 ? 'from-amber-400 to-orange-300' : 'from-red-400 to-rose-400';
   const monthScoreGlow = monthScore >= 60 ? 'shadow-emerald-300/60' : monthScore >= 30 ? 'shadow-amber-300/60' : 'shadow-red-300/60';
@@ -262,9 +386,17 @@ export function KuvertHeroCard({
   }[statusState];
   const statusCardStyle = resolveFlowCardStyle(flowStatus.cardBg, flowStatus.badgeBg);
   const badgeHex = extractBadgeHex(flowStatus.badgeBg);
-  const progressBarStyle = badgeHex ? { background: `linear-gradient(to right, ${badgeHex}cc, ${badgeHex})` } as CSSProperties : undefined;
-  const progressDotColor = badgeHex ?? (overBudget ? '#ef4444' : flowScore >= 60 ? '#34d399' : '#fbbf24');
-  const progressGlowColor = badgeHex ? `${badgeHex}55` : undefined;
+  const activeAccent = isVacationMode ? VACATION_ACCENT : (badgeHex ?? '#2ED3A7');
+  const flameStart = isVacationMode ? VACATION_ACCENT : '#2ED3A7';
+  const flameMid = isVacationMode ? VACATION_ACCENT_MID : '#8FF1D7';
+  const flameEnd = isVacationMode ? VACATION_ACCENT_SOFT : '#BFF8EA';
+  const progressBarStyle = isVacationMode
+    ? { background: `linear-gradient(to right, ${VACATION_ACCENT}cc, ${VACATION_ACCENT_MID})` } as CSSProperties
+    : badgeHex
+      ? { background: `linear-gradient(to right, ${badgeHex}cc, ${badgeHex})` } as CSSProperties
+      : undefined;
+  const progressDotColor = isVacationMode ? VACATION_ACCENT : (badgeHex ?? (overBudget ? '#ef4444' : flowScore >= 60 ? '#34d399' : '#fbbf24'));
+  const progressGlowColor = isVacationMode ? `${VACATION_ACCENT}55` : (badgeHex ? `${badgeHex}55` : undefined);
   const showScoreInHero =
     variant === 'score_streak_focus' ||
     variant === 'score_streak_focus_native' ||
@@ -279,8 +411,9 @@ export function KuvertHeroCard({
   const budgetPanelStyle: CSSProperties | undefined = isNativeHero ? { background: 'transparent' } : statusCardStyle.inlineStyle;
   const nativeCardClass = 'relative overflow-hidden rounded-[28px] border border-foreground/8 bg-white';
   const cardHeadingClass = 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82';
-  const splitCardBackground =
-    'linear-gradient(to bottom right, rgba(236,253,245,0.80), rgba(240,253,250,0.30), #ffffff)';
+  const splitCardBackground = isVacationMode
+    ? 'linear-gradient(to bottom right, rgba(255,248,225,0.86), rgba(255,255,255,0.68), #ffffff)'
+    : 'linear-gradient(to bottom right, rgba(236,253,245,0.80), rgba(240,253,250,0.30), #ffffff)';
   const splitLargeCardStyle: CSSProperties = {
     ...getCardStyle(design.cardLarge, design.gradientFrom, design.gradientTo),
     background: splitCardBackground,
@@ -316,12 +449,32 @@ export function KuvertHeroCard({
                     style={splitLargeTopBarStyle}
                   />
                 )}
+                {isSplitCards && !isVacationMode && onPlanVacation && (
+                  <button
+                    type="button"
+                    onClick={onPlanVacation}
+                    className="absolute right-4 top-3 z-[2] inline-flex items-center gap-1.5 rounded-full border border-[#F6C126]/35 bg-[#F6C126]/12 px-3 py-1.5 text-[0.68rem] font-semibold text-[#0E3B43] transition-transform active:scale-[0.98]"
+                  >
+                    <Palmtree className="h-3.5 w-3.5" />
+                    Planlæg ferie
+                  </button>
+                )}
+                {isSplitCards && isVacationMode && onEndVacation && (
+                  <button
+                    type="button"
+                    onClick={onEndVacation}
+                    className="absolute right-4 top-3 z-[2] inline-flex items-center gap-1.5 rounded-full border border-[#F6C126]/35 bg-white/80 px-3 py-1.5 text-[0.68rem] font-semibold text-[#0E3B43] transition-transform active:scale-[0.98]"
+                  >
+                    <Palmtree className="h-3.5 w-3.5" />
+                    Afslut ferie
+                  </button>
+                )}
                 <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
                   <defs>
                     <linearGradient id="kuvert-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#2ED3A7" />
-                      <stop offset="58%" stopColor="#8FF1D7" />
-                      <stop offset="100%" stopColor="#BFF8EA" />
+                      <stop offset="0%" stopColor={flameStart} />
+                      <stop offset="58%" stopColor={flameMid} />
+                      <stop offset="100%" stopColor={flameEnd} />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -362,7 +515,7 @@ export function KuvertHeroCard({
                             ? 'text-left text-[3.65rem] sm:text-[5rem]'
                             : 'text-7xl sm:text-8xl'
                       )}>
-                        {cumulativeScore}
+                        {displayScore}
                       </p>
                     </div>
                   </button>
@@ -430,7 +583,7 @@ export function KuvertHeroCard({
                             ? 'mt-0.5 text-[0.76rem] leading-tight sm:-mt-0.5 sm:text-[0.95rem]'
                             : '-mt-2 text-lg'
                       )}>
-                        {currentWeekStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
+                        {isVacationMode ? 'Feriedage' : currentWeekStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
                       </p>
                     </button>
                   )}
@@ -439,22 +592,23 @@ export function KuvertHeroCard({
                 <div className={cn(isSplitCards ? 'mt-2 sm:mt-2.5' : isNativeHero ? 'mt-2.5 sm:mt-3' : 'mt-4')}>
                   <div className="flex items-end justify-between">
                     <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/44' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>
-                      Kuvert niveauer
+                      {levelLabel}
                     </p>
                   </div>
                   <div className="mt-1.5 grid grid-cols-5 gap-1">
-                    {cumulativeScoreSegments.map((segment, index) => {
-                      const nextMin = cumulativeScoreSegments[index + 1]?.min ?? Number.POSITIVE_INFINITY;
-                      const active = cumulativeScore >= segment.min;
-                      const current = cumulativeScore >= segment.min && cumulativeScore < nextMin;
+                    {scoreSegments.map((segment, index) => {
+                      const nextMin = scoreSegments[index + 1]?.min ?? Number.POSITIVE_INFINITY;
+                      const active = segmentProgressScore >= segment.min;
+                      const current = segmentProgressScore >= segment.min && segmentProgressScore < nextMin;
                       return (
                         <div key={segment.label}>
                           <div
                             className={cn(
                               'flex h-7 items-center justify-center rounded-full px-1 text-center transition-all duration-500 sm:h-8',
-                              active ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]',
+                              active && !isVacationMode ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]',
                               current && !isNativeHero && 'shadow-[0_0_10px_rgba(46,211,167,0.22)]'
                             )}
+                            style={active && isVacationMode ? { background: `linear-gradient(to right, ${VACATION_ACCENT}, ${VACATION_ACCENT_MID})` } : undefined}
                           >
                             <span className={cn('text-[9px] font-semibold leading-none sm:text-[10px]', active ? 'text-[#0E3B43]' : 'text-foreground/42')}>
                               {segment.label}
@@ -478,7 +632,7 @@ export function KuvertHeroCard({
                       )}
                     >
                       {monthWeeks.map((week, index) => {
-                        const label = `Uge ${week.iso_week_number}`;
+                        const label = getStreakPeriodLabel(week);
                         const weekKey = `${week.week_start}-${week.week_end}`;
                         const isFilled = week.kept_budget === true || streakWeekKeys.has(weekKey);
                         const isMissed = week.kept_budget === false;
@@ -501,12 +655,15 @@ export function KuvertHeroCard({
                                 isFilled
                                   ? { background: tone.accent }
                                   : isCurrent
-                                    ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, rgba(46, 211, 167, 0.16) 0)` }
+                                    ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, ${isVacationMode ? 'rgba(246, 193, 38, 0.18)' : 'rgba(46, 211, 167, 0.16)'} 0)` }
                                     : undefined
                               }
                             >
                               {isCurrent && !isFilled ? (
-                                <span className="flex h-full w-full items-center justify-center rounded-full bg-[#ecfdf5]">
+                                <span
+                                  className="flex h-full w-full items-center justify-center rounded-full"
+                                  style={{ backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : '#ecfdf5' }}
+                                >
                                   Nu
                                 </span>
                               ) : isFilled ? (
@@ -536,9 +693,9 @@ export function KuvertHeroCard({
                   <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
                     <defs>
                       <linearGradient id="kuvert-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stopColor="#2ED3A7" />
-                        <stop offset="58%" stopColor="#8FF1D7" />
-                        <stop offset="100%" stopColor="#BFF8EA" />
+                        <stop offset="0%" stopColor={flameStart} />
+                        <stop offset="58%" stopColor={flameMid} />
+                        <stop offset="100%" stopColor={flameEnd} />
                       </linearGradient>
                     </defs>
                   </svg>
@@ -554,7 +711,7 @@ export function KuvertHeroCard({
                 </div>
 
                 <p className="-mt-3 text-lg font-semibold tracking-normal text-foreground">
-                  {currentWeekStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
+                  {isVacationMode ? 'Feriedage' : currentWeekStreak === 1 ? 'Uge' : 'Uger'} indenfor budget
                 </p>
               </button>
             )}
@@ -582,7 +739,7 @@ export function KuvertHeroCard({
                 )}
               >
                 {monthWeeks.map((week, index) => {
-                  const label = `Uge ${week.iso_week_number}`;
+                  const label = getStreakPeriodLabel(week);
                   const weekKey = `${week.week_start}-${week.week_end}`;
                   const isFilled = week.kept_budget === true || streakWeekKeys.has(weekKey);
                   const isMissed = week.kept_budget === false;
@@ -605,12 +762,15 @@ export function KuvertHeroCard({
                           isFilled
                             ? { background: tone.accent }
                             : isCurrent
-                              ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, rgba(46, 211, 167, 0.16) 0)` }
+                              ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, ${isVacationMode ? 'rgba(246, 193, 38, 0.18)' : 'rgba(46, 211, 167, 0.16)'} 0)` }
                               : undefined
                         }
                       >
                         {isCurrent && !isFilled ? (
-                          <span className="flex h-full w-full items-center justify-center rounded-full bg-[#ecfdf5]">
+                          <span
+                            className="flex h-full w-full items-center justify-center rounded-full"
+                            style={{ backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : '#ecfdf5' }}
+                          >
                             Nu
                           </span>
                         ) : isFilled ? (
@@ -695,7 +855,7 @@ export function KuvertHeroCard({
 
               <div className="mt-2.5 space-y-1">
                 <div className="flex items-center justify-between">
-                  <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/46' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>Månedsscore</p>
+                  <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/46' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>{periodScoreLabel}</p>
                   <div className="flex items-center gap-2">
                     <span className={cn(isNativeHero ? 'text-[10px] font-semibold tabular-nums' : 'text-xs font-bold tabular-nums', monthScore >= 60 ? 'text-emerald-700' : monthScore >= 30 ? 'text-amber-700' : 'text-red-600')}>
                       {monthScore}
@@ -709,12 +869,12 @@ export function KuvertHeroCard({
                       monthlyOverBudget ? 'bg-red-400' : !progressBarStyle && cn('bg-gradient-to-r', monthScoreBarColor, !isNativeHero && monthScoreGlow)
                     )}
                     style={{
-                      width: `${flowMonthlyBudget > 0 ? (monthlyOverBudget ? Math.min((flowMonthlySpent / flowMonthlyBudget) * 100, 100) : monthScoreBarPct) : 0}%`,
+                      width: `${scoreBudget > 0 ? (monthlyOverBudget ? Math.min((scoreSpent / scoreBudget) * 100, 100) : monthScoreBarPct) : 0}%`,
                       ...(progressBarStyle ?? {}),
                       boxShadow: !isNativeHero && progressGlowColor ? `0 0 6px 1px ${progressGlowColor}` : undefined,
                     }}
                   >
-                    {!monthlyOverBudget && flowMonthlyBudget > 0 && (
+                    {!monthlyOverBudget && scoreBudget > 0 && (
                       <div
                         className={cn(
                           'absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full border-2 bg-white sm:h-3.5 sm:w-3.5',
@@ -726,7 +886,7 @@ export function KuvertHeroCard({
                   </div>
                 </div>
                 <p className={cn(isNativeHero ? 'text-[0.84rem] leading-snug text-foreground/46' : 'text-label leading-snug text-muted-foreground/60')}>
-                  {formatDKK(flowMonthlySpent)} brugt af {formatDKK(activeBudget)}
+                  {formatDKK(scoreSpent)} brugt af {formatDKK(activeBudget)}
                 </p>
               </div>
             </div>
@@ -748,13 +908,21 @@ export function KuvertHeroCard({
                     onComplete={onQuickExpenseSaved}
                     successMode="card"
                     successOverlayClassName="-inset-x-4 -top-4 -bottom-5 sm:-inset-x-5 sm:-top-4.5 sm:-bottom-6"
+                    expenseMode={isVacationMode ? 'vacation' : 'normal'}
+                    vacationModeId={activeVacation?.id ?? null}
+                    accentColor={activeAccent}
                   />
                 </div>
               </div>
             ) : isNativeHero ? (
               <div className="inline-expense-card-shell mt-2 border-t border-foreground/8 px-2 pb-0 pt-2.5 sm:mt-3 sm:pt-3">
                 <div className="inline-expense-form-shell">
-                  <QuickExpenseInlineForm onComplete={onQuickExpenseSaved} />
+                  <QuickExpenseInlineForm
+                    onComplete={onQuickExpenseSaved}
+                    expenseMode={isVacationMode ? 'vacation' : 'normal'}
+                    vacationModeId={activeVacation?.id ?? null}
+                    accentColor={activeAccent}
+                  />
                 </div>
               </div>
             ) : (
@@ -766,7 +934,10 @@ export function KuvertHeroCard({
                   'border-t border-white/15 bg-[#0E3B43] py-3.5 text-white hover:bg-[#092F35]'
                 )}
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2ED3A7] text-[#0E3B43] transition-transform duration-200 group-hover:scale-105">
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#0E3B43] transition-transform duration-200 group-hover:scale-105"
+                  style={{ backgroundColor: activeAccent }}
+                >
                   <Plus className="h-4 w-4" />
                 </span>
                 Tilføj udgift
@@ -801,7 +972,14 @@ export function KuvertHeroCard({
               <X className="h-4 w-4" />
             </button>
 
-            <div className="border-b border-foreground/5 bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white px-5 pb-5 pt-7">
+            <div
+              className="border-b border-foreground/5 px-5 pb-5 pt-7"
+              style={{
+                background: isVacationMode
+                  ? 'linear-gradient(to bottom right, rgba(255,248,225,0.92), rgba(255,255,255,0.62), #ffffff)'
+                  : 'linear-gradient(to bottom right, rgba(236,253,245,0.80), rgba(240,253,250,0.40), #ffffff)',
+              }}
+            >
               <div className="flex items-center gap-3">
                 <div className="relative flex h-14 w-14 items-center justify-center">
                   <Flame
@@ -813,10 +991,10 @@ export function KuvertHeroCard({
                 </div>
                 <div>
                   <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                    Streak Count
+                    {isVacationMode ? 'Ferie streak' : 'Streak Count'}
                   </p>
                   <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                    Uger indenfor budget
+                    {isVacationMode ? 'Feriedage indenfor budget' : 'Uger indenfor budget'}
                   </h2>
                 </div>
               </div>
@@ -830,7 +1008,7 @@ export function KuvertHeroCard({
                     <p className="text-sm font-semibold text-foreground">Rekord</p>
                   </div>
                   <span className="text-sm font-semibold tabular-nums text-foreground">
-                    {bestWeekStreak} {bestWeekStreak === 1 ? 'uge' : 'uger'}
+                    {bestWeekStreak} {isVacationMode ? (bestWeekStreak === 1 ? 'dag' : 'dage') : (bestWeekStreak === 1 ? 'uge' : 'uger')}
                   </span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-foreground/[0.07]">
@@ -841,22 +1019,34 @@ export function KuvertHeroCard({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-emerald-100/70 bg-emerald-50/80 px-4 py-3">
-                <p className="mb-1 text-sm font-semibold text-emerald-950">Sådan tæller din streak</p>
-                <p className="text-sm leading-relaxed text-emerald-900/75">
-                  En uge tæller med, når den er afsluttet, og du har holdt dig indenfor ugens budget.
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{
+                  backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : 'rgba(236,253,245,0.80)',
+                  borderColor: isVacationMode ? 'rgba(246,193,38,0.36)' : 'rgba(167,243,208,0.70)',
+                }}
+              >
+                <p className="mb-1 text-sm font-semibold text-[#0E3B43]">Sådan tæller din streak</p>
+                <p className="text-sm leading-relaxed text-[#0E3B43]/75">
+                  {isVacationMode
+                    ? 'En feriedag tæller med, når dagen er nået, og du har holdt dig indenfor dagens feriebudget.'
+                    : 'En uge tæller med, når den er afsluttet, og du har holdt dig indenfor ugens budget.'}
                 </p>
               </div>
 
+              {!isVacationMode && (
               <div className="rounded-2xl border border-foreground/8 bg-white px-4 py-3">
                 <p className="mb-1 text-sm font-semibold text-foreground">Streak-måned</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   Fire uger indenfor budget samles til en streak-måned. Derfor kan du se en multiplier som x1, x2 eller x3, når du holder rytmen over flere måneder.
                 </p>
               </div>
+              )}
 
               <p className="px-1 text-xs leading-relaxed text-muted-foreground">
-                Rekorden er din længste sammenhængende periode med afsluttede uger indenfor budget. Hvis en uge går over budget, starter streaken forfra.
+                {isVacationMode
+                  ? 'Rekorden er din længste sammenhængende periode med feriedage indenfor budget. Hvis en feriedag går over budget, starter ferie-streaken forfra.'
+                  : 'Rekorden er din længste sammenhængende periode med afsluttede uger indenfor budget. Hvis en uge går over budget, starter streaken forfra.'}
               </p>
             </div>
 
@@ -898,18 +1088,32 @@ export function KuvertHeroCard({
               <X className="h-4 w-4" />
             </button>
 
-            <div className="border-b border-foreground/5 bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white px-5 pb-5 pt-7">
+            <div
+              className="border-b border-foreground/5 px-5 pb-5 pt-7"
+              style={{
+                background: isVacationMode
+                  ? 'linear-gradient(to bottom right, rgba(255,248,225,0.92), rgba(255,255,255,0.62), #ffffff)'
+                  : 'linear-gradient(to bottom right, rgba(236,253,245,0.80), rgba(240,253,250,0.40), #ffffff)',
+              }}
+            >
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-300 to-emerald-400 ring-2 ring-white/40">
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl ring-2 ring-white/40"
+                  style={{
+                    background: isVacationMode
+                      ? `linear-gradient(to bottom right, ${VACATION_ACCENT}, ${VACATION_ACCENT_MID})`
+                      : 'linear-gradient(to bottom right, #5eead4, #34d399)',
+                  }}
+                >
                   <Zap className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                    Kuvert Score
+                    {isVacationMode ? 'Ferie Score' : 'Kuvert Score'}
                   </p>
                   <div className="flex items-baseline gap-2">
                     <h2 className="text-3xl font-semibold tracking-tight text-foreground">
-                      {cumulativeScore.toLocaleString('da-DK')}
+                      {displayScore.toLocaleString('da-DK')}
                     </h2>
                     <span className={cn('rounded-full border px-2.5 py-1 text-xs font-semibold', cumulativeScoreTier.badge)}>
                       {cumulativeScoreTier.label}
@@ -921,55 +1125,84 @@ export function KuvertHeroCard({
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
               <div>
-                <p className="mb-1.5 text-sm font-semibold text-foreground">Hvad er Kuvert Score?</p>
+                <p className="mb-1.5 text-sm font-semibold text-foreground">Hvad er {isVacationMode ? 'Ferie Score' : 'Kuvert Score'}?</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Din Kuvert Score er et akkumulerende pointsystem der vokser over tid, når du holder dit budget. Jo bedre du klarer dig, og jo længere din gode rytme varer, jo stærkere bliver din score.
+                  {isVacationMode
+                    ? 'Din Ferie Score viser, hvor sundt feriebudgettet står lige nu. Den følger feriens dage, så du kan mærke rytmen dag for dag.'
+                    : 'Din Kuvert Score er et akkumulerende pointsystem der vokser over tid, når du holder dit budget. Jo bedre du klarer dig, og jo længere din gode rytme varer, jo stærkere bliver din score.'}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-teal-100/70 bg-teal-50/80 px-4 py-3">
-                <p className="mb-1 text-sm font-semibold text-teal-950">Scoren lever gennem måneden</p>
-                <p className="text-sm leading-relaxed text-teal-900/75">
-                  Tallet du ser i appen bevæger sig lidt op og ned ud fra månedsscore og ugens rytme. Ved månedsskifte bliver de rigtige bonuspoint og straffe låst fast i din langsigtede score.
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{
+                  backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : 'rgba(240,253,250,0.80)',
+                  borderColor: isVacationMode ? 'rgba(246,193,38,0.36)' : 'rgba(153,246,228,0.70)',
+                }}
+              >
+                <p className="mb-1 text-sm font-semibold text-[#0E3B43]">
+                  {isVacationMode ? 'Scoren lever gennem ferien' : 'Scoren lever gennem måneden'}
+                </p>
+                <p className="text-sm leading-relaxed text-[#0E3B43]/75">
+                  {isVacationMode
+                    ? 'Tallet bevæger sig med feriebudgettet dag for dag. Det gør det let at se, om ferien stadig har luft.'
+                    : 'Tallet du ser i appen bevæger sig lidt op og ned ud fra månedsscore og ugens rytme. Ved månedsskifte bliver de rigtige bonuspoint og straffe låst fast i din langsigtede score.'}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-emerald-100/70 bg-emerald-50/80 px-4 py-3">
-                <p className="mb-1 text-sm font-semibold text-emerald-950">Sådan stiger din score</p>
-                <p className="text-sm leading-relaxed text-emerald-900/75">
-                  Hver måned du holder dig indenfor budget, lægger nye point ovenpå. Måneder med bedre økonomisk rytme giver også en stærkere belønning.
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{
+                  backgroundColor: isVacationMode ? 'rgba(255,248,225,0.76)' : 'rgba(236,253,245,0.80)',
+                  borderColor: isVacationMode ? 'rgba(246,193,38,0.30)' : 'rgba(167,243,208,0.70)',
+                }}
+              >
+                <p className="mb-1 text-sm font-semibold text-[#0E3B43]">
+                  {isVacationMode ? 'Sådan stiger ferie-score' : 'Sådan stiger din score'}
+                </p>
+                <p className="text-sm leading-relaxed text-[#0E3B43]/75">
+                  {isVacationMode
+                    ? 'Hver feriedag indenfor budget flytter dig tættere på næste ferie-niveau.'
+                    : 'Hver måned du holder dig indenfor budget, lægger nye point ovenpå. Måneder med bedre økonomisk rytme giver også en stærkere belønning.'}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-amber-100/70 bg-amber-50/80 px-4 py-3">
-                <p className="mb-1 text-sm font-semibold text-amber-900">Hvis en måned glider</p>
+                <p className="mb-1 text-sm font-semibold text-amber-900">
+                  {isVacationMode ? 'Hvis ferien glider' : 'Hvis en måned glider'}
+                </p>
                 <p className="text-sm leading-relaxed text-amber-900/75">
-                  Går du over budget, mister du en del af din Kuvert Score. Derfor er scoren både et pejlemærke og en lille beskytter af dine vaner.
+                  {isVacationMode
+                    ? 'Går feriebudgettet over, falder ferie-score. Det er ikke en straf, bare et klart signal om at justere resten af ferien.'
+                    : 'Går du over budget, mister du en del af din Kuvert Score. Derfor er scoren både et pejlemærke og en lille beskytter af dine vaner.'}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-end justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-foreground/48">Kuvert niveauer</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-foreground/48">{levelLabel}</p>
                   <span className="text-xs text-muted-foreground">
                     {nextCumulativeMilestone
-                      ? `${Math.max(0, nextCumulativeMilestone.min - cumulativeScore)} point til næste niveau`
+                      ? `${Math.max(0, nextCumulativeMilestone.min - segmentProgressScore)} ${isVacationMode ? 'dage' : 'point'} til næste niveau`
                       : 'Højeste niveau nået'}
                   </span>
                 </div>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {cumulativeScoreSegments.map((segment, index) => {
-                    const nextMin = cumulativeScoreSegments[index + 1]?.min ?? Number.POSITIVE_INFINITY;
-                    const active = cumulativeScore >= segment.min;
-                    const current = cumulativeScore >= segment.min && cumulativeScore < nextMin;
+                  {scoreSegments.map((segment, index) => {
+                    const nextMin = scoreSegments[index + 1]?.min ?? Number.POSITIVE_INFINITY;
+                    const active = segmentProgressScore >= segment.min;
+                    const current = segmentProgressScore >= segment.min && segmentProgressScore < nextMin;
                     return (
                       <div key={segment.label} className="space-y-1">
                         <div
                           className={cn(
                             'h-2 rounded-full transition-all duration-500',
-                            active ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]'
+                            active && !isVacationMode ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]'
                           )}
-                          style={current ? { boxShadow: '0 0 10px rgba(46,211,167,0.22)' } : undefined}
+                          style={{
+                            ...(active && isVacationMode ? { background: `linear-gradient(to right, ${VACATION_ACCENT}, ${VACATION_ACCENT_MID})` } : {}),
+                            ...(current ? { boxShadow: `0 0 10px ${isVacationMode ? 'rgba(246,193,38,0.24)' : 'rgba(46,211,167,0.22)'}` } : {}),
+                          }}
                         />
                         <p className={cn('text-[10px] font-semibold', active ? 'text-[#0E3B43]' : 'text-foreground/32')}>
                           {segment.label}

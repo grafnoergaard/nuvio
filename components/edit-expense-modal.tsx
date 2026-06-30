@@ -185,11 +185,12 @@ interface EditExpenseModalProps {
   expense: QuickExpense;
   year: number;
   month: number;
+  allowMonthlyDistribution?: boolean;
   onSave: (updated: QuickExpense) => void;
   onClose: () => void;
 }
 
-export default function EditExpenseModal({ expense, year, month, onSave, onClose }: EditExpenseModalProps) {
+export default function EditExpenseModal({ expense, year, month, allowMonthlyDistribution = true, onSave, onClose }: EditExpenseModalProps) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const dayItems = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
   const monthItems = DANISH_MONTHS_SHORT;
@@ -204,12 +205,19 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
   const [spreadOverMonth, setSpreadOverMonth] = useState(Boolean(expense.spread_over_month));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canSpreadOverMonth = allowMonthlyDistribution && expense.mode !== 'vacation';
 
   const amountInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTimeout(() => amountInputRef.current?.select(), 80);
   }, []);
+
+  useEffect(() => {
+    if (!canSpreadOverMonth) {
+      setSpreadOverMonth(false);
+    }
+  }, [canSpreadOverMonth]);
 
   async function handleSave() {
     const parsed = parseFloat(amountRaw.replace(',', '.'));
@@ -227,7 +235,7 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
     setSaving(true);
     setError(null);
     try {
-      const updated = await updateQuickExpense(expense.id, parsed, newDate, spreadOverMonth);
+      const updated = await updateQuickExpense(expense.id, parsed, newDate, canSpreadOverMonth ? spreadOverMonth : false);
       onSave(updated);
     } catch {
       setError('Kunne ikke gemme ændringen. Prøv igen.');
@@ -298,6 +306,7 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
           </div>
         </div>
 
+        {canSpreadOverMonth && (
         <div className="px-5 pt-2 pb-2">
           <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border/60 bg-secondary/20 px-3 py-2.5 text-sm text-foreground/75">
             <input
@@ -322,6 +331,7 @@ export default function EditExpenseModal({ expense, year, month, onSave, onClose
             </span>
           </label>
         </div>
+        )}
 
         {error && (
           <div className="px-5 pb-2">

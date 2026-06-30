@@ -1,4 +1,5 @@
 import { supabase, supabaseUrl, supabaseAnonKey } from './supabase';
+import type { ExpenseMode } from './vacation-mode-service';
 
 export interface MonthAiAnalysis {
   message: string;
@@ -71,6 +72,8 @@ export interface QuickExpense {
   expense_date: string;
   created_at: string;
   spread_over_month?: boolean | null;
+  mode?: ExpenseMode;
+  vacation_mode_id?: string | null;
 }
 
 export interface QuickExpenseBudget {
@@ -378,7 +381,11 @@ function toDateString(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export async function getQuickExpensesForMonth(year: number, month: number): Promise<QuickExpense[]> {
+export async function getQuickExpensesForMonth(
+  year: number,
+  month: number,
+  mode: ExpenseMode = 'normal'
+): Promise<QuickExpense[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -390,6 +397,7 @@ export async function getQuickExpensesForMonth(year: number, month: number): Pro
     .from('quick_expenses')
     .select('*')
     .eq('user_id', user.id)
+    .eq('mode', mode)
     .gte('expense_date', start)
     .lte('expense_date', end)
     .order('created_at', { ascending: false });
@@ -398,7 +406,56 @@ export async function getQuickExpensesForMonth(year: number, month: number): Pro
   return (data ?? []) as QuickExpense[];
 }
 
-export async function addQuickExpense(amount: number, note: string | null, spreadOverMonth: boolean = false): Promise<QuickExpense> {
+export async function getQuickExpensesForRange(
+  startDate: string,
+  endDate: string,
+  mode: ExpenseMode = 'normal'
+): Promise<QuickExpense[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('quick_expenses')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('mode', mode)
+    .gte('expense_date', startDate)
+    .lte('expense_date', endDate)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as QuickExpense[];
+}
+
+export async function getQuickExpensesForVacationMode(
+  vacationModeId: string,
+  startDate: string,
+  endDate: string
+): Promise<QuickExpense[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('quick_expenses')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('mode', 'vacation')
+    .eq('vacation_mode_id', vacationModeId)
+    .gte('expense_date', startDate)
+    .lte('expense_date', endDate)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as QuickExpense[];
+}
+
+export async function addQuickExpense(
+  amount: number,
+  note: string | null,
+  spreadOverMonth: boolean = false,
+  mode: ExpenseMode = 'normal',
+  vacationModeId: string | null = null
+): Promise<QuickExpense> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -409,6 +466,8 @@ export async function addQuickExpense(amount: number, note: string | null, sprea
       amount,
       note,
       spread_over_month: spreadOverMonth,
+      mode,
+      vacation_mode_id: vacationModeId,
       expense_date: new Date().toISOString().slice(0, 10),
     })
     .select()
@@ -657,6 +716,7 @@ export async function getWeeklyBudgetStreak(): Promise<QuickExpenseWeeklyStreak>
     .from('quick_expenses')
     .select('*')
     .eq('user_id', user.id)
+    .eq('mode', 'normal')
     .gte('expense_date', start)
     .lte('expense_date', end);
 
@@ -848,7 +908,8 @@ export async function backfillStreakFromHistory(): Promise<{
   const { data: allExpenses, error: expError } = await supabase
     .from('quick_expenses')
     .select('amount, expense_date')
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .eq('mode', 'normal');
 
   if (expError) throw expError;
   const expenses = (allExpenses ?? []) as { amount: number; expense_date: string }[];

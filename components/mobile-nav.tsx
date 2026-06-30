@@ -11,6 +11,11 @@ import { useUIStrings } from '@/lib/ui-strings-context';
 import { VERSION } from '@/lib/version';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from '@/lib/database.types';
 import { useNotificationCenter } from '@/lib/notification-center-context';
+import { getActiveVacationMode } from '@/lib/vacation-mode-service';
+import { VACATION_MODE_CHANGED_EVENT } from '@/lib/vacation-mode-events';
+
+const NORMAL_NAV_ACCENT = '#2ED3A7';
+const VACATION_NAV_ACCENT = '#F6C126';
 
 const DEFAULT_BURGER_SECTIONS = [
   {
@@ -31,7 +36,7 @@ type DisplaySlot = {
   isEmpty: boolean;
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 };
 
 function NavHighlight({ activeIndex, count }: { activeIndex: number; count: number }) {
@@ -66,7 +71,23 @@ export function MobileNav() {
   const [dbGroups, setDbGroups] = useState<NavGroupWithItems[]>([]);
   const [mobileSlots, setMobileSlots] = useState<MobileNavSlotWithItem[]>([]);
   const [pendingNav, setPendingNav] = useState<{ mode: 'db' | 'default'; index: number } | null>(null);
+  const [hasActiveVacationMode, setHasActiveVacationMode] = useState(false);
   const prefetchedRoutesRef = useRef<Set<string>>(new Set());
+  const navAccent = hasActiveVacationMode ? VACATION_NAV_ACCENT : NORMAL_NAV_ACCENT;
+
+  const refreshVacationNavAccent = useCallback(async () => {
+    if (!user?.id) {
+      setHasActiveVacationMode(false);
+      return;
+    }
+
+    try {
+      const activeVacationMode = await getActiveVacationMode(user.id);
+      setHasActiveVacationMode(Boolean(activeVacationMode));
+    } catch {
+      setHasActiveVacationMode(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     getNavGroupsWithItems().then((data) => {
@@ -81,6 +102,17 @@ export function MobileNav() {
     document.body.style.overflow = burgerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [burgerOpen]);
+
+  useEffect(() => {
+    refreshVacationNavAccent();
+  }, [pathname, refreshVacationNavAccent]);
+
+  useEffect(() => {
+    window.addEventListener(VACATION_MODE_CHANGED_EVENT, refreshVacationNavAccent);
+    return () => {
+      window.removeEventListener(VACATION_MODE_CHANGED_EVENT, refreshVacationNavAccent);
+    };
+  }, [refreshVacationNavAccent]);
 
   useEffect(() => {
     setPendingNav(null);
@@ -313,19 +345,21 @@ export function MobileNav() {
                       onClick={() => setBurgerOpen((v) => !v)}
                       className={cn(
                         'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 self-stretch px-2 py-2 rounded-full transition-colors duration-300',
-                        active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
+                        active ? '' : 'text-muted-foreground'
                       )}
+                      style={active ? { color: navAccent } : undefined}
                     >
                       <div className="w-12 h-7 rounded-full flex items-center justify-center transition-all duration-300">
                         {burgerOpen
-                          ? <X className="h-5 w-5 text-[#2ED3A7]" />
+                          ? <X className="h-5 w-5" style={{ color: navAccent }} />
                           : <Menu className="h-5 w-5 text-muted-foreground" />
                         }
                       </div>
                       <span className={cn(
                         'text-[10px] font-semibold leading-none tracking-wide',
-                        active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
-                      )}>
+                        active ? '' : 'text-muted-foreground'
+                      )}
+                      style={active ? { color: navAccent } : undefined}>
                         Menu
                       </span>
                     </button>
@@ -346,11 +380,15 @@ export function MobileNav() {
                     }}
                     className={cn(
                       'relative z-10 flex flex-col items-center justify-center gap-1 flex-1 self-stretch px-1.5 py-2 rounded-full transition-colors duration-300',
-                      active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
+                      active ? '' : 'text-muted-foreground'
                     )}
+                    style={active ? { color: navAccent } : undefined}
                   >
                     <div className="relative flex h-7 w-12 items-center justify-center rounded-full transition-all duration-300">
-                      <Icon className={cn('h-5 w-5', active ? 'text-[#2ED3A7]' : 'text-muted-foreground')} />
+                      <Icon
+                        className={cn('h-5 w-5', active ? '' : 'text-muted-foreground')}
+                        style={active ? { color: navAccent } : undefined}
+                      />
                       {showBadge && (
                         <span className="absolute -right-1 -top-1 flex min-h-[1.05rem] min-w-[1.05rem] items-center justify-center rounded-full bg-[#E5484D] px-1 text-[0.58rem] font-bold leading-none text-white shadow-sm">
                           {badgeLabel}
@@ -359,8 +397,9 @@ export function MobileNav() {
                     </div>
                     <span className={cn(
                       'text-[9px] font-medium leading-none tracking-wide',
-                      active ? 'text-[#2ED3A7]' : 'text-muted-foreground'
-                    )}>
+                      active ? '' : 'text-muted-foreground'
+                    )}
+                    style={active ? { color: navAccent } : undefined}>
                       {slot.label}
                     </span>
                   </button>

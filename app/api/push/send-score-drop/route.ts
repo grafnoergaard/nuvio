@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
     supabase
       .from('quick_expenses')
       .select('user_id,amount')
+      .eq('mode', 'normal')
       .gte('expense_date', monthStart)
       .lte('expense_date', monthEnd),
     supabase

@@ -3,19 +3,43 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, LogOut, Settings, TriangleAlert, Info, X } from 'lucide-react';
+import { CalendarDays, Loader2, LogOut, Palmtree, Pencil, Settings, Trash2, TriangleAlert, Info, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { EditableText } from '@/components/editable-text';
 import UserDataResetWizard from '@/components/user-data-reset-wizard';
 import { getUserWeekStartDay, setUserWeekStartDay } from '@/lib/quick-expense-service';
 import { VERSION } from '@/lib/version';
 import { PushNotificationSettings } from '@/components/push-notification-settings';
+import { VacationModeWizard } from '@/components/vacation-mode-wizard';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  cancelVacationMode,
+  getActiveVacationMode,
+  getPlannedVacationMode,
+  type VacationMode,
+} from '@/lib/vacation-mode-service';
 
 export default function IndstillingerPage() {
   const { user, signOut } = useAuth();
   const [weekStartDay, setWeekStartDayState] = useState<number>(1);
   const [savingWeekStartDay, setSavingWeekStartDay] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showVacationWizard, setShowVacationWizard] = useState(false);
+  const [vacationModeToEdit, setVacationModeToEdit] = useState<VacationMode | null>(null);
+  const [plannedVacationMode, setPlannedVacationMode] = useState<VacationMode | null>(null);
+  const [activeVacationMode, setActiveVacationMode] = useState<VacationMode | null>(null);
+  const [loadingVacationModes, setLoadingVacationModes] = useState(false);
+  const [cancellingVacationMode, setCancellingVacationMode] = useState(false);
+  const [showCancelVacationConfirm, setShowCancelVacationConfirm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const now = new Date();
   const DANISH_MONTHS_FULL = [
@@ -28,6 +52,61 @@ export default function IndstillingerPage() {
       .then(day => setWeekStartDayState(day))
       .catch(() => null);
   }, []);
+
+  useEffect(() => {
+    loadVacationModes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  async function loadVacationModes() {
+    if (!user) {
+      setActiveVacationMode(null);
+      setPlannedVacationMode(null);
+      return;
+    }
+
+    setLoadingVacationModes(true);
+    try {
+      const [active, planned] = await Promise.all([
+        getActiveVacationMode(user.id),
+        getPlannedVacationMode(user.id),
+      ]);
+      setActiveVacationMode(active);
+      setPlannedVacationMode(planned);
+    } catch (error) {
+      console.error('[Indstillinger] vacation modes load failed', error);
+      toast.error('Kunne ikke hente feriekuverter');
+    } finally {
+      setLoadingVacationModes(false);
+    }
+  }
+
+  function openVacationWizard(mode: VacationMode | null = null) {
+    setVacationModeToEdit(mode);
+    setShowVacationWizard(true);
+  }
+
+  function closeVacationWizard() {
+    setShowVacationWizard(false);
+    setVacationModeToEdit(null);
+  }
+
+  async function handleCancelVacationMode() {
+    if (!user || !plannedVacationMode || cancellingVacationMode) return;
+
+    setCancellingVacationMode(true);
+    try {
+      await cancelVacationMode(plannedVacationMode.id, user.id);
+      toast.success('Feriekuvert annulleret');
+      setShowCancelVacationConfirm(false);
+      await loadVacationModes();
+    } catch (error) {
+      console.error('[Indstillinger] vacation mode cancel failed', error);
+      toast.error('Kunne ikke annullere feriekuverten');
+    } finally {
+      setCancellingVacationMode(false);
+    }
+  }
 
   async function handleWeekStartDayChange(value: string) {
     const day = parseInt(value);
@@ -134,6 +213,65 @@ export default function IndstillingerPage() {
 
         <section>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 px-1 mb-2 flex items-center gap-1.5">
+            <Palmtree className="h-3 w-3" />
+            Ferie mode
+          </p>
+          <div className="rounded-2xl bg-white border border-foreground/6 shadow-sm px-4 py-4">
+            {loadingVacationModes ? (
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Henter feriekuverter...
+              </div>
+            ) : activeVacationMode ? (
+              <VacationModeSummary
+                title="Aktiv feriekuvert"
+                mode={activeVacationMode}
+                tone="active"
+                primaryLabel="Rediger"
+                onPrimary={() => openVacationWizard(activeVacationMode)}
+              />
+            ) : plannedVacationMode ? (
+              <VacationModeSummary
+                title="Planlagt feriekuvert"
+                mode={plannedVacationMode}
+                tone="planned"
+                primaryLabel="Rediger"
+                onPrimary={() => openVacationWizard(plannedVacationMode)}
+                secondaryLabel={cancellingVacationMode ? 'Annullerer...' : 'Annuller'}
+                onSecondary={() => setShowCancelVacationConfirm(true)}
+                secondaryDisabled={cancellingVacationMode}
+              />
+            ) : (
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">Feriekuvert</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    Planlæg et særskilt feriebudget uden at ændre din normale Kuvert endnu.
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openVacationWizard()}
+                    className="rounded-full bg-[#0E3B43] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-transform active:scale-[0.98]"
+                  >
+                    Start feriekuvert
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openVacationWizard()}
+                    className="rounded-full border border-[#F6C126]/40 bg-[#F6C126]/10 px-4 py-2 text-xs font-semibold text-[#0E3B43] transition-transform active:scale-[0.98]"
+                  >
+                    Planlæg ferie
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40 px-1 mb-2 flex items-center gap-1.5">
             <Info className="h-3 w-3" />
             Notifikationer
           </p>
@@ -153,6 +291,135 @@ export default function IndstillingerPage() {
       {showInfoModal && (
         <IndstillingerInfoModal onClose={() => setShowInfoModal(false)} />
       )}
+      <VacationModeWizard
+        open={showVacationWizard}
+        onClose={closeVacationWizard}
+        vacationMode={vacationModeToEdit}
+        onSaved={loadVacationModes}
+      />
+      <AlertDialog open={showCancelVacationConfirm} onOpenChange={setShowCancelVacationConfirm}>
+        <AlertDialogContent className="rounded-[28px] border border-foreground/10 bg-white px-6 py-6 shadow-2xl sm:max-w-md">
+          <AlertDialogHeader className="space-y-3 text-left">
+            <div className="h-12 w-12 rounded-2xl bg-[#F6C126]/12 border border-[#F6C126]/30 flex items-center justify-center">
+              <Palmtree className="h-6 w-6 text-[#8C6900]" />
+            </div>
+            <AlertDialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
+              Annuller feriekuvert?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed text-muted-foreground">
+              Den planlagte feriekuvert bliver slettet, og din normale Kuvert fortsætter som nu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <AlertDialogCancel
+              disabled={cancellingVacationMode}
+              className="h-12 rounded-full border border-foreground/10 px-5 text-sm font-semibold"
+            >
+              Behold
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void handleCancelVacationMode();
+              }}
+              disabled={cancellingVacationMode}
+              className="h-12 rounded-full bg-[#0E3B43] px-5 text-sm font-semibold text-white hover:bg-[#0b3238]"
+            >
+              {cancellingVacationMode ? 'Annullerer...' : 'Ja, annuller'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function formatVacationDate(value: string): string {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('da-DK', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function formatVacationAmount(value: number): string {
+  return `${Math.round(value).toLocaleString('da-DK')} kr.`;
+}
+
+function VacationModeSummary({
+  title,
+  mode,
+  tone,
+  primaryLabel,
+  onPrimary,
+  secondaryLabel,
+  onSecondary,
+  secondaryDisabled,
+}: {
+  title: string;
+  mode: VacationMode;
+  tone: 'active' | 'planned';
+  primaryLabel: string;
+  onPrimary: () => void;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+  secondaryDisabled?: boolean;
+}) {
+  const dailyAmount = Number(mode.budget_amount) / Math.max(1, mode.number_of_days);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">{title}</p>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                tone === 'active'
+                  ? 'bg-[#F6C126]/20 text-[#8C6900]'
+                  : 'bg-[#0E3B43]/8 text-[#0E3B43]'
+              }`}
+            >
+              {tone === 'active' ? 'Aktiv' : 'Planlagt'}
+            </span>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {formatVacationDate(mode.start_date)} - {formatVacationDate(mode.end_date)}
+            {' · '}
+            {mode.number_of_days} dage
+            {' · '}
+            {formatVacationAmount(dailyAmount)} pr. dag
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onPrimary}
+          className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#0E3B43] px-3 py-2 text-xs font-semibold text-white shadow-sm transition-transform active:scale-[0.98]"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          {primaryLabel}
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-[#F6C126]/24 bg-[#F6C126]/8 px-3 py-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8C6900]/70">Feriebudget</p>
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <p className="text-2xl font-semibold tracking-tight text-[#0E3B43]">
+            {formatVacationAmount(Number(mode.budget_amount))}
+          </p>
+          {secondaryLabel && onSecondary && (
+            <button
+              type="button"
+              onClick={onSecondary}
+              disabled={secondaryDisabled}
+              className="flex items-center gap-1.5 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 disabled:opacity-60"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {secondaryLabel}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

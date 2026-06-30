@@ -11,6 +11,7 @@ import {
   getWeeklyBudgetStreak,
   computeWeeklyCarryOver,
   getUserWeekStartDay,
+  type QuickExpense,
   type QuickExpenseStreak,
   type QuickExpenseWeeklyStreak,
   type WeeklyCarryOverSummary,
@@ -94,6 +95,7 @@ export interface HomeDataState {
   categoryGroupTypes: Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>;
   quickStreak: QuickExpenseStreak | null;
   weeklyStreak: QuickExpenseWeeklyStreak | null;
+  quickExpenses: QuickExpense[];
   flowMonthlyBudget: number;
   flowMonthlySpent: number;
   flowScoreThreshold: number;
@@ -195,6 +197,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
   const [categoryGroupTypes, setCategoryGroupTypes] = useState<Array<{ name: string; kind: 'income' | 'expense' | 'variable_expense' | 'savings' | 'investment' | 'frirum' }>>(initialCache?.categoryGroupTypes ?? []);
   const [quickStreak, setQuickStreak] = useState<QuickExpenseStreak | null>(initialCache?.quickStreak ?? null);
   const [weeklyStreak, setWeeklyStreak] = useState<QuickExpenseWeeklyStreak | null>(initialCache?.weeklyStreak ?? null);
+  const [quickExpenses, setQuickExpenses] = useState<QuickExpense[]>(initialCache?.quickExpenses ?? []);
   const [flowMonthlyBudget, setFlowMonthlyBudget] = useState(initialCache?.flowMonthlyBudget ?? 0);
   const [flowMonthlySpent, setFlowMonthlySpent] = useState(initialCache?.flowMonthlySpent ?? 0);
   const [flowScoreThreshold, setFlowScoreThreshold] = useState(initialCache?.flowScoreThreshold ?? 0.15);
@@ -223,6 +226,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
       categoryGroupTypes,
       quickStreak,
       weeklyStreak,
+      quickExpenses,
       flowMonthlyBudget,
       flowMonthlySpent,
       flowScoreThreshold,
@@ -244,6 +248,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     categoryGroupTypes,
     quickStreak,
     weeklyStreak,
+    quickExpenses,
     flowMonthlyBudget,
     flowMonthlySpent,
     flowScoreThreshold,
@@ -390,6 +395,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     ]);
     const budgetAmount = monthlyBudget?.budget_amount ?? 0;
     setFlowMonthlyBudget(budgetAmount);
+    setQuickExpenses(quickExpenses);
     setFlowMonthlySpent(quickExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0));
 
     if (flowConfigEntries.data && flowConfigEntries.data.length > 0) {
@@ -455,6 +461,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     categoryGroupTypes,
     quickStreak,
     weeklyStreak,
+    quickExpenses,
     flowMonthlyBudget,
     flowMonthlySpent,
     flowScoreThreshold,

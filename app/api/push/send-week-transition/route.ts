@@ -108,6 +108,7 @@ async function getOrCreateWeekTransitionCandidate({
       .from('quick_expenses')
       .select('id,user_id,amount,note,expense_date,created_at,spread_over_month')
       .eq('user_id', userId)
+      .eq('mode', 'normal')
       .gte('expense_date', monthStart)
       .lte('expense_date', monthEnd),
   ]);

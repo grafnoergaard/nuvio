@@ -23,6 +23,17 @@ export interface FlowSavingsTotals {
   updated_at: string;
 }
 
+export interface VacationSavingsEntry {
+  id: string;
+  user_id: string;
+  vacation_mode_id: string;
+  amount: number;
+  budget_amount: number;
+  total_spent: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function getFlowSavingsTotals(): Promise<FlowSavingsTotals | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -158,6 +169,81 @@ export async function recordFlowSavingsWeek(
 
   return {
     entry: entryData as FlowSavingsEntry,
+    totals: totalsData as FlowSavingsTotals,
+  };
+}
+
+export async function recordVacationFlowSavings(
+  vacationModeId: string,
+  amount: number,
+  budgetAmount: number,
+  totalSpent: number
+): Promise<{ entry: VacationSavingsEntry; totals: FlowSavingsTotals }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const safeAmount = Math.max(0, amount);
+
+  const { data: existingEntry, error: existingError } = await supabase
+    .from('vacation_savings_entries')
+    .select('id, amount')
+    .eq('user_id', user.id)
+    .eq('vacation_mode_id', vacationModeId)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+
+  const previousAmount = existingEntry ? Number(existingEntry.amount) : 0;
+  const isNewEntry = existingEntry === null;
+  const amountDelta = safeAmount - previousAmount;
+
+  const { data: entryData, error: entryError } = await supabase
+    .from('vacation_savings_entries')
+    .upsert(
+      {
+        user_id: user.id,
+        vacation_mode_id: vacationModeId,
+        amount: safeAmount,
+        budget_amount: budgetAmount,
+        total_spent: totalSpent,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,vacation_mode_id' }
+    )
+    .select()
+    .single();
+
+  if (entryError) throw entryError;
+
+  const existing = await getFlowSavingsTotals();
+
+  const newCurrentBalance = (existing?.current_balance ?? 0) + amountDelta;
+  const newLifetimeTotal = (existing?.lifetime_total ?? 0) + amountDelta;
+  const newWeekCount = existing
+    ? existing.week_count + (isNewEntry && safeAmount > 0 ? 1 : 0)
+    : (safeAmount > 0 ? 1 : 0);
+
+  const { data: totalsData, error: totalsError } = await supabase
+    .from('flow_savings_totals')
+    .upsert(
+      {
+        user_id: user.id,
+        current_balance: newCurrentBalance,
+        lifetime_total: newLifetimeTotal,
+        week_count: newWeekCount,
+        reset_count: existing?.reset_count ?? 0,
+        last_reset_at: existing?.last_reset_at ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    )
+    .select()
+    .single();
+
+  if (totalsError) throw totalsError;
+
+  return {
+    entry: entryData as VacationSavingsEntry,
     totals: totalsData as FlowSavingsTotals,
   };
 }

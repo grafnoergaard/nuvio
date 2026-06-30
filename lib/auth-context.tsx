@@ -30,19 +30,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    let mounted = true;
+    let hasResolvedInitialSession = false;
+
+    const loadingFallback = window.setTimeout(() => {
+      if (!mounted || hasResolvedInitialSession) return;
+      console.warn('Supabase session check timed out. Releasing auth loading state.');
+      setSession(null);
+      setUser(null);
       setLoading(false);
+    }, 5000);
+
+    function finishSessionLoad(nextSession: Session | null) {
+      if (!mounted) return;
+      hasResolvedInitialSession = true;
+      window.clearTimeout(loadingFallback);
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      finishSessionLoad(session);
+    }).catch((error) => {
+      console.warn('Supabase session check failed.', error);
+      finishSessionLoad(null);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      finishSessionLoad(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      window.clearTimeout(loadingFallback);
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function signOut() {
