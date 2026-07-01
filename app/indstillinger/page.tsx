@@ -298,24 +298,35 @@ export default function IndstillingerPage() {
         onSaved={loadVacationModes}
       />
       <AlertDialog open={showCancelVacationConfirm} onOpenChange={setShowCancelVacationConfirm}>
-        <AlertDialogContent className="rounded-[28px] border border-foreground/10 bg-white px-6 py-6 shadow-2xl sm:max-w-md">
+        <AlertDialogContent className="top-auto bottom-[max(1rem,env(safe-area-inset-bottom))] max-w-[calc(100vw-1.5rem)] translate-x-[-50%] translate-y-0 rounded-[32px] border border-foreground/10 bg-white px-6 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:slide-in-from-bottom-8 sm:top-[50%] sm:bottom-auto sm:max-w-md sm:translate-y-[-50%] sm:rounded-[28px] sm:pb-6">
+          <div className="absolute inset-x-0 top-0 h-1 rounded-t-[32px] bg-gradient-to-r from-[#F6C126] to-[#FFD977] sm:rounded-t-[28px]" />
           <AlertDialogHeader className="space-y-3 text-left">
-            <div className="h-12 w-12 rounded-2xl bg-[#F6C126]/12 border border-[#F6C126]/30 flex items-center justify-center">
-              <Palmtree className="h-6 w-6 text-[#8C6900]" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#F6C126]/30 bg-[#F6C126]/12">
+                <Palmtree className="h-6 w-6 text-[#8C6900]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8C6900]/80">
+                  Ferie mode
+                </p>
+                <AlertDialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
+                  Annuller feriekuvert?
+                </AlertDialogTitle>
+              </div>
             </div>
-            <AlertDialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
-              Annuller feriekuvert?
-            </AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-relaxed text-muted-foreground">
-              Den planlagte feriekuvert bliver slettet, og din normale Kuvert fortsætter som nu.
+              Den planlagte feriekuvert bliver slettet. Din normale Kuvert fortsætter bare derfra, hvor den er nu.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="mt-4 rounded-2xl border border-[#F6C126]/18 bg-[#F6C126]/8 px-4 py-3 text-sm text-[#0E3B43]">
+            Du kan altid planlaegge en ny feriekuvert senere.
+          </div>
           <AlertDialogFooter className="mt-6 flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <AlertDialogCancel
               disabled={cancellingVacationMode}
               className="h-12 rounded-full border border-foreground/10 px-5 text-sm font-semibold"
             >
-              Behold
+              Behold ferieplan
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(event) => {
@@ -325,7 +336,7 @@ export default function IndstillingerPage() {
               disabled={cancellingVacationMode}
               className="h-12 rounded-full bg-[#0E3B43] px-5 text-sm font-semibold text-white hover:bg-[#0b3238]"
             >
-              {cancellingVacationMode ? 'Annullerer...' : 'Ja, annuller'}
+              {cancellingVacationMode ? 'Annullerer...' : 'Ja, slet ferieplan'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
