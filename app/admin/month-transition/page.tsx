@@ -386,8 +386,8 @@ export default function AdminMonthTransitionPage() {
           prevSummary={activePreset.summary}
           streak={activePreset.streak}
           defaultBudget={activePreset.defaultBudget}
-          onConfirm={async (amount) => {
-            toast.success(`Test: budget sat til ${amount.toLocaleString('da-DK')} kr. (ikke gemt)`);
+          onConfirm={async (input) => {
+            toast.success(`Test: budget sat til ${input.budgetAmount.toLocaleString('da-DK')} kr. (ikke gemt)`);
             setShowModal(false);
           }}
           onDismiss={() => setShowModal(false)}

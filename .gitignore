@@ -43,3 +43,4 @@ supabase/.temp/
 
 # Local data exports
 exports/
+.env*

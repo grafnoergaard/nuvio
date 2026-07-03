@@ -5,6 +5,9 @@ import { Trash2, Settings2, X, ChevronLeft, ChevronRight, Receipt, CalendarDays,
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { useSettings, getCardStyle, getTopBarStyle } from '@/lib/settings-context';
+import { getVacationAccentColor, getVacationCardSurfaceStyle, getVacationTopBarCard, withAlpha } from '@/lib/vacation-theme';
+import { useVacationMode } from '@/lib/vacation-mode-context';
+import { getNormalUntilVacationPeriod } from '@/lib/normal-until-vacation';
 import { type FlowAiContext } from '@/components/ai-assistant-button';
 import { useAiContext } from '@/lib/ai-context';
 import {
@@ -27,13 +30,14 @@ import {
   QuickExpenseStreak,
   WeeklyCarryOverSummary,
 } from '@/lib/quick-expense-service';
-import { getActiveVacationMode, type VacationMode } from '@/lib/vacation-mode-service';
+import { getVacationBudgetDayStatuses } from '@/lib/vacation-budget';
 import { supabase } from '@/lib/supabase';
 import MonthTransitionModal from '@/components/month-transition-modal';
 import StreakBadge from '@/components/streak-badge';
 import EditExpenseModal from '@/components/edit-expense-modal';
 import NuvioFlowGuideModal from '@/components/nuvio-flow-guide-modal';
 import { toKuvertCopy } from '@/lib/kuvert-copy';
+import { addDaysToIsoDate, upsertPlannedVacationMode } from '@/lib/vacation-mode-service';
 
 const GUIDE_SEEN_KEY = 'nuvio_flow_guide_seen_v1';
 
@@ -91,7 +95,6 @@ const FLOW_STATUS_DEFAULTS: FlowStatusConfig = {
 
 interface NuvioFlowCacheData {
   expenses: QuickExpense[];
-  activeVacationMode: VacationMode | null;
   monthlyBudget: number;
   variableEstimate: number | null;
   prevSummary: MonthSummary | null;
@@ -143,29 +146,6 @@ function badgeHexToCardStyle(hex: string): React.CSSProperties {
   };
 }
 
-function resolveCardStyle(cardBgValue: string, badgeBgValue?: string): { className: string; inlineStyle: React.CSSProperties | undefined } {
-  if (badgeBgValue) {
-    const hex = extractBadgeHex(badgeBgValue);
-    if (hex) {
-      return {
-        className: 'rounded-2xl border shadow-sm',
-        inlineStyle: badgeHexToCardStyle(hex),
-      };
-    }
-  }
-  const hexMatch = cardBgValue.match(/from-\[([^\]]+)\]\s+via-\[([^\]]+)\]\s+to-\[([^\]]+)\]/);
-  if (hexMatch) {
-    return {
-      className: 'rounded-2xl border shadow-sm',
-      inlineStyle: {
-        background: `linear-gradient(to bottom right, ${hexMatch[1]}, ${hexMatch[2]}, ${hexMatch[3]})`,
-        borderColor: `${hexMatch[1]}99`,
-      },
-    };
-  }
-  return { className: cn('rounded-2xl border shadow-sm', cardBgValue), inlineStyle: undefined };
-}
-
 function formatDate(dateStr: string): string {
   const [, m, d] = dateStr.split('-');
   return `${parseInt(d)}. ${DANISH_MONTHS[parseInt(m) - 1]}`;
@@ -195,6 +175,7 @@ function getPrevMonthRef(year: number, month: number): { year: number; month: nu
 
 export default function NuvioFlowPage() {
   const { user } = useAuth();
+  const { activeVacationMode, plannedVacationMode, isResolved: vacationModeResolved } = useVacationMode();
   const { design } = useSettings();
   const { setAiContext, setWizardActive } = useAiContext();
   const now = useMemo(() => new Date(), []);
@@ -220,8 +201,6 @@ export default function NuvioFlowPage() {
   const [showGuide, setShowGuide] = useState(false);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState<number>(1);
-  const [activeVacationMode, setActiveVacationMode] = useState<VacationMode | null>(null);
-  const flowCacheKey = user ? `${user.id}:${viewYear}-${viewMonth}` : null;
 
   useEffect(() => {
     setWizardActive(showGuide);
@@ -231,6 +210,13 @@ export default function NuvioFlowPage() {
   const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth() + 1;
   const isVacationMode = Boolean(activeVacationMode);
   const isCurrentPeriod = isVacationMode || isCurrentMonth;
+  const normalUntilVacationPeriod = useMemo(
+    () => !activeVacationMode ? getNormalUntilVacationPeriod(plannedVacationMode ?? null, viewYear, viewMonth, now) : null,
+    [activeVacationMode, plannedVacationMode, viewYear, viewMonth, now],
+  );
+  const flowCacheKey = user
+    ? `${user.id}:${viewYear}-${viewMonth}:${activeVacationMode?.id ?? 'normal'}:${normalUntilVacationPeriod?.endDate ?? 'full'}`
+    : null;
   const vacationPeriodLabel = activeVacationMode
     ? `${formatDate(activeVacationMode.start_date)} - ${formatDate(activeVacationMode.end_date)}`
     : '';
@@ -240,7 +226,6 @@ export default function NuvioFlowPage() {
     const cached = getNuvioFlowCache(flowCacheKey);
     if (cached) {
       setExpenses(cached.expenses);
-      setActiveVacationMode(cached.activeVacationMode);
       setMonthlyBudget(cached.monthlyBudget);
       setVariableEstimate(cached.variableEstimate);
       setPrevSummary(cached.prevSummary);
@@ -259,11 +244,10 @@ export default function NuvioFlowPage() {
       const curYear = now.getFullYear();
       const curMonth = now.getMonth() + 1;
       const prev = getPrevMonthRef(curYear, curMonth);
-      const activeVacation = await getActiveVacationMode(user.id);
 
       const [exps, budget, streakData, flowConfigEntries, userWeekStartDay, householdData, backfillResult] = await Promise.all([
-        activeVacation
-          ? getQuickExpensesForVacationMode(activeVacation.id, activeVacation.start_date, activeVacation.end_date)
+        activeVacationMode
+          ? getQuickExpensesForVacationMode(activeVacationMode.id, activeVacationMode.start_date, activeVacationMode.end_date)
           : getQuickExpensesForMonth(viewYear, viewMonth),
         getMonthlyBudget(viewYear, viewMonth),
         getStreak(),
@@ -281,8 +265,7 @@ export default function NuvioFlowPage() {
       ]);
 
       setExpenses(exps);
-      setActiveVacationMode(activeVacation);
-      const budgetAmount = activeVacation ? Number(activeVacation.budget_amount) : (budget?.budget_amount ?? 0);
+      const budgetAmount = activeVacationMode ? Number(activeVacationMode.budget_amount) : (budget?.budget_amount ?? 0);
       setMonthlyBudget(budgetAmount);
       setWeekStartDay(userWeekStartDay);
 
@@ -327,8 +310,11 @@ export default function NuvioFlowPage() {
         });
       }
 
-      if (!activeVacation && budgetAmount > 0) {
-        const weekly = computeWeeklyCarryOver(budgetAmount, viewYear, viewMonth, exps, now, userWeekStartDay);
+      if (!activeVacationMode && budgetAmount > 0) {
+        const weekly = computeWeeklyCarryOver(budgetAmount, viewYear, viewMonth, exps, now, userWeekStartDay, {
+          periodStartDate: normalUntilVacationPeriod?.startDate,
+          periodEndDate: normalUntilVacationPeriod?.endDate,
+        });
         setWeeklyStatus(weekly);
 
         if (isCurrentMonth) {
@@ -338,7 +324,7 @@ export default function NuvioFlowPage() {
         setWeeklyStatus(null);
       }
 
-      if (!activeVacation && isCurrentMonth) {
+      if (!activeVacationMode && isCurrentMonth) {
         const [acknowledged, summary, prevBudget] = await Promise.all([
           hasAcknowledgedTransition(curYear, curMonth),
           getPreviousMonthSummary(curYear, curMonth),
@@ -360,7 +346,7 @@ export default function NuvioFlowPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, viewYear, viewMonth, isCurrentMonth, flowCacheKey, now]);
+  }, [user, viewYear, viewMonth, isCurrentMonth, flowCacheKey, now, activeVacationMode, normalUntilVacationPeriod]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -370,7 +356,6 @@ export default function NuvioFlowPage() {
       at: Date.now(),
       data: {
         expenses,
-        activeVacationMode,
         monthlyBudget,
         variableEstimate,
         prevSummary,
@@ -409,10 +394,10 @@ export default function NuvioFlowPage() {
   const { totalSpent, remaining, usedPct, overBudget, daysInMonth, remainingDays, dailyAvailable } = useMemo(() => {
     const spent = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
     const rem = monthlyBudget - spent;
-    const dim = activeVacationMode?.number_of_days ?? new Date(viewYear, viewMonth, 0).getDate();
+    const dim = activeVacationMode?.number_of_days ?? normalUntilVacationPeriod?.totalDays ?? new Date(viewYear, viewMonth, 0).getDate();
     const remDays = activeVacationMode
       ? getDaysLeftInRange(activeVacationMode.end_date, now)
-      : dim - now.getDate() + 1;
+      : normalUntilVacationPeriod?.remainingDays ?? (dim - now.getDate() + 1);
     return {
       totalSpent: spent,
       remaining: rem,
@@ -422,7 +407,18 @@ export default function NuvioFlowPage() {
       remainingDays: remDays,
       dailyAvailable: remDays > 0 && rem > 0 ? rem / remDays : 0,
     };
-  }, [expenses, monthlyBudget, now, activeVacationMode, viewYear, viewMonth]);
+  }, [expenses, monthlyBudget, now, activeVacationMode, normalUntilVacationPeriod, viewYear, viewMonth]);
+  const normalModePeriodDays = normalUntilVacationPeriod?.totalDays ?? new Date(viewYear, viewMonth, 0).getDate();
+  const normalModeDailyBudget = normalModePeriodDays > 0 ? monthlyBudget / normalModePeriodDays : 0;
+  const displayWeeklyStatus = useMemo(
+    () => !isVacationMode && monthlyBudget > 0
+      ? computeWeeklyCarryOver(monthlyBudget, viewYear, viewMonth, expenses, now, weekStartDay, {
+          periodStartDate: normalUntilVacationPeriod?.startDate,
+          periodEndDate: normalUntilVacationPeriod?.endDate,
+        })
+      : null,
+    [isVacationMode, monthlyBudget, viewYear, viewMonth, expenses, now, weekStartDay, normalUntilVacationPeriod],
+  );
 
   function prevMonth() {
     if (viewMonth === 1) { setViewYear(y => y - 1); setViewMonth(12); }
@@ -446,7 +442,10 @@ export default function NuvioFlowPage() {
       const newExpenses = expenses.filter(e => e.id !== id);
       setExpenses(newExpenses);
       if (!isVacationMode && monthlyBudget > 0) {
-        const weekly = computeWeeklyCarryOver(monthlyBudget, viewYear, viewMonth, newExpenses, now, weekStartDay);
+        const weekly = computeWeeklyCarryOver(monthlyBudget, viewYear, viewMonth, newExpenses, now, weekStartDay, {
+          periodStartDate: normalUntilVacationPeriod?.startDate,
+          periodEndDate: normalUntilVacationPeriod?.endDate,
+        });
         setWeeklyStatus(weekly);
         if (isCurrentMonth) {
           updateWeeklyCarryOver(viewYear, viewMonth, weekly.accumulatedCarryOver).catch(() => null);
@@ -478,7 +477,10 @@ export default function NuvioFlowPage() {
 
     setExpenses(newExpenses);
     if (!isVacationMode && monthlyBudget > 0) {
-      const weekly = computeWeeklyCarryOver(monthlyBudget, viewYear, viewMonth, newExpenses, now, weekStartDay);
+      const weekly = computeWeeklyCarryOver(monthlyBudget, viewYear, viewMonth, newExpenses, now, weekStartDay, {
+        periodStartDate: normalUntilVacationPeriod?.startDate,
+        periodEndDate: normalUntilVacationPeriod?.endDate,
+      });
       setWeeklyStatus(weekly);
       if (isCurrentMonth) {
         updateWeeklyCarryOver(viewYear, viewMonth, weekly.accumulatedCarryOver).catch(() => null);
@@ -496,7 +498,10 @@ export default function NuvioFlowPage() {
     try {
       await upsertMonthlyBudget(viewYear, viewMonth, parsed);
       setMonthlyBudget(parsed);
-      const weekly = computeWeeklyCarryOver(parsed, viewYear, viewMonth, expenses, now, weekStartDay);
+      const weekly = computeWeeklyCarryOver(parsed, viewYear, viewMonth, expenses, now, weekStartDay, {
+        periodStartDate: normalUntilVacationPeriod?.startDate,
+        periodEndDate: normalUntilVacationPeriod?.endDate,
+      });
       setWeeklyStatus(weekly);
       if (isCurrentMonth) {
         updateWeeklyCarryOver(viewYear, viewMonth, weekly.accumulatedCarryOver).catch(() => null);
@@ -507,16 +512,54 @@ export default function NuvioFlowPage() {
     }
   }
 
-  async function handleTransitionConfirm(budgetAmount: number) {
+  async function handleTransitionConfirm(input: {
+    budgetAmount: number;
+    vacationPlan: null | {
+      startDate: string;
+      numberOfDays: number;
+      budgetAmount: number | null;
+    };
+  }) {
     const curYear = now.getFullYear();
     const curMonth = now.getMonth() + 1;
     const prev = getPrevMonthRef(curYear, curMonth);
 
-    await upsertMonthlyBudget(curYear, curMonth, budgetAmount);
+    await upsertMonthlyBudget(curYear, curMonth, input.budgetAmount);
+    if (user && input.vacationPlan) {
+      await upsertPlannedVacationMode(user.id, {
+        budget_amount: input.vacationPlan.budgetAmount ?? 0,
+        start_date: input.vacationPlan.startDate,
+        end_date: addDaysToIsoDate(input.vacationPlan.startDate, input.vacationPlan.numberOfDays - 1),
+        number_of_days: input.vacationPlan.numberOfDays,
+      });
+    }
     await acknowledgeMonthTransition(curYear, curMonth, prev.year, prev.month);
 
-    setMonthlyBudget(budgetAmount);
-    const weekly = computeWeeklyCarryOver(budgetAmount, curYear, curMonth, expenses, now, weekStartDay);
+    setMonthlyBudget(input.budgetAmount);
+    const transitionPeriod = getNormalUntilVacationPeriod(
+      input.vacationPlan
+        ? {
+            id: '',
+            user_id: user?.id ?? '',
+            status: 'planned',
+            budget_amount: input.vacationPlan.budgetAmount ?? 0,
+            start_date: input.vacationPlan.startDate,
+            end_date: addDaysToIsoDate(input.vacationPlan.startDate, input.vacationPlan.numberOfDays - 1),
+            number_of_days: input.vacationPlan.numberOfDays,
+            activated_at: null,
+            ended_at: null,
+            created_at: '',
+            updated_at: '',
+          }
+        : plannedVacationMode,
+      curYear,
+      curMonth,
+      now,
+    );
+    const weekly = computeWeeklyCarryOver(input.budgetAmount, curYear, curMonth, expenses, now, weekStartDay, {
+      periodStartDate: transitionPeriod?.startDate,
+      periodEndDate: transitionPeriod?.endDate,
+    });
     setWeeklyStatus(weekly);
     updateWeeklyCarryOver(curYear, curMonth, weekly.accumulatedCarryOver).catch(() => null);
     setShowTransitionModal(false);
@@ -535,8 +578,8 @@ export default function NuvioFlowPage() {
   [overBudget, usedPct]);
 
   const carryOverPenalty = useMemo(() =>
-    weeklyStatus ? Math.abs(Math.min(0, weeklyStatus.accumulatedCarryOver)) : 0,
-  [weeklyStatus]);
+    displayWeeklyStatus ? Math.abs(Math.min(0, displayWeeklyStatus.accumulatedCarryOver)) : 0,
+  [displayWeeklyStatus]);
 
   const { healthPct, healthBarPct, healthBarColor, healthGlow } = useMemo(() => {
     const rawFlowScore = (() => {
@@ -653,25 +696,42 @@ export default function NuvioFlowPage() {
   const cfg = statusConfig[statusState];
 
   const cardMedium = design.cardMedium;
-  const cardStyleBase = getCardStyle(cardMedium, design.gradientFrom, design.gradientTo);
-  const topBarStyleOverride = getTopBarStyle(cardMedium, design.gradientFrom, design.gradientTo);
+  const vacationAccent = getVacationAccentColor(design);
+  const activeCardMedium = isVacationMode ? getVacationTopBarCard(cardMedium, vacationAccent) : cardMedium;
+  const activeGradientTo = isVacationMode ? vacationAccent : design.gradientTo;
+  const cardStyleBase = getCardStyle(activeCardMedium, design.gradientFrom, activeGradientTo);
+  const topBarStyleOverride = getTopBarStyle(activeCardMedium, design.gradientFrom, activeGradientTo);
+  const sharedCardClassName = cn(
+    'relative rounded-2xl border shadow-sm overflow-hidden transition-all duration-500',
+    isVacationMode
+      ? 'bg-gradient-to-br from-white via-white to-white'
+      : 'bg-gradient-to-br from-emerald-50/80 via-teal-50/30 to-white border-emerald-200/50'
+  );
+  const vacationCardTintStyle = isVacationMode
+    ? getVacationCardSurfaceStyle(vacationAccent)
+    : undefined;
 
-  const { statusCardStyle, badgeHex, progressBarStyle, progressDotColor, progressGlowColor } = useMemo(() => {
-    const cardStyle = resolveCardStyle(
-      monthlyBudget > 0 ? cfg.cardBg : 'bg-white/80 backdrop-blur border-white/30',
-      monthlyBudget > 0 ? cfg.badgeBg : undefined,
-    );
-    const hex = extractBadgeHex(cfg.badgeBg);
+  const { progressBarStyle, progressDotColor } = useMemo(() => {
+    const hex = isVacationMode ? vacationAccent : extractBadgeHex(cfg.badgeBg);
     return {
-      statusCardStyle: cardStyle,
-      badgeHex: hex,
       progressBarStyle: hex ? { background: `linear-gradient(to right, ${hex}cc, ${hex})` } as React.CSSProperties : undefined,
       progressDotColor: hex ?? (overBudget ? '#ef4444' : healthPct >= 60 ? '#34d399' : '#fbbf24'),
-      progressGlowColor: hex ? `${hex}55` : undefined,
     };
-  }, [cfg.cardBg, cfg.badgeBg, monthlyBudget, overBudget, healthPct]);
+  }, [cfg.badgeBg, overBudget, healthPct, isVacationMode, vacationAccent]);
 
-  const currentWeek = weeklyStatus?.weeks.find(w => w.isCurrentWeek);
+  const currentWeek = displayWeeklyStatus?.weeks.find(w => w.isCurrentWeek);
+  const vacationDayStatuses = useMemo(() => {
+    if (!activeVacationMode) return [];
+    return getVacationBudgetDayStatuses(activeVacationMode, expenses, now);
+  }, [activeVacationMode, expenses, now]);
+  const currentVacationDayStatus = useMemo(
+    () => vacationDayStatuses.find(day => day.isCurrent) ?? vacationDayStatuses.find(day => day.isFuture) ?? null,
+    [vacationDayStatuses]
+  );
+  const vacationStartingDailyBudget = useMemo(() => {
+    if (!activeVacationMode || activeVacationMode.number_of_days <= 0) return 0;
+    return monthlyBudget / activeVacationMode.number_of_days;
+  }, [activeVacationMode, monthlyBudget]);
   const weeklyTransactionCount = useMemo(() => {
     if (!isCurrentMonth) return 0;
     const weekStart = new Date(now);
@@ -705,35 +765,42 @@ export default function NuvioFlowPage() {
   }, [isCurrentPeriod, isVacationMode, monthlyBudget, healthPct, statusState, cfg.badgeText, remaining, totalSpent, remainingDays, dailyAvailable, streak, carryOverPenalty, viewMonth, viewYear, vacationPeriodLabel, weeklyTransactionCount, setAiContext]);
 
   const pageBackground = useMemo(() => {
+    if (activeVacationMode) {
+      const top = withAlpha(getVacationAccentColor(design), 0.16);
+      return {
+        top,
+        gradient: `linear-gradient(to bottom, ${top}, #ffffff 42%, #ffffff)`,
+      };
+    }
     if (statusState === 'kursen') {
       return {
-        top: 'rgb(240,253,250)',
-        gradient: 'linear-gradient(to bottom, rgba(240,253,250,0.7), rgba(236,253,245,0.3), #ffffff)',
+        top: 'rgb(236,253,245)',
+        gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.60), #ffffff, #ffffff)',
       };
     }
     if (statusState === 'tempo') {
       return {
         top: 'rgb(236,253,245)',
-        gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.7), rgba(240,253,250,0.25), #ffffff)',
+        gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.60), #ffffff, #ffffff)',
       };
     }
     if (statusState === 'warn') {
       return {
-        top: 'rgb(255,251,235)',
-        gradient: 'linear-gradient(to bottom, rgba(255,251,235,0.7), rgba(255,247,237,0.25), #ffffff)',
+        top: 'rgb(236,253,245)',
+        gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.60), #ffffff, #ffffff)',
       };
     }
     if (statusState === 'over') {
       return {
-        top: 'rgb(254,242,242)',
-        gradient: 'linear-gradient(to bottom, rgba(254,242,242,0.7), rgba(255,241,242,0.25), #ffffff)',
+        top: 'rgb(236,253,245)',
+        gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.60), #ffffff, #ffffff)',
       };
     }
     return {
-      top: '#dfe9e7',
-      gradient: 'linear-gradient(to bottom, rgba(223,233,231,0.9), rgba(237,243,241,0.7), #ffffff)',
+      top: 'rgb(236,253,245)',
+      gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.60), #ffffff, #ffffff)',
     };
-  }, [statusState]);
+  }, [activeVacationMode, statusState, design]);
 
   const topBgColor = pageBackground.top;
 
@@ -756,6 +823,23 @@ export default function NuvioFlowPage() {
       if (meta) meta.content = '#f8f9f2';
     };
   }, [topBgColor]);
+
+  if (user && !vacationModeResolved) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-lg mx-auto px-4 pb-32 sm:pb-16" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}>
+          <div className="mb-6">
+            <div className="h-3 w-24 rounded-full bg-black/6 animate-pulse" />
+            <div className="mt-3 h-10 w-52 rounded-2xl bg-black/6 animate-pulse" />
+          </div>
+          <div className="space-y-4">
+            <div className="h-80 rounded-2xl border border-black/6 bg-white shadow-sm animate-pulse" />
+            <div className="h-56 rounded-2xl border border-black/6 bg-white shadow-sm animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -786,10 +870,10 @@ export default function NuvioFlowPage() {
 
         {/* Budget Status Card */}
         <div
-          className={cn('mb-4 transition-all duration-500', statusCardStyle.className)}
-          style={{ ...cardStyleBase, ...statusCardStyle.inlineStyle }}
+          className={cn('mb-4', sharedCardClassName)}
+          style={{ ...cardStyleBase, ...vacationCardTintStyle }}
         >
-          {topBarStyleOverride && monthlyBudget > 0 && (
+          {topBarStyleOverride && (
             <div style={topBarStyleOverride} />
           )}
 
@@ -813,9 +897,15 @@ export default function NuvioFlowPage() {
                 </p>
                 {monthlyBudget > 0 && (
                   cfg.badgeCustom ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold tracking-wide bg-gradient-to-r from-slate-700 to-slate-800 border border-yellow-400/40 shadow-sm">
-                      <Crown className="h-2.5 w-2.5 text-yellow-400" />
-                      <span className="text-yellow-300">{isVacationMode ? 'Ferie' : 'Udgifter'}</span>
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold tracking-wide bg-gradient-to-r from-slate-700 to-slate-800 shadow-sm"
+                      style={isVacationMode ? { borderColor: withAlpha(vacationAccent, 0.4) } : undefined}
+                    >
+                      <Crown
+                        className="h-2.5 w-2.5"
+                        style={isVacationMode ? { color: vacationAccent } : undefined}
+                      />
+                      <span style={isVacationMode ? { color: vacationAccent } : undefined}>{isVacationMode ? 'Ferie' : 'Udgifter'}</span>
                     </span>
                   ) : cfg.badgeBg.startsWith('bg-[') ? (
                     <span
@@ -885,12 +975,22 @@ export default function NuvioFlowPage() {
                       <p className="text-xs font-medium text-muted-foreground/70 leading-snug mb-0.5">Dage tilbage</p>
                       <p className="text-sm font-semibold tracking-tight text-foreground">{remainingDays}</p>
                     </div>
-                    <div className={cn(
-                      'rounded-xl border px-3 py-2 text-center min-w-[56px]',
-                      (statusState === 'tempo' || statusState === 'kursen' || statusState === 'flow') ? 'bg-emerald-50/80 border-emerald-100/60' :
-                      statusState === 'warn' ? 'bg-amber-50/80 border-amber-100/60' :
-                      'bg-red-50/80 border-red-100/60'
-                    )}>
+                    <div
+                      className={cn(
+                        'rounded-xl border px-3 py-2 text-center min-w-[56px]',
+                        !isVacationMode && (
+                          (statusState === 'tempo' || statusState === 'kursen' || statusState === 'flow') ? 'bg-emerald-50/80 border-emerald-100/60' :
+                          statusState === 'warn' ? 'bg-amber-50/80 border-amber-100/60' :
+                          'bg-red-50/80 border-red-100/60'
+                        )
+                      )}
+                      style={isVacationMode
+                        ? {
+                            backgroundColor: withAlpha(vacationAccent, 0.10),
+                            borderColor: withAlpha(vacationAccent, 0.20),
+                          }
+                        : undefined}
+                    >
                       <p className="text-xs font-medium text-muted-foreground/70 leading-snug mb-0.5">Per dag</p>
                       <p className={cn('text-sm font-semibold tracking-tight', cfg.amountColor)}>
                         {dailyAvailable > 0
@@ -902,20 +1002,37 @@ export default function NuvioFlowPage() {
                 )}
               </div>
 
-              {/* Månedsscore */}
+              {/* Budgetstatus */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-muted-foreground tracking-wide">
-                    {isVacationMode ? 'Feriescore' : 'Månedsscore'}
+                    Budgetstatus
                   </span>
                   <div className="flex items-center gap-2">
                     {streak && streak.current_streak > 0 && (
                       <button
                         onClick={() => setShowStreakPopup(true)}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200/60 hover:bg-amber-100 transition-colors"
+                        className={cn(
+                          'flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors',
+                          isVacationMode ? 'hover:brightness-[0.98]' : 'bg-amber-50 border border-amber-200/60 hover:bg-amber-100'
+                        )}
+                        style={isVacationMode
+                          ? {
+                              backgroundColor: withAlpha(vacationAccent, 0.12),
+                              border: `1px solid ${withAlpha(vacationAccent, 0.24)}`,
+                            }
+                          : undefined}
                       >
-                        <Flame className="h-3 w-3 text-amber-500" />
-                        <span className="text-xs font-bold tabular-nums text-amber-700">{streak.current_streak}</span>
+                        <Flame
+                          className="h-3 w-3"
+                          style={isVacationMode ? { color: vacationAccent } : undefined}
+                        />
+                        <span
+                          className="text-xs font-bold tabular-nums"
+                          style={isVacationMode ? { color: '#0E3B43' } : undefined}
+                        >
+                          {streak.current_streak}
+                        </span>
                       </button>
                     )}
                     {!overBudget && (
@@ -930,12 +1047,10 @@ export default function NuvioFlowPage() {
                   {!overBudget ? (
                     <div
                       className={cn(
-                        'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out shadow-sm',
-                        !progressBarStyle && cn('bg-gradient-to-r', healthBarColor),
-                        !progressBarStyle && (progressGlowColor ?? healthGlow),
-                        isCurrentMonth && healthPct >= 60 && 'health-bar-pulse'
+                        'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out',
+                        !progressBarStyle && cn('bg-gradient-to-r', healthBarColor)
                       )}
-                      style={{ width: `${healthBarPct}%`, ...(progressBarStyle ?? {}), boxShadow: progressGlowColor ? `0 0 6px 1px ${progressGlowColor}` : undefined }}
+                      style={{ width: `${healthBarPct}%`, ...(progressBarStyle ?? {}) }}
                     >
                       <div
                         className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 h-3.5 w-3.5 rounded-full bg-white shadow-md border-2"
@@ -969,8 +1084,154 @@ export default function NuvioFlowPage() {
                 </div>
               )}
 
-              {/* Ugebudget — integrated */}
-              {!isVacationMode && weeklyStatus && (
+              {/* Ferie dagsbudget / Ugebudget — integrated */}
+              {isVacationMode && activeVacationMode && (
+                <div className="-mx-5 -mb-5 border-t border-black/5">
+                  <div className="w-full flex items-center justify-between px-5 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <CalendarDays className="h-4 w-4 shrink-0" style={{ color: vacationAccent }} />
+                      <div className="text-left">
+                        <p className="text-xs font-semibold text-foreground">Ferie dagsbudget</p>
+                        <p className="text-label text-muted-foreground leading-snug">
+                          {formatDKK(currentVacationDayStatus?.budgetForDay ?? vacationStartingDailyBudget)} pr. feriedag
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className="rounded-full px-2 py-0.5 text-label font-semibold tabular-nums"
+                      style={{
+                        backgroundColor: withAlpha(vacationAccent, 0.14),
+                        color: vacationAccent,
+                      }}
+                    >
+                      {activeVacationMode.number_of_days} dage
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border/40 divide-y divide-border/30">
+                    <div className="px-5 py-3 bg-secondary/10">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Startbudget: {formatDKK(monthlyBudget)} / {activeVacationMode.number_of_days} dage = {formatDKK(vacationStartingDailyBudget)} pr. dag.
+                        Bruger du mindre en dag, fordeles resten automatisk over de resterende feriedage.
+                      </p>
+                    </div>
+
+                    {vacationDayStatuses.map((day) => {
+                      const dayBudget = day.budgetForDay;
+                      const currentDayTotal = day.isCurrent ? day.spent + dayBudget : dayBudget;
+                      const daySpentPct = currentDayTotal > 0 ? Math.min((day.spent / currentDayTotal) * 100, 100) : 0;
+                      const dayRemaining = day.isCurrent ? dayBudget : dayBudget - day.spent;
+                      const isOverDayBudget = day.isCurrent ? dayBudget < 0 : day.spent > dayBudget;
+
+                      return (
+                        <div
+                          key={day.date}
+                          className={cn(
+                            'px-5 py-3.5',
+                            day.isFuture && 'opacity-60'
+                          )}
+                          style={day.isCurrent ? { backgroundColor: withAlpha(vacationAccent, 0.08) } : undefined}
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-semibold text-foreground">
+                                  Dag {day.index}
+                                </span>
+                                {day.isCurrent && (
+                                  <span
+                                    className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                                    style={{
+                                      backgroundColor: withAlpha(vacationAccent, 0.18),
+                                      color: '#0E3B43',
+                                    }}
+                                  >
+                                    Nu
+                                  </span>
+                                )}
+                                {day.isPast && day.keptBudget === false && (
+                                  <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 flex items-center gap-0.5">
+                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                    Overskredet
+                                  </span>
+                                )}
+                                {day.isPast && day.keptBudget === true && (
+                                  <span
+                                    className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                                    style={{
+                                      backgroundColor: withAlpha(vacationAccent, 0.18),
+                                      color: '#0E3B43',
+                                    }}
+                                  >
+                                    Indenfor budget
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-label text-muted-foreground mt-0.5">
+                                {formatDate(day.date)}
+                              </p>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              {day.isCurrent ? (
+                                <>
+                                  <p className="text-sm font-semibold tabular-nums text-foreground">
+                                    {formatDKK(Math.round(dayRemaining))}
+                                  </p>
+                                  <p className="text-label text-muted-foreground mt-0.5">
+                                    {dayRemaining >= 0 ? 'tilbage i dag' : 'over dagens budget'}
+                                  </p>
+                                </>
+                              ) : day.isFuture ? (
+                                <>
+                                  <p className="text-sm font-semibold tabular-nums text-foreground">
+                                    {formatDKK(Math.round(dayBudget))}
+                                  </p>
+                                  <p className="text-label text-muted-foreground mt-0.5">budget</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-semibold tabular-nums text-foreground">
+                                    {formatDKK(Math.round(day.spent))}
+                                  </p>
+                                  <p className="text-label text-muted-foreground mt-0.5">
+                                    af {formatDKK(Math.round(dayBudget))}
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {!day.isFuture && (
+                            <div className="h-1.5 rounded-full bg-black/5 overflow-hidden">
+                              <div
+                                className={cn('h-full rounded-full transition-all duration-500')}
+                                style={{
+                                  width: `${daySpentPct}%`,
+                                  backgroundColor: isOverDayBudget
+                                    ? '#f87171'
+                                    : daySpentPct > 80
+                                    ? '#fbbf24'
+                                    : vacationAccent,
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {day.isPast && isOverDayBudget && (
+                            <p className="text-label text-red-600 mt-1.5 flex items-center gap-1">
+                              <TrendingDown className="h-3 w-3" />
+                              {formatDKK(Math.round(Math.abs(dayRemaining)))} over dagens budget
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {!isVacationMode && displayWeeklyStatus && (
                 <div className="-mx-5 -mb-5 border-t border-black/5">
                   <div className="w-full flex items-center justify-between px-5 py-3">
                     <div className="flex items-center gap-2.5">
@@ -979,18 +1240,18 @@ export default function NuvioFlowPage() {
                         <p className="text-xs font-semibold text-foreground">Ugebudget</p>
                         {currentWeek && isCurrentMonth ? (
                           <p className="text-label text-muted-foreground leading-snug">
-                            {formatDKK(Math.round(weeklyStatus.effectiveWeeklyBudget))} denne uge
+                            {formatDKK(Math.round(displayWeeklyStatus.effectiveWeeklyBudget))} denne uge
                           </p>
                         ) : (
                           <p className="text-label text-muted-foreground leading-snug">
-                            {formatDKK(Math.round(weeklyStatus.weeklyBase))} pr. uge (base)
+                            {formatDKK(Math.round(displayWeeklyStatus.weeklyBase))} pr. uge (base)
                           </p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {currentWeek && isCurrentMonth && (
-                        <WeekPill week={currentWeek} effectiveBudget={weeklyStatus.effectiveWeeklyBudget} />
+                        <WeekPill week={currentWeek} effectiveBudget={displayWeeklyStatus.effectiveWeeklyBudget} />
                       )}
                     </div>
                   </div>
@@ -998,14 +1259,14 @@ export default function NuvioFlowPage() {
                   <div className="border-t border-border/40 divide-y divide-border/30">
                       <div className="px-5 py-3 bg-secondary/10">
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                          Dagligt budget: {formatDKK(monthlyBudget)} / {new Date(viewYear, viewMonth, 0).getDate()} dage = {formatDKK(Math.round((monthlyBudget / new Date(viewYear, viewMonth, 0).getDate()) * 100) / 100)} pr. dag.
+                          Dagligt budget: {formatDKK(monthlyBudget)} / {normalModePeriodDays} dage = {formatDKK(Math.round(normalModeDailyBudget * 100) / 100)} pr. dag.
                           Uger der starter eller slutter midt i måneden beregnes efter faktisk antal dage. Overtræk fordeles ligeligt over de resterende uger.
                         </p>
                       </div>
 
                 {(() => {
                   const nowStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-                  return weeklyStatus.weeks.map((week) => {
+                  return displayWeeklyStatus.weeks.map((week) => {
                   const weekStartStr = `${week.weekStart.getFullYear()}-${String(week.weekStart.getMonth()+1).padStart(2,'0')}-${String(week.weekStart.getDate()).padStart(2,'0')}`;
                   const weekEndStr = `${week.weekEnd.getFullYear()}-${String(week.weekEnd.getMonth()+1).padStart(2,'0')}-${String(week.weekEnd.getDate()).padStart(2,'0')}`;
                   const isFuture = weekStartStr > nowStr && !week.isCurrentWeek;
@@ -1127,7 +1388,10 @@ export default function NuvioFlowPage() {
         </div>
 
         {/* Month Navigator + History */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur border border-white/30 shadow-sm overflow-hidden">
+        <div className={sharedCardClassName} style={{ ...cardStyleBase, ...vacationCardTintStyle }}>
+          {topBarStyleOverride && (
+            <div style={topBarStyleOverride} />
+          )}
           <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
             <button
               onClick={prevMonth}

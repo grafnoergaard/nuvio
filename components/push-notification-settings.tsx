@@ -193,7 +193,7 @@ export function PushNotificationSettings() {
 
         {status === 'denied' && (
           <p className="mt-3 text-xs leading-relaxed text-red-500">
-            Notifikationer er blokeret i browseren. De skal åbnes igen i browserens eller iOS' indstillinger.
+            Notifikationer er blokeret i browseren. De skal åbnes igen i browserens eller iOS&apos; indstillinger.
           </p>
         )}
 

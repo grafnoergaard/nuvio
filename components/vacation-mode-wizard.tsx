@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CalendarDays, Check, Palmtree, Wallet, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
+import { useSettings } from '@/lib/settings-context';
 import { cn } from '@/lib/utils';
+import { getVacationAccentColor, getVacationAccentMid, getVacationAccentSoft, withAlpha } from '@/lib/vacation-theme';
 import { updateVacationMode, type VacationMode } from '@/lib/vacation-mode-service';
 
 interface VacationModeWizardProps {
@@ -62,12 +64,14 @@ function formatDate(value: string): string {
 
 export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: VacationModeWizardProps) {
   const { user } = useAuth();
+  const { design } = useSettings();
   const [step, setStep] = useState(0);
   const [budgetInput, setBudgetInput] = useState('');
   const [daysInput, setDaysInput] = useState('');
   const [startDateInput, setStartDateInput] = useState(todayIso());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const wizardRef = useRef<HTMLDivElement>(null);
 
   const budgetAmount = Number(budgetInput.replace(',', '.'));
   const numberOfDays = Number.parseInt(daysInput, 10);
@@ -82,6 +86,9 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
   const isReadyForActivation = startDateInput === startDateToday;
   const isEditing = Boolean(vacationMode);
   const isEditingActiveVacation = vacationMode?.status === 'active';
+  const vacationAccent = getVacationAccentColor(design);
+  const vacationAccentSoft = getVacationAccentSoft(vacationAccent);
+  const vacationAccentMid = getVacationAccentMid(vacationAccent);
 
   useEffect(() => {
     if (!open) return;
@@ -100,7 +107,47 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
     setStartDateInput(todayIso());
   }, [open, vacationMode?.id]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const syncKeyboardOffset = () => {
+      if (typeof window === 'undefined' || !window.visualViewport) return;
+      const viewport = window.visualViewport;
+      const keyboardOffset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      document.documentElement.style.setProperty('--vacation-wizard-keyboard-offset', `${keyboardOffset}px`);
+      document.body.style.setProperty('--vacation-wizard-keyboard-offset', `${keyboardOffset}px`);
+    };
+
+    syncKeyboardOffset();
+
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      const viewport = window.visualViewport;
+      viewport.addEventListener('resize', syncKeyboardOffset);
+      viewport.addEventListener('scroll', syncKeyboardOffset);
+      window.addEventListener('orientationchange', syncKeyboardOffset);
+
+      return () => {
+        viewport.removeEventListener('resize', syncKeyboardOffset);
+        viewport.removeEventListener('scroll', syncKeyboardOffset);
+        window.removeEventListener('orientationchange', syncKeyboardOffset);
+        document.documentElement.style.removeProperty('--vacation-wizard-keyboard-offset');
+        document.body.style.removeProperty('--vacation-wizard-keyboard-offset');
+      };
+    }
+
+    return () => {
+      document.documentElement.style.removeProperty('--vacation-wizard-keyboard-offset');
+      document.body.style.removeProperty('--vacation-wizard-keyboard-offset');
+    };
+  }, [open]);
+
   if (!open) return null;
+
+  function handleFieldFocus() {
+    window.setTimeout(() => {
+      wizardRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }, 80);
+  }
 
   function validateCurrentStep(): string | null {
     if (step === 0 && (!Number.isFinite(budgetAmount) || budgetAmount <= 0)) {
@@ -195,9 +242,25 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
     : 'Fortsæt';
 
   return (
-    <div className="fixed inset-0 z-[90] bg-white">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,#fff8df_0%,#fef9ec_42%,#ffffff_100%)]" />
-      <div className="relative flex min-h-[100dvh] flex-col px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <div
+      ref={wizardRef}
+      className="fixed inset-0 z-[90] overflow-hidden"
+      style={{
+        ['--vacation-accent' as string]: vacationAccent,
+        backgroundColor: withAlpha(vacationAccentSoft, 0.72),
+      }}
+    >
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(180deg, ${withAlpha(vacationAccent, 0.18)} 0%, ${withAlpha(vacationAccentSoft, 0.72)} 36%, #ffffff 100%)`,
+        }}
+      />
+      <div
+        className="absolute inset-x-0 top-0 h-[calc(env(safe-area-inset-top)+5.5rem)]"
+        style={{ backgroundColor: withAlpha(vacationAccent, 0.18) }}
+      />
+      <div className="relative flex min-h-[100dvh] flex-col px-6 pt-[max(calc(env(safe-area-inset-top)+1rem),2rem)]">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -213,23 +276,36 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
                 key={index}
                 className={cn(
                   'h-2 rounded-full transition-all duration-300',
-                  index === step ? 'w-8 bg-[#F6C126]' : 'w-2 bg-[#F6C126]/25'
+                  index === step ? 'w-8' : 'w-2'
                 )}
+                style={{ backgroundColor: index === step ? vacationAccent : withAlpha(vacationAccent, 0.25) }}
               />
             ))}
           </div>
           <div className="h-12 w-12" />
         </div>
 
-        <div className="flex flex-1 flex-col justify-center">
-          <div className="mb-10 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#F6C126]/18 text-[#0E3B43] ring-1 ring-[#F6C126]/30">
+        <div
+          className="flex flex-1 flex-col justify-center overflow-y-auto pb-6"
+          style={{
+            paddingBottom:
+              'calc(var(--vacation-wizard-keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px) + 7.5rem)',
+          }}
+        >
+          <div
+            className="mb-10 flex h-16 w-16 items-center justify-center rounded-[22px] text-[#0E3B43] ring-1"
+            style={{
+              backgroundColor: withAlpha(vacationAccent, 0.18),
+              ['--tw-ring-color' as string]: withAlpha(vacationAccent, 0.30),
+            }}
+          >
             {step === 0 && <Wallet className="h-7 w-7" />}
             {step === 1 && <Palmtree className="h-7 w-7" />}
             {step === 2 && <CalendarDays className="h-7 w-7" />}
             {step === 3 && <Check className="h-7 w-7" />}
           </div>
 
-          <p className="mb-3 text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-[#B88A00]">
+          <p className="mb-3 text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-[#0E3B43]/70">
             {stepLabel}
           </p>
 
@@ -242,6 +318,7 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
                 <input
                   value={budgetInput}
                   onChange={event => setBudgetInput(event.target.value)}
+                  onFocus={handleFieldFocus}
                   inputMode="decimal"
                   placeholder="0"
                   className="min-w-0 flex-1 bg-transparent text-7xl font-semibold leading-none tracking-tight text-[#0E3B43] outline-none placeholder:text-slate-300"
@@ -261,6 +338,7 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
                 <input
                   value={daysInput}
                   onChange={event => setDaysInput(event.target.value)}
+                  onFocus={handleFieldFocus}
                   inputMode="numeric"
                   placeholder="0"
                   className="min-w-0 flex-1 bg-transparent text-7xl font-semibold leading-none tracking-tight text-[#0E3B43] outline-none placeholder:text-slate-300"
@@ -284,7 +362,8 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
                 value={startDateInput}
                 min={isEditingActiveVacation ? undefined : startDateToday}
                 onChange={event => setStartDateInput(event.target.value)}
-                className="h-16 w-full rounded-2xl border border-foreground/12 bg-white px-4 text-xl font-semibold text-[#0E3B43] outline-none focus:border-[#F6C126]"
+                onFocus={handleFieldFocus}
+                className="h-16 w-full rounded-2xl border border-foreground/12 bg-white px-4 text-xl font-semibold text-[#0E3B43] outline-none focus:border-[var(--vacation-accent)]"
               />
               <p className="mt-4 text-base leading-relaxed text-muted-foreground">
                 {isEditingActiveVacation
@@ -308,8 +387,11 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
                   <SummaryItem label="Start" value={formatDate(startDateInput)} />
                   <SummaryItem label="Slut" value={endDateInput ? formatDate(endDateInput) : '-'} />
                 </div>
-                <div className="mt-5 rounded-2xl bg-[#F6C126]/16 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-[#8C6900]">Dagligt feriebeløb</p>
+                <div
+                  className="mt-5 rounded-2xl px-4 py-3"
+                  style={{ backgroundColor: withAlpha(vacationAccent, 0.16) }}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-widest text-[#0E3B43]/70">Dagligt feriebeløb</p>
                   <p className="mt-1 text-3xl font-semibold tracking-tight text-[#0E3B43]">{formatDKK(dailyAmount)}</p>
                 </div>
               </div>
@@ -330,14 +412,22 @@ export function VacationModeWizard({ open, onClose, onSaved, vacationMode }: Vac
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={step === STEP_COUNT - 1 ? saveVacationMode : goNext}
-          disabled={saving}
-          className="h-16 w-full rounded-full bg-[#0E3B43] text-lg font-semibold text-white shadow-lg shadow-[#0E3B43]/12 transition-transform active:scale-[0.99] disabled:opacity-60"
+        <div
+          className="relative shrink-0 pt-2"
+          style={{
+            paddingBottom:
+              'calc(var(--vacation-wizard-keyboard-offset, 0px) + env(safe-area-inset-bottom, 0px) + 1rem)',
+          }}
         >
-          {primaryLabel}
-        </button>
+          <button
+            type="button"
+            onClick={step === STEP_COUNT - 1 ? saveVacationMode : goNext}
+            disabled={saving}
+            className="h-16 w-full rounded-full bg-[#0E3B43] text-lg font-semibold text-white shadow-lg shadow-[#0E3B43]/12 transition-transform active:scale-[0.99] disabled:opacity-60"
+          >
+            {primaryLabel}
+          </button>
+        </div>
       </div>
     </div>
   );

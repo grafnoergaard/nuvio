@@ -15,7 +15,10 @@ import {
 
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
 import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
+import { getVacationAccentColor, getVacationAccentMid, getVacationCardSurfaceStyle, getVacationTopBarCard, withAlpha } from '@/lib/vacation-theme';
+import { useVacationMode } from '@/lib/vacation-mode-context';
 
 import {
   getFlowSavingsTotals,
@@ -95,30 +98,60 @@ function getFlowSavingsCache() {
 }
 
 export default function OpsparingPage() {
+  const { design } = useSettings();
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const { isVacationMode: hasActiveVacationMode, isResolved: vacationModeResolved } = useVacationMode();
   const now = new Date();
+  const vacationAccent = getVacationAccentColor(design);
+  const pageBackground = hasActiveVacationMode
+    ? `linear-gradient(to bottom, ${withAlpha(vacationAccent, 0.16)}, #ffffff 42%, #ffffff)`
+    : 'linear-gradient(to bottom, rgba(236,253,245,0.60), #ffffff, #ffffff)';
+  const themeColor = hasActiveVacationMode ? withAlpha(vacationAccent, 0.16) : 'rgb(236,253,245)';
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const color = 'rgb(236,253,245)';
-    document.body.style.backgroundColor = color;
+    const previousHtmlBackground = document.documentElement.style.backgroundColor;
+    const previousBodyBackground = document.body.style.backgroundColor;
+    document.documentElement.style.backgroundColor = themeColor;
+    document.body.style.backgroundColor = themeColor;
     let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
     if (!meta) {
       meta = document.createElement('meta');
       meta.name = 'theme-color';
       document.head.appendChild(meta);
     }
-    meta.content = color;
+    meta.content = themeColor;
     return () => {
-      document.body.style.backgroundColor = '';
+      document.documentElement.style.backgroundColor = previousHtmlBackground;
+      document.body.style.backgroundColor = previousBodyBackground;
       if (meta) meta.content = '#f8f9f2';
     };
-  }, []);
+  }, [themeColor]);
+
+  if (!vacationModeResolved) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div
+          className="max-w-lg mx-auto pb-32 sm:pb-16"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 2rem)' }}
+        >
+          <div className="px-4 mb-6">
+            <div className="h-3 w-24 rounded-full bg-black/6 animate-pulse" />
+            <div className="mt-3 h-10 w-44 rounded-2xl bg-black/6 animate-pulse" />
+          </div>
+          <div className="px-4 space-y-3">
+            <div className="h-40 rounded-2xl border border-black/6 bg-white shadow-sm animate-pulse" />
+            <div className="h-64 rounded-2xl border border-black/6 bg-white shadow-sm animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-b from-emerald-50/60 via-white to-white"
-      style={{ backgroundColor: 'rgb(236,253,245)' }}
+      className="min-h-screen"
+      style={{ background: pageBackground, backgroundColor: themeColor }}
     >
       <div
         className="max-w-lg mx-auto pb-32 sm:pb-16"
@@ -144,17 +177,20 @@ export default function OpsparingPage() {
           </div>
         </div>
 
-        <FlowSavingsTab />
+        <FlowSavingsTab isVacationMode={hasActiveVacationMode} />
       </div>
 
       {showInfoModal && (
-        <OpsparingInfoModal onClose={() => setShowInfoModal(false)} />
+        <OpsparingInfoModal isVacationMode={hasActiveVacationMode} onClose={() => setShowInfoModal(false)} />
       )}
     </div>
   );
 }
 
-function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
+function OpsparingInfoModal({ isVacationMode, onClose }: { isVacationMode: boolean; onClose: () => void }) {
+  const { design } = useSettings();
+  const vacationAccent = getVacationAccentColor(design);
+  const vacationAccentMid = getVacationAccentMid(vacationAccent);
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -162,11 +198,25 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
         className="relative w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
         style={{ animation: 'slideUp 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards' }}
       >
-        <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r from-emerald-400 to-teal-400" />
+        <div
+          className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl"
+          style={isVacationMode ? { background: `linear-gradient(to right, #0E3B43, ${vacationAccentMid}, ${vacationAccent})` } : { background: 'linear-gradient(to right, #34d399, #2dd4bf)' }}
+        />
         <div className="px-6 pt-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <div className="flex items-start justify-between mb-4">
-            <div className="h-10 w-10 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center shrink-0">
-              <Info className="h-5 w-5 text-emerald-600" />
+            <div
+              className={cn(
+                'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0',
+                !isVacationMode && 'bg-emerald-50 border border-emerald-200/60'
+              )}
+              style={isVacationMode
+                ? {
+                    backgroundColor: withAlpha(vacationAccent, 0.12),
+                    border: `1px solid ${withAlpha(vacationAccent, 0.24)}`,
+                  }
+                : undefined}
+            >
+              <Info className={cn('h-5 w-5', !isVacationMode && 'text-emerald-600')} style={isVacationMode ? { color: vacationAccent } : undefined} />
             </div>
             <button
               onClick={onClose}
@@ -176,7 +226,12 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
           <h2 className="text-xl font-bold tracking-tight mb-1">Sparet</h2>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600/70 mb-4">Hvordan fungerer det?</p>
+          <p
+            className="text-[11px] font-semibold uppercase tracking-widest mb-4"
+            style={isVacationMode ? { color: withAlpha(vacationAccent, 0.72) } : undefined}
+          >
+            Hvordan fungerer det?
+          </p>
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p>
               <span className="font-semibold text-foreground">Sparet</span> er penge du automatisk sparer, hver gang du afslutter en uge under dit Udgifter-budget. Overskuddet overføres direkte til din saldo i Sparet.
@@ -188,7 +243,9 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             className="mt-6 w-full h-12 rounded-2xl font-semibold text-sm text-white transition-all duration-200 active:scale-[0.98]"
-            style={{ background: 'linear-gradient(to right, #0d9488, #10b981)' }}
+            style={isVacationMode
+              ? { background: `linear-gradient(to right, #0E3B43, ${vacationAccentMid}, ${vacationAccent})` }
+              : { background: 'linear-gradient(to right, #0d9488, #10b981)' }}
           >
             Forstået
           </button>
@@ -204,8 +261,10 @@ function OpsparingInfoModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function FlowSavingsTab() {
+function FlowSavingsTab({ isVacationMode }: { isVacationMode: boolean }) {
   const { design } = useSettings();
+  const vacationAccent = getVacationAccentColor(design);
+  const vacationAccentMid = getVacationAccentMid(vacationAccent);
   const cached = getFlowSavingsCache();
   const [totals, setTotals] = useState<FlowSavingsTotals | null>(cached?.totals ?? null);
   const [entries, setEntries] = useState<FlowSavingsEntry[]>(cached?.entries ?? []);
@@ -265,8 +324,11 @@ function FlowSavingsTab() {
   const weekCount = totals?.week_count ?? 0;
   const hasData = balance > 0 || weekCount > 0;
   const cardMedium = design.cardMedium;
-  const cardStyleBase = getCardStyle(cardMedium, design.gradientFrom, design.gradientTo);
-  const topBarStyleOverride = getTopBarStyle(cardMedium, design.gradientFrom, design.gradientTo);
+  const activeCardMedium = isVacationMode ? getVacationTopBarCard(cardMedium, vacationAccent) : cardMedium;
+  const activeGradientTo = isVacationMode ? vacationAccent : design.gradientTo;
+  const cardStyleBase = getCardStyle(activeCardMedium, design.gradientFrom, activeGradientTo);
+  const topBarStyleOverride = getTopBarStyle(activeCardMedium, design.gradientFrom, activeGradientTo);
+  const vacationCardSurfaceStyle = isVacationMode ? getVacationCardSurfaceStyle(vacationAccent) : undefined;
 
   if (loading) {
     return (
@@ -286,7 +348,7 @@ function FlowSavingsTab() {
             ? 'bg-gradient-to-br from-emerald-50/80 via-teal-50/30 to-white border-emerald-200/50'
             : 'bg-white/80 border-white/30'
         )}
-        style={cardStyleBase}
+        style={{ ...cardStyleBase, ...vacationCardSurfaceStyle }}
       >
         {topBarStyleOverride && hasData && (
           <div style={topBarStyleOverride} />
@@ -296,16 +358,43 @@ function FlowSavingsTab() {
           <div className="flex items-center gap-2.5">
             <div className={cn(
               'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ring-2 transition-all duration-500',
-              hasData ? 'bg-emerald-100 ring-emerald-200' : 'bg-muted/20 ring-muted/10'
-            )}>
-              <Wallet className={cn('h-4 w-4', hasData ? 'text-emerald-600' : 'text-muted-foreground/40')} />
+              hasData
+                ? isVacationMode
+                  ? ''
+                  : 'bg-emerald-100 ring-emerald-200'
+                : 'bg-muted/20 ring-muted/10'
+            )}
+            style={hasData && isVacationMode ? {
+              backgroundColor: withAlpha(vacationAccent, 0.16),
+              boxShadow: `inset 0 0 0 2px ${withAlpha(vacationAccent, 0.22)}`,
+            } : undefined}
+            >
+              <Wallet className={cn(
+                'h-4 w-4',
+                hasData
+                  ? isVacationMode
+                    ? 'text-[#0E3B43]'
+                    : 'text-emerald-600'
+                  : 'text-muted-foreground/40'
+              )} />
             </div>
             <div>
               <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/50 leading-none mb-0.5">
                 Sparet
               </p>
               {hasData && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold tracking-wide text-white bg-emerald-500">
+                <span
+                  className={cn(
+                    'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold tracking-wide',
+                    !isVacationMode && 'text-white bg-emerald-500'
+                  )}
+                  style={isVacationMode
+                    ? {
+                        backgroundColor: withAlpha(vacationAccent, 0.14),
+                        color: '#0E3B43',
+                      }
+                    : undefined}
+                >
                   Aktiv
                 </span>
               )}
@@ -336,12 +425,18 @@ function FlowSavingsTab() {
           <div className="px-5 pb-5 space-y-4">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-medium leading-snug mb-1 text-emerald-800">
+                <p className={cn(
+                  'text-xs font-medium leading-snug mb-1',
+                  isVacationMode ? 'text-[#0E3B43]' : 'text-emerald-800'
+                )}>
                   {weekCount === 1
                     ? 'Sparet over 1 uge'
                     : `Sparet over ${weekCount} uger`}
                 </p>
-                <p className="text-3xl font-semibold tracking-tight tabular-nums leading-none text-emerald-700">
+                <p className={cn(
+                  'text-3xl font-semibold tracking-tight tabular-nums leading-none',
+                  isVacationMode ? 'text-[#0E3B43]' : 'text-emerald-700'
+                )}>
                   {formatDKK(balance)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -364,12 +459,20 @@ function FlowSavingsTab() {
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground tracking-wide">Sparet</span>
-                <span className="text-xs font-bold tabular-nums text-emerald-700">{weekCount} uger</span>
+                <span className={cn('text-xs font-bold tabular-nums', isVacationMode ? 'text-[#0E3B43]' : 'text-emerald-700')}>{weekCount} uger</span>
               </div>
               <div className="relative h-2 rounded-full bg-black/[0.06] overflow-hidden">
                 <div
-                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-emerald-400 to-teal-400"
-                  style={{ width: lifetimeTotal > 0 ? `${Math.min(100, Math.max(8, (balance / lifetimeTotal) * 100))}%` : '100%' }}
+                  className={cn(
+                    'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out',
+                    !isVacationMode && 'bg-gradient-to-r from-emerald-400 to-teal-400'
+                  )}
+                  style={{
+                    width: lifetimeTotal > 0 ? `${Math.min(100, Math.max(8, (balance / lifetimeTotal) * 100))}%` : '100%',
+                    ...(isVacationMode
+                      ? { background: `linear-gradient(to right, ${vacationAccentMid}, ${vacationAccent})` }
+                      : {}),
+                  }}
                 />
               </div>
               <p className="text-label text-muted-foreground/60 leading-snug">
@@ -385,7 +488,7 @@ function FlowSavingsTab() {
 
       <div id="flow-opsparing-detaljer">
         {milestonesResult && (
-          <FlowMilestonesSection result={milestonesResult} />
+          <FlowMilestonesSection result={milestonesResult} isVacationMode={isVacationMode} />
         )}
       </div>
 

@@ -10,6 +10,16 @@ import type { KuvertHomeVariant } from '@/lib/kuvert-home-variant';
 import { QuickExpenseInlineForm } from '@/components/quick-expense-inline-form';
 import { computeKuvertLiveScore } from '@/lib/kuvert-live-score';
 import { getCardStyle, getTopBarStyle, useSettings } from '@/lib/settings-context';
+import { getVacationBudgetDayStatuses } from '@/lib/vacation-budget';
+import { getNormalUntilVacationPeriod } from '@/lib/normal-until-vacation';
+import {
+  getVacationAccentColor,
+  getVacationAccentMid,
+  getVacationAccentSoft,
+  getVacationTopBarCard,
+  VACATION_CARD_STROKE,
+  withAlpha,
+} from '@/lib/vacation-theme';
 
 interface KuvertHeroCardProps {
   quickStreak: QuickExpenseStreak | null;
@@ -21,6 +31,7 @@ interface KuvertHeroCardProps {
   flowWeeklyStatus: WeeklyCarryOverSummary | null;
   quickExpenses: QuickExpense[];
   vacationMode?: VacationMode | null;
+  plannedVacationMode?: VacationMode | null;
   showStreak: boolean;
   showQuickExpense: boolean;
   onShowQuickExpense: () => void;
@@ -31,9 +42,6 @@ interface KuvertHeroCardProps {
 }
 
 const WEEKS_PER_STREAK_MONTH = 4;
-const VACATION_ACCENT = '#F6C126';
-const VACATION_ACCENT_MID = '#F8D76A';
-const VACATION_ACCENT_SOFT = '#FFF8E1';
 
 const DANISH_MONTHS = [
   'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
@@ -162,42 +170,15 @@ function getVisibleStreakItems<T extends { is_current?: boolean }>(items: T[], m
 }
 
 function buildVacationDayItems(vacationMode: VacationMode, expenses: QuickExpense[], now: Date): StreakPeriodItem[] {
-  const start = parseDateOnly(vacationMode.start_date);
-  const todayIso = toIsoDateOnly(now);
-  const totalDays = Math.max(1, vacationMode.number_of_days || getInclusiveDays(vacationMode.start_date, vacationMode.end_date));
-  const dailyBudget = totalDays > 0 ? (Number(vacationMode.budget_amount) || 0) / totalDays : 0;
-
-  return Array.from({ length: totalDays }, (_, index) => {
-    const date = addDays(start, index);
-    const isoDate = toIsoDateOnly(date);
-    const spent = expenses
-      .filter(expense => expense.expense_date === isoDate)
-      .reduce((sum, expense) => sum + Number(expense.amount), 0);
-    const isCurrent = isoDate === todayIso;
-    const isPast = isoDate < todayIso;
-    const isFuture = isoDate > todayIso;
-
-    return {
-      iso_week_number: index + 1,
-      week_start: isoDate,
-      week_end: isoDate,
-      label: `Dag ${index + 1}`,
-      is_current: isCurrent,
-      is_completed: isPast,
-      kept_budget: isFuture ? undefined : spent <= dailyBudget,
-    };
-  });
-}
-
-function buildVacationLevelSegments(totalDays: number) {
-  const safeDays = Math.max(1, totalDays);
-  return [
-    { label: 'Begynder', min: 0 },
-    { label: 'Aktiv', min: Math.max(1, Math.ceil(safeDays * 0.25)) },
-    { label: 'Erfaren', min: Math.max(2, Math.ceil(safeDays * 0.5)) },
-    { label: 'Mester', min: Math.max(3, Math.ceil(safeDays * 0.75)) },
-    { label: 'Legendarisk', min: safeDays },
-  ];
+  return getVacationBudgetDayStatuses(vacationMode, expenses, now).map(day => ({
+    iso_week_number: day.index,
+    week_start: day.date,
+    week_end: day.date,
+    label: `Dag ${day.index}`,
+    is_current: day.isCurrent,
+    is_completed: day.isPast,
+    kept_budget: day.keptBudget,
+  }));
 }
 
 function getStreakPeriodLabel(period: { label?: string; iso_week_number: number }): string {
@@ -214,6 +195,7 @@ export function KuvertHeroCard({
   flowWeeklyStatus,
   quickExpenses,
   vacationMode,
+  plannedVacationMode,
   showStreak,
   showQuickExpense,
   onShowQuickExpense,
@@ -225,6 +207,9 @@ export function KuvertHeroCard({
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
   const { design } = useSettings();
+  const vacationAccent = getVacationAccentColor(design);
+  const vacationAccentMid = getVacationAccentMid(vacationAccent);
+  const vacationAccentSoft = getVacationAccentSoft(vacationAccent);
 
   const now = new Date();
   const activeVacation = vacationMode?.status === 'active' ? vacationMode : null;
@@ -244,16 +229,13 @@ export function KuvertHeroCard({
   const currentWeekStreak = isVacationMode ? vacationStreakCount : (weeklyStreak?.current_streak ?? 0);
   const longestWeekStreak = isVacationMode ? Math.max(vacationStreakCount, vacationDayItems.filter(day => day.is_completed || day.is_current).length) : (weeklyStreak?.longest_streak ?? 0);
   const tone = isVacationMode
-    ? { label: 'Ferie', accent: VACATION_ACCENT, badge: 'bg-[#F6C126]/20 text-[#0E3B43] border-[#F6C126]/45' }
+    ? { label: 'Ferie', accent: vacationAccent, badge: 'border-[#0E3B43]/10 bg-white/60 text-[#0E3B43]' }
     : getStreakTone(currentWeekStreak);
   const hasWeekStreak = isVacationMode ? true : currentWeekStreak > 0;
   const completedStreakMonths = Math.floor(currentWeekStreak / WEEKS_PER_STREAK_MONTH);
   const bestWeekStreak = Math.max(longestWeekStreak, currentWeekStreak);
   const recordProgress = bestWeekStreak > 0 ? Math.min(100, Math.max(12, (currentWeekStreak / bestWeekStreak) * 100)) : 0;
-  const currentMonthIndex = (weeklyStreak?.current_month ?? (now.getMonth() + 1)) - 1;
-  const currentMonthLabel = isVacationMode ? 'Ferie' : (DANISH_MONTHS[currentMonthIndex] ?? 'Denne måned');
-  const levelLabel = isVacationMode ? 'Ferie niveauer' : 'Kuvert niveauer';
-  const periodScoreLabel = isVacationMode ? 'Feriescore' : 'Månedsscore';
+  const periodScoreLabel = 'Budgetstatus';
   const streakWeekKeys = new Set((weeklyStreak?.streak_weeks ?? []).map(week => `${week.week_start}-${week.week_end}`));
   const normalMonthWeeks = weeklyStreak?.current_month_weeks?.length
     ? weeklyStreak.current_month_weeks
@@ -272,17 +254,23 @@ export function KuvertHeroCard({
     { label: 'Mester', min: 900 },
     { label: 'Legendarisk', min: 2000 },
   ];
-  const vacationScoreSegments = buildVacationLevelSegments(vacationTotalDays);
   const currentWeekStatus = flowWeeklyStatus?.weeks.find(week => week.isCurrentWeek) ?? null;
+  const normalUntilVacationPeriod = !isVacationMode
+    ? getNormalUntilVacationPeriod(plannedVacationMode ?? null, now.getFullYear(), now.getMonth() + 1, now)
+    : null;
   const budgetPeriodLabel = isVacationMode ? 'Feriebudget' : currentWeekStatus ? 'Ugebudget' : 'Budget';
   const activeBudget = isVacationMode ? vacationBudget : (currentWeekStatus?.effectiveBudget ?? flowMonthlyBudget);
   const activeSpent = isVacationMode ? vacationSpent : (currentWeekStatus?.spent ?? flowMonthlySpent);
-  const activePeriodDays = isVacationMode ? vacationTotalDays : (currentWeekStatus?.daysInMonth ?? daysInMonth);
+  const activePeriodDays = isVacationMode
+    ? vacationTotalDays
+    : (currentWeekStatus?.daysInMonth ?? normalUntilVacationPeriod?.totalDays ?? daysInMonth);
   const scoreBudget = isVacationMode ? vacationBudget : flowMonthlyBudget;
   const scoreSpent = isVacationMode ? vacationSpent : flowMonthlySpent;
-  const scoreTotalDays = isVacationMode ? vacationTotalDays : daysInMonth;
+  const scoreTotalDays = isVacationMode ? vacationTotalDays : (normalUntilVacationPeriod?.totalDays ?? daysInMonth);
   const monthlyRemaining = scoreBudget - scoreSpent;
-  const monthlyRemainingDays = activeVacation ? getDaysLeftInRange(activeVacation.end_date, now) : daysInMonth - now.getDate() + 1;
+  const monthlyRemainingDays = activeVacation
+    ? getDaysLeftInRange(activeVacation.end_date, now)
+    : (normalUntilVacationPeriod?.remainingDays ?? (daysInMonth - now.getDate() + 1));
   const monthlyDailyAvailable = monthlyRemainingDays > 0 && monthlyRemaining > 0 ? monthlyRemaining / monthlyRemainingDays : 0;
   const monthlyOverBudget = scoreBudget > 0 && scoreSpent > scoreBudget;
   const carryOverPenalty = !isVacationMode && flowWeeklyStatus ? Math.abs(Math.min(0, flowWeeklyStatus.accumulatedCarryOver)) : 0;
@@ -290,7 +278,7 @@ export function KuvertHeroCard({
     ? getDaysLeftInRange(activeVacation.end_date, now)
     : currentWeekStatus
     ? getDaysLeftInRange(currentWeekStatus.weekEnd, now)
-    : daysInMonth - now.getDate() + 1;
+    : (normalUntilVacationPeriod?.remainingDays ?? (daysInMonth - now.getDate() + 1));
   const remaining = activeBudget - activeSpent;
   const overBudget = activeBudget > 0 && activeSpent > activeBudget;
   const dailyAvailable = remainingDays > 0 && remaining > 0 ? remaining / remainingDays : 0;
@@ -328,15 +316,15 @@ export function KuvertHeroCard({
   const cumulativeScore = computeKuvertLiveScore({
     permanentScore: quickStreak?.cumulative_score ?? 0,
     monthScore,
-    currentWeekBudget: currentWeekStatus?.effectiveBudget,
-    currentWeekSpent: currentWeekStatus?.spent,
-    currentWeekDaysInPeriod: currentWeekStatus?.daysInMonth,
-    currentWeekDaysRemaining: currentWeekStatus ? remainingDays : null,
+    currentWeekBudget: currentWeekStatus?.effectiveBudget ?? (isVacationMode ? activeBudget : null),
+    currentWeekSpent: currentWeekStatus?.spent ?? (isVacationMode ? activeSpent : null),
+    currentWeekDaysInPeriod: currentWeekStatus?.daysInMonth ?? (isVacationMode ? activePeriodDays : null),
+    currentWeekDaysRemaining: currentWeekStatus || isVacationMode ? remainingDays : null,
     flowScoreThreshold,
   }).displayScore;
-  const displayScore = isVacationMode ? monthScore : cumulativeScore;
-  const scoreSegments = isVacationMode ? vacationScoreSegments : cumulativeScoreSegments;
-  const segmentProgressScore = isVacationMode ? currentWeekStreak : cumulativeScore;
+  const displayScore = cumulativeScore;
+  const scoreSegments = cumulativeScoreSegments;
+  const segmentProgressScore = cumulativeScore;
   const nextCumulativeMilestone = scoreSegments.find((segment) => segment.min > segmentProgressScore) ?? null;
   const cumulativeScoreTier = getCumulativeScoreTier(displayScore);
   const monthScoreBarPct = Math.min(100, Math.max(4, monthScore));
@@ -386,17 +374,17 @@ export function KuvertHeroCard({
   }[statusState];
   const statusCardStyle = resolveFlowCardStyle(flowStatus.cardBg, flowStatus.badgeBg);
   const badgeHex = extractBadgeHex(flowStatus.badgeBg);
-  const activeAccent = isVacationMode ? VACATION_ACCENT : (badgeHex ?? '#2ED3A7');
-  const flameStart = isVacationMode ? VACATION_ACCENT : '#2ED3A7';
-  const flameMid = isVacationMode ? VACATION_ACCENT_MID : '#8FF1D7';
-  const flameEnd = isVacationMode ? VACATION_ACCENT_SOFT : '#BFF8EA';
+  const activeAccent = isVacationMode ? vacationAccent : (badgeHex ?? '#2ED3A7');
+  const flameStart = isVacationMode ? vacationAccent : '#2ED3A7';
+  const flameMid = isVacationMode ? vacationAccentMid : '#8FF1D7';
+  const flameEnd = isVacationMode ? vacationAccentSoft : '#BFF8EA';
   const progressBarStyle = isVacationMode
-    ? { background: `linear-gradient(to right, ${VACATION_ACCENT}cc, ${VACATION_ACCENT_MID})` } as CSSProperties
+    ? { background: `linear-gradient(to right, ${withAlpha(vacationAccent, 0.8)}, ${vacationAccentMid})` } as CSSProperties
     : badgeHex
       ? { background: `linear-gradient(to right, ${badgeHex}cc, ${badgeHex})` } as CSSProperties
       : undefined;
-  const progressDotColor = isVacationMode ? VACATION_ACCENT : (badgeHex ?? (overBudget ? '#ef4444' : flowScore >= 60 ? '#34d399' : '#fbbf24'));
-  const progressGlowColor = isVacationMode ? `${VACATION_ACCENT}55` : (badgeHex ? `${badgeHex}55` : undefined);
+  const progressDotColor = isVacationMode ? vacationAccent : (badgeHex ?? (overBudget ? '#ef4444' : flowScore >= 60 ? '#34d399' : '#fbbf24'));
+  const progressGlowColor = isVacationMode ? withAlpha(vacationAccent, 0.34) : (badgeHex ? `${badgeHex}55` : undefined);
   const showScoreInHero =
     variant === 'score_streak_focus' ||
     variant === 'score_streak_focus_native' ||
@@ -412,18 +400,23 @@ export function KuvertHeroCard({
   const nativeCardClass = 'relative overflow-hidden rounded-[28px] border border-foreground/8 bg-white';
   const cardHeadingClass = 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82';
   const splitCardBackground = isVacationMode
-    ? 'linear-gradient(to bottom right, rgba(255,248,225,0.86), rgba(255,255,255,0.68), #ffffff)'
+    ? `linear-gradient(to bottom right, ${withAlpha(vacationAccentSoft, 0.86)}, rgba(255,255,255,0.68), #ffffff)`
     : 'linear-gradient(to bottom right, rgba(236,253,245,0.80), rgba(240,253,250,0.30), #ffffff)';
+  const activeLargeCard = isVacationMode ? getVacationTopBarCard(design.cardLarge, vacationAccent) : design.cardLarge;
+  const activeMediumCard = isVacationMode ? getVacationTopBarCard(design.cardMedium, vacationAccent) : design.cardMedium;
+  const activeGradientTo = isVacationMode ? vacationAccent : design.gradientTo;
   const splitLargeCardStyle: CSSProperties = {
-    ...getCardStyle(design.cardLarge, design.gradientFrom, design.gradientTo),
+    ...getCardStyle(activeLargeCard, design.gradientFrom, activeGradientTo),
     background: splitCardBackground,
+    ...(isVacationMode ? { borderColor: VACATION_CARD_STROKE } : {}),
   };
   const splitMediumCardStyle: CSSProperties = {
-    ...getCardStyle(design.cardMedium, design.gradientFrom, design.gradientTo),
+    ...getCardStyle(activeMediumCard, design.gradientFrom, activeGradientTo),
     background: splitCardBackground,
+    ...(isVacationMode ? { borderColor: VACATION_CARD_STROKE } : {}),
   };
-  const splitLargeTopBarStyle = getTopBarStyle(design.cardLarge, design.gradientFrom, design.gradientTo);
-  const splitMediumTopBarStyle = getTopBarStyle(design.cardMedium, design.gradientFrom, design.gradientTo);
+  const splitLargeTopBarStyle = getTopBarStyle(activeLargeCard, design.gradientFrom, activeGradientTo);
+  const splitMediumTopBarStyle = getTopBarStyle(activeMediumCard, design.gradientFrom, activeGradientTo);
 
   return (
     <>
@@ -431,6 +424,36 @@ export function KuvertHeroCard({
         className="relative w-full overflow-hidden bg-transparent"
       >
         <div className="pb-3 pt-0 sm:pb-4 sm:pt-1">
+        {isSplitCards && !isVacationMode && onPlanVacation && (
+          <div className="mb-2.5 flex items-center justify-start px-1 pt-[max(0.2rem,env(safe-area-inset-top,0px))] sm:mb-3 sm:pt-1">
+            <button
+              type="button"
+              onClick={onPlanVacation}
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[0.72rem] font-semibold text-[#0E3B43] transition-transform active:scale-[0.98] sm:text-[0.76rem]"
+              style={{
+                borderColor: withAlpha(vacationAccent, 0.35),
+                backgroundColor: withAlpha(vacationAccent, 0.12),
+              }}
+            >
+              <Palmtree className="h-3.5 w-3.5" />
+              Planlæg ferie
+            </button>
+          </div>
+        )}
+
+        {isSplitCards && isVacationMode && onEndVacation && (
+          <div className="mb-2.5 flex items-center justify-start px-1 pt-[max(0.2rem,env(safe-area-inset-top,0px))] sm:mb-3 sm:pt-1">
+            <button
+              type="button"
+              onClick={onEndVacation}
+              className="inline-flex items-center gap-1.5 rounded-full border bg-white/80 px-3 py-1.5 text-[0.72rem] font-semibold text-[#0E3B43] transition-transform active:scale-[0.98] sm:text-[0.76rem]"
+              style={{ borderColor: withAlpha(vacationAccent, 0.35) }}
+            >
+              <Palmtree className="h-3.5 w-3.5" />
+              Afslut ferie
+            </button>
+          </div>
+        )}
 
         {showStreak && (
           <>
@@ -449,26 +472,6 @@ export function KuvertHeroCard({
                     style={splitLargeTopBarStyle}
                   />
                 )}
-                {isSplitCards && !isVacationMode && onPlanVacation && (
-                  <button
-                    type="button"
-                    onClick={onPlanVacation}
-                    className="absolute right-4 top-3 z-[2] inline-flex items-center gap-1.5 rounded-full border border-[#F6C126]/35 bg-[#F6C126]/12 px-3 py-1.5 text-[0.68rem] font-semibold text-[#0E3B43] transition-transform active:scale-[0.98]"
-                  >
-                    <Palmtree className="h-3.5 w-3.5" />
-                    Planlæg ferie
-                  </button>
-                )}
-                {isSplitCards && isVacationMode && onEndVacation && (
-                  <button
-                    type="button"
-                    onClick={onEndVacation}
-                    className="absolute right-4 top-3 z-[2] inline-flex items-center gap-1.5 rounded-full border border-[#F6C126]/35 bg-white/80 px-3 py-1.5 text-[0.68rem] font-semibold text-[#0E3B43] transition-transform active:scale-[0.98]"
-                  >
-                    <Palmtree className="h-3.5 w-3.5" />
-                    Afslut ferie
-                  </button>
-                )}
                 <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
                   <defs>
                     <linearGradient id="kuvert-flame-gradient" x1="4" y1="4" x2="20" y2="21" gradientUnits="userSpaceOnUse">
@@ -480,10 +483,10 @@ export function KuvertHeroCard({
                 </svg>
 
                 <div className={cn(
-                  'grid gap-x-3 gap-y-2',
+                  'grid gap-x-3 gap-y-0.5',
                   isSplitCards
                     ? hasWeekStreak
-                      ? 'grid-cols-[minmax(0,1fr)_5.75rem] items-start sm:grid-cols-[minmax(0,1fr)_11rem] sm:gap-x-5'
+                      ? 'grid-cols-[minmax(0,1fr)_5.4rem] items-end sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-x-5'
                       : 'grid-cols-1 items-start'
                     : isNativeHero
                       ? hasWeekStreak
@@ -494,13 +497,16 @@ export function KuvertHeroCard({
                   <button
                     type="button"
                     onClick={() => setShowScoreInfo(true)}
-                    className={cn('min-w-0 text-left outline-none transition-transform duration-200 active:scale-[0.99]', isNativeHero ? 'pt-0' : 'pt-4')}
+                    className={cn(
+                      'min-w-0 text-left outline-none transition-transform duration-200 active:scale-[0.99]',
+                      isSplitCards ? 'flex h-full flex-col justify-end pt-2 sm:pt-3' : isNativeHero ? 'pt-0' : 'pt-4'
+                    )}
                     aria-label="Læs om Kuvert Score"
                   >
-                    <div className={cn(isNativeHero ? 'mt-0' : 'mt-1')}>
+                    <div className={cn(isSplitCards ? 'mt-0' : isNativeHero ? 'mt-0' : 'mt-1')}>
                       <p className={cn(
                         isSplitCards
-                          ? 'mb-0.5 text-[0.95rem] font-medium leading-snug text-foreground/82'
+                          ? 'mb-[-0.12rem] text-[0.95rem] font-medium leading-none text-foreground/82'
                           : isNativeHero
                             ? 'mb-[-0.28rem] text-[0.82rem] font-medium leading-none text-foreground/66 sm:text-[0.9rem]'
                             : 'mb-3 text-base font-medium text-muted-foreground/75'
@@ -510,7 +516,7 @@ export function KuvertHeroCard({
                       <p className={cn(
                         'font-semibold leading-[0.82] tracking-tight tabular-nums text-[#0E3B43]',
                         isSplitCards
-                          ? 'text-left text-[3.2rem] sm:text-[4.4rem]'
+                          ? 'text-left text-[3.05rem] sm:text-[4.25rem]'
                           : isNativeHero
                             ? 'text-left text-[3.65rem] sm:text-[5rem]'
                             : 'text-7xl sm:text-8xl'
@@ -527,7 +533,7 @@ export function KuvertHeroCard({
                       className={cn(
                         'group flex flex-col outline-none transition-transform duration-200 active:scale-[0.99]',
                         isSplitCards
-                          ? 'w-[5.75rem] justify-self-end items-center text-center sm:w-auto sm:items-end sm:text-right'
+                          ? 'mt-0 w-[5.4rem] self-end justify-self-end items-center text-center sm:w-auto sm:items-end sm:text-right'
                           : isNativeHero
                             ? 'w-[6.5rem] justify-self-end items-center text-center sm:w-auto sm:items-end sm:text-right'
                             : 'items-center text-center'
@@ -537,7 +543,7 @@ export function KuvertHeroCard({
                       <div className={cn(
                         'flex w-full items-start',
                         isSplitCards
-                          ? 'h-[5.2rem] justify-center sm:h-[7.1rem] sm:justify-end'
+                          ? 'h-[4.5rem] justify-center sm:h-[6.4rem] sm:justify-end'
                           : isNativeHero
                             ? 'h-[6rem] justify-center sm:h-[8.5rem] sm:justify-end'
                             : 'justify-center h-[10rem]'
@@ -545,7 +551,7 @@ export function KuvertHeroCard({
                         <div className={cn(
                           'relative',
                           isSplitCards
-                            ? 'h-[5.2rem] w-[5.2rem] sm:h-[7.1rem] sm:w-[7.1rem]'
+                            ? 'h-[4.5rem] w-[4.5rem] sm:h-[6.4rem] sm:w-[6.4rem]'
                             : isNativeHero
                               ? 'h-[6rem] w-[6rem] sm:h-[8.5rem] sm:w-[8.5rem]'
                               : 'h-[10rem] w-[10rem]'
@@ -554,7 +560,7 @@ export function KuvertHeroCard({
                             className={cn(
                               'transition-transform duration-200 group-hover:scale-[1.02]',
                               isSplitCards
-                                ? 'h-[5.2rem] w-[5.2rem] sm:h-[7.1rem] sm:w-[7.1rem]'
+                                ? 'h-[4.5rem] w-[4.5rem] sm:h-[6.4rem] sm:w-[6.4rem]'
                                 : isNativeHero
                                   ? 'h-[6rem] w-[6rem] sm:h-[8.5rem] sm:w-[8.5rem]'
                                   : 'h-[10rem] w-[10rem] drop-shadow-sm'
@@ -566,7 +572,7 @@ export function KuvertHeroCard({
                           <span className={cn(
                             'absolute inset-0 flex items-center justify-center font-semibold tabular-nums leading-none tracking-normal text-[#0E3B43]',
                             isSplitCards
-                              ? 'translate-x-[0.02rem] translate-y-[0.18rem] text-[1.95rem] sm:translate-x-[0.08rem] sm:translate-y-[0.16rem] sm:text-[2.7rem]'
+                              ? 'translate-x-[0.01rem] translate-y-[0.2rem] text-[1.72rem] sm:translate-x-[0.08rem] sm:translate-y-[0.2rem] sm:text-[2.45rem]'
                               : isNativeHero
                                 ? 'translate-x-[0.06rem] translate-y-[0.3rem] text-[2.25rem] sm:translate-x-[0.12rem] sm:translate-y-[0.2rem] sm:text-[3.2rem]'
                                 : 'pt-6 text-6xl drop-shadow-[0_1px_4px_rgba(255,255,255,0.45)]'
@@ -578,7 +584,7 @@ export function KuvertHeroCard({
                       <p className={cn(
                         'font-semibold tracking-normal text-[#111827]',
                         isSplitCards
-                          ? 'mt-0.5 text-[0.72rem] leading-tight sm:text-[0.92rem]'
+                          ? 'mt-1 text-[0.72rem] leading-tight sm:mt-1.5 sm:text-[0.92rem]'
                           : isNativeHero
                             ? 'mt-0.5 text-[0.76rem] leading-tight sm:-mt-0.5 sm:text-[0.95rem]'
                             : '-mt-2 text-lg'
@@ -589,13 +595,8 @@ export function KuvertHeroCard({
                   )}
                 </div>
 
-                <div className={cn(isSplitCards ? 'mt-2 sm:mt-2.5' : isNativeHero ? 'mt-2.5 sm:mt-3' : 'mt-4')}>
-                  <div className="flex items-end justify-between">
-                    <p className={cn(isNativeHero ? 'text-[10px] font-medium tracking-[0.06em] text-foreground/44' : 'text-xs font-semibold tracking-wide text-muted-foreground')}>
-                      {levelLabel}
-                    </p>
-                  </div>
-                  <div className="mt-1.5 grid grid-cols-5 gap-1">
+                <div className={cn(isSplitCards ? 'mt-1.5 sm:mt-2' : isNativeHero ? 'mt-2.5 sm:mt-3' : 'mt-4')}>
+                  <div className="grid grid-cols-5 gap-1">
                     {scoreSegments.map((segment, index) => {
                       const nextMin = scoreSegments[index + 1]?.min ?? Number.POSITIVE_INFINITY;
                       const active = segmentProgressScore >= segment.min;
@@ -608,7 +609,7 @@ export function KuvertHeroCard({
                               active && !isVacationMode ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]',
                               current && !isNativeHero && 'shadow-[0_0_10px_rgba(46,211,167,0.22)]'
                             )}
-                            style={active && isVacationMode ? { background: `linear-gradient(to right, ${VACATION_ACCENT}, ${VACATION_ACCENT_MID})` } : undefined}
+                            style={active && isVacationMode ? { background: `linear-gradient(to right, ${vacationAccent}, ${vacationAccentMid})` } : undefined}
                           >
                             <span className={cn('text-[9px] font-semibold leading-none sm:text-[10px]', active ? 'text-[#0E3B43]' : 'text-foreground/42')}>
                               {segment.label}
@@ -655,14 +656,14 @@ export function KuvertHeroCard({
                                 isFilled
                                   ? { background: tone.accent }
                                   : isCurrent
-                                    ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, ${isVacationMode ? 'rgba(246, 193, 38, 0.18)' : 'rgba(46, 211, 167, 0.16)'} 0)` }
+                                    ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, ${isVacationMode ? withAlpha(vacationAccent, 0.18) : 'rgba(46, 211, 167, 0.16)'} 0)` }
                                     : undefined
                               }
                             >
                               {isCurrent && !isFilled ? (
                                 <span
                                   className="flex h-full w-full items-center justify-center rounded-full"
-                                  style={{ backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : '#ecfdf5' }}
+                                  style={{ backgroundColor: isVacationMode ? vacationAccentSoft : '#ecfdf5' }}
                                 >
                                   Nu
                                 </span>
@@ -762,14 +763,14 @@ export function KuvertHeroCard({
                           isFilled
                             ? { background: tone.accent }
                             : isCurrent
-                              ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, ${isVacationMode ? 'rgba(246, 193, 38, 0.18)' : 'rgba(46, 211, 167, 0.16)'} 0)` }
+                              ? { background: `conic-gradient(${tone.accent} ${currentProgress}%, ${isVacationMode ? withAlpha(vacationAccent, 0.18) : 'rgba(46, 211, 167, 0.16)'} 0)` }
                               : undefined
                         }
                       >
                         {isCurrent && !isFilled ? (
                           <span
                             className="flex h-full w-full items-center justify-center rounded-full"
-                            style={{ backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : '#ecfdf5' }}
+                            style={{ backgroundColor: isVacationMode ? vacationAccentSoft : '#ecfdf5' }}
                           >
                             Nu
                           </span>
@@ -880,7 +881,7 @@ export function KuvertHeroCard({
                           'absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full border-2 bg-white sm:h-3.5 sm:w-3.5',
                           !isNativeHero && 'shadow-md'
                         )}
-                        style={{ borderColor: badgeHex ?? (monthScore >= 60 ? '#34d399' : monthScore >= 30 ? '#fbbf24' : '#ef4444') }}
+                        style={{ borderColor: progressDotColor }}
                       />
                     )}
                   </div>
@@ -1001,12 +1002,15 @@ export function KuvertHeroCard({
             </div>
 
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 py-4">
-              <div className="rounded-2xl border border-foreground/8 bg-white px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-amber-500" />
-                    <p className="text-sm font-semibold text-foreground">Rekord</p>
-                  </div>
+	              <div className="rounded-2xl border border-foreground/8 bg-white px-4 py-3">
+	                <div className="flex items-center justify-between gap-3">
+	                  <div className="flex items-center gap-2">
+	                    <Trophy
+	                      className="h-4 w-4"
+	                      style={isVacationMode ? { color: vacationAccent } : undefined}
+	                    />
+	                    <p className="text-sm font-semibold text-foreground">Rekord</p>
+	                  </div>
                   <span className="text-sm font-semibold tabular-nums text-foreground">
                     {bestWeekStreak} {isVacationMode ? (bestWeekStreak === 1 ? 'dag' : 'dage') : (bestWeekStreak === 1 ? 'uge' : 'uger')}
                   </span>
@@ -1022,8 +1026,8 @@ export function KuvertHeroCard({
               <div
                 className="rounded-2xl border px-4 py-3"
                 style={{
-                  backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : 'rgba(236,253,245,0.80)',
-                  borderColor: isVacationMode ? 'rgba(246,193,38,0.36)' : 'rgba(167,243,208,0.70)',
+                  backgroundColor: isVacationMode ? vacationAccentSoft : 'rgba(236,253,245,0.80)',
+                  borderColor: isVacationMode ? withAlpha(vacationAccent, 0.36) : 'rgba(167,243,208,0.70)',
                 }}
               >
                 <p className="mb-1 text-sm font-semibold text-[#0E3B43]">Sådan tæller din streak</p>
@@ -1045,7 +1049,7 @@ export function KuvertHeroCard({
 
               <p className="px-1 text-xs leading-relaxed text-muted-foreground">
                 {isVacationMode
-                  ? 'Rekorden er din længste sammenhængende periode med feriedage indenfor budget. Hvis en feriedag går over budget, starter ferie-streaken forfra.'
+                  ? 'Rekorden er det højeste antal feriedage, du ender indenfor budget på samme ferie. En dyr dag kan stadig give mening, hvis du har sparet op på andre dage.'
                   : 'Rekorden er din længste sammenhængende periode med afsluttede uger indenfor budget. Hvis en uge går over budget, starter streaken forfra.'}
               </p>
             </div>
@@ -1101,7 +1105,7 @@ export function KuvertHeroCard({
                   className="flex h-12 w-12 items-center justify-center rounded-2xl ring-2 ring-white/40"
                   style={{
                     background: isVacationMode
-                      ? `linear-gradient(to bottom right, ${VACATION_ACCENT}, ${VACATION_ACCENT_MID})`
+                      ? `linear-gradient(to bottom right, ${vacationAccent}, ${vacationAccentMid})`
                       : 'linear-gradient(to bottom right, #5eead4, #34d399)',
                   }}
                 >
@@ -1109,7 +1113,7 @@ export function KuvertHeroCard({
                 </div>
                 <div>
                   <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                    {isVacationMode ? 'Ferie Score' : 'Kuvert Score'}
+                    Kuvert Score
                   </p>
                   <div className="flex items-baseline gap-2">
                     <h2 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -1125,28 +1129,24 @@ export function KuvertHeroCard({
 
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
               <div>
-                <p className="mb-1.5 text-sm font-semibold text-foreground">Hvad er {isVacationMode ? 'Ferie Score' : 'Kuvert Score'}?</p>
+                <p className="mb-1.5 text-sm font-semibold text-foreground">Hvad er Kuvert Score?</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  {isVacationMode
-                    ? 'Din Ferie Score viser, hvor sundt feriebudgettet står lige nu. Den følger feriens dage, så du kan mærke rytmen dag for dag.'
-                    : 'Din Kuvert Score er et akkumulerende pointsystem der vokser over tid, når du holder dit budget. Jo bedre du klarer dig, og jo længere din gode rytme varer, jo stærkere bliver din score.'}
+                  Din Kuvert Score er din samlede brugerscore. Den vokser over tid, når du holder dit budget, og den fortsætter gennem både hverdag og ferie.
                 </p>
               </div>
 
               <div
                 className="rounded-2xl border px-4 py-3"
                 style={{
-                  backgroundColor: isVacationMode ? VACATION_ACCENT_SOFT : 'rgba(240,253,250,0.80)',
-                  borderColor: isVacationMode ? 'rgba(246,193,38,0.36)' : 'rgba(153,246,228,0.70)',
+                  backgroundColor: isVacationMode ? vacationAccentSoft : 'rgba(240,253,250,0.80)',
+                  borderColor: isVacationMode ? withAlpha(vacationAccent, 0.36) : 'rgba(153,246,228,0.70)',
                 }}
               >
                 <p className="mb-1 text-sm font-semibold text-[#0E3B43]">
-                  {isVacationMode ? 'Scoren lever gennem ferien' : 'Scoren lever gennem måneden'}
+                  Scoren lever gennem dine perioder
                 </p>
                 <p className="text-sm leading-relaxed text-[#0E3B43]/75">
-                  {isVacationMode
-                    ? 'Tallet bevæger sig med feriebudgettet dag for dag. Det gør det let at se, om ferien stadig har luft.'
-                    : 'Tallet du ser i appen bevæger sig lidt op og ned ud fra månedsscore og ugens rytme. Ved månedsskifte bliver de rigtige bonuspoint og straffe låst fast i din langsigtede score.'}
+                  Tallet du ser i appen bevæger sig lidt op og ned ud fra din aktuelle budgetrytme. Det gælder både i normale uger og når du er i feriekuvert.
                 </p>
               </div>
 
@@ -1158,32 +1158,44 @@ export function KuvertHeroCard({
                 }}
               >
                 <p className="mb-1 text-sm font-semibold text-[#0E3B43]">
-                  {isVacationMode ? 'Sådan stiger ferie-score' : 'Sådan stiger din score'}
+                  Sådan stiger din score
                 </p>
                 <p className="text-sm leading-relaxed text-[#0E3B43]/75">
-                  {isVacationMode
-                    ? 'Hver feriedag indenfor budget flytter dig tættere på næste ferie-niveau.'
-                    : 'Hver måned du holder dig indenfor budget, lægger nye point ovenpå. Måneder med bedre økonomisk rytme giver også en stærkere belønning.'}
+                  Når du holder en god budgetrytme, styrkes din score. Ferien tæller med i samme retning som dine normale perioder i stedet for at starte en separat score.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-amber-100/70 bg-amber-50/80 px-4 py-3">
-                <p className="mb-1 text-sm font-semibold text-amber-900">
-                  {isVacationMode ? 'Hvis ferien glider' : 'Hvis en måned glider'}
-                </p>
-                <p className="text-sm leading-relaxed text-amber-900/75">
-                  {isVacationMode
-                    ? 'Går feriebudgettet over, falder ferie-score. Det er ikke en straf, bare et klart signal om at justere resten af ferien.'
-                    : 'Går du over budget, mister du en del af din Kuvert Score. Derfor er scoren både et pejlemærke og en lille beskytter af dine vaner.'}
-                </p>
-              </div>
+	              <div
+	                className="rounded-2xl border px-4 py-3"
+	                style={isVacationMode
+	                  ? {
+	                      borderColor: withAlpha(vacationAccent, 0.22),
+	                      backgroundColor: withAlpha(vacationAccent, 0.10),
+	                    }
+	                  : undefined}
+	              >
+	                <p
+	                  className="mb-1 text-sm font-semibold"
+	                  style={isVacationMode ? { color: '#0E3B43' } : undefined}
+	                >
+	                  Hvis en periode glider
+	                </p>
+	                <p
+	                  className="text-sm leading-relaxed"
+	                  style={isVacationMode ? { color: 'rgba(14,59,67,0.75)' } : undefined}
+	                >
+	                  Går du over budget, mister du en del af din Kuvert Score. Derfor er scoren både et pejlemærke og en lille beskytter af dine vaner, også når du er på ferie.
+	                </p>
+	              </div>
 
               <div className="space-y-2">
                 <div className="flex items-end justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-foreground/48">{levelLabel}</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-foreground/48">
+                    Kuvert niveauer
+                  </p>
                   <span className="text-xs text-muted-foreground">
                     {nextCumulativeMilestone
-                      ? `${Math.max(0, nextCumulativeMilestone.min - segmentProgressScore)} ${isVacationMode ? 'dage' : 'point'} til næste niveau`
+                      ? `${Math.max(0, nextCumulativeMilestone.min - segmentProgressScore)} point til næste niveau`
                       : 'Højeste niveau nået'}
                   </span>
                 </div>
@@ -1200,8 +1212,8 @@ export function KuvertHeroCard({
                             active && !isVacationMode ? 'bg-gradient-to-r from-[#2ED3A7] to-[#5FE7C2]' : 'bg-black/[0.06]'
                           )}
                           style={{
-                            ...(active && isVacationMode ? { background: `linear-gradient(to right, ${VACATION_ACCENT}, ${VACATION_ACCENT_MID})` } : {}),
-                            ...(current ? { boxShadow: `0 0 10px ${isVacationMode ? 'rgba(246,193,38,0.24)' : 'rgba(46,211,167,0.22)'}` } : {}),
+                            ...(active && isVacationMode ? { background: `linear-gradient(to right, ${vacationAccent}, ${vacationAccentMid})` } : {}),
+                            ...(current ? { boxShadow: `0 0 10px ${isVacationMode ? withAlpha(vacationAccent, 0.24) : 'rgba(46,211,167,0.22)'}` } : {}),
                           }}
                         />
                         <p className={cn('text-[10px] font-semibold', active ? 'text-[#0E3B43]' : 'text-foreground/32')}>

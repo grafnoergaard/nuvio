@@ -5,7 +5,10 @@ import { Check, Palmtree, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth-context';
 import { recordVacationFlowSavings } from '@/lib/flow-savings-service';
-import { upsertMonthlyBudget, type QuickExpense } from '@/lib/quick-expense-service';
+import { applyVacationScoreDelta, upsertMonthlyBudget, type QuickExpense } from '@/lib/quick-expense-service';
+import { useSettings } from '@/lib/settings-context';
+import { getVacationBudgetSummary } from '@/lib/vacation-budget';
+import { getVacationAccentColor, getVacationAccentMid, withAlpha } from '@/lib/vacation-theme';
 import { completeVacationMode, type VacationMode } from '@/lib/vacation-mode-service';
 import { notifyVacationModeChanged } from '@/lib/vacation-mode-events';
 
@@ -33,74 +36,8 @@ function parseAmount(value: string): number {
   return Number(normalized);
 }
 
-function parseDateOnly(value: string): Date {
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function dateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function addDays(date: Date, days: number): Date {
-  const copy = new Date(date);
-  copy.setDate(copy.getDate() + days);
-  return copy;
-}
-
-function getElapsedVacationDays(vacationMode: VacationMode, now: Date): Date[] {
-  const start = parseDateOnly(vacationMode.start_date);
-  const plannedEnd = parseDateOnly(vacationMode.end_date);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const end = today < plannedEnd ? today : plannedEnd;
-
-  if (end < start) return [];
-
-  const days: Date[] = [];
-  for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
-    days.push(new Date(cursor));
-  }
-  return days;
-}
-
 function getVacationStats(vacationMode: VacationMode, expenses: QuickExpense[]) {
-  const budget = Number(vacationMode.budget_amount) || 0;
-  const spent = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-  const dailyBudget = vacationMode.number_of_days > 0 ? budget / vacationMode.number_of_days : 0;
-  const elapsedDays = getElapsedVacationDays(vacationMode, new Date());
-
-  const spentByDay = new Map<string, number>();
-  for (const expense of expenses) {
-    const key = expense.expense_date.slice(0, 10);
-    spentByDay.set(key, (spentByDay.get(key) ?? 0) + Number(expense.amount || 0));
-  }
-
-  let cumulativeSpent = 0;
-  const dayResults = elapsedDays.map((day, index) => {
-    cumulativeSpent += spentByDay.get(dateKey(day)) ?? 0;
-    return cumulativeSpent <= dailyBudget * (index + 1);
-  });
-
-  let streak = 0;
-  for (let index = dayResults.length - 1; index >= 0; index -= 1) {
-    if (!dayResults[index]) break;
-    streak += 1;
-  }
-
-  const daysWithinBudget = dayResults.filter(Boolean).length;
-  const balance = budget - spent;
-
-  return {
-    budget,
-    spent,
-    surplus: Math.max(0, balance),
-    overspend: Math.max(0, -balance),
-    daysWithinBudget,
-    streak,
-  };
+  return getVacationBudgetSummary(vacationMode, expenses);
 }
 
 export function VacationModeCompletionFlow({
@@ -111,10 +48,13 @@ export function VacationModeCompletionFlow({
   onCompleted,
 }: VacationModeCompletionFlowProps) {
   const { user } = useAuth();
+  const { design } = useSettings();
   const [step, setStep] = useState<Step>('analysis');
   const [remainingBudget, setRemainingBudget] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const vacationAccent = getVacationAccentColor(design);
+  const vacationAccentMid = getVacationAccentMid(vacationAccent);
 
   const stats = useMemo(() => {
     if (!vacationMode) return null;
@@ -155,6 +95,7 @@ export function VacationModeCompletionFlow({
       const now = new Date();
       await upsertMonthlyBudget(now.getFullYear(), now.getMonth() + 1, amount);
       await completeVacationMode(vacationMode.id, user.id);
+      await applyVacationScoreDelta(stats.budget, stats.spent);
       notifyVacationModeChanged();
 
       toast.success('Feriekuvert afsluttet');
@@ -170,10 +111,19 @@ export function VacationModeCompletionFlow({
   return (
     <div className="fixed inset-0 z-[88] flex items-end justify-center bg-black/38 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-[6px] sm:items-center">
       <div className="w-full max-w-md overflow-hidden rounded-[34px] border border-[#D6E4E4] bg-white shadow-2xl shadow-[#0E3B43]/14">
-        <div className="h-2 bg-[linear-gradient(90deg,#F6C126_0%,#FFE6A0_48%,#F6C126_100%)]" />
+        <div
+          className="h-2"
+          style={{ background: `linear-gradient(90deg, ${vacationAccent} 0%, ${vacationAccentMid} 48%, ${vacationAccent} 100%)` }}
+        />
         <div className="px-6 pb-6 pt-6">
           <div className="mb-6 flex items-start justify-between gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-[#F6C126]/18 text-[#0E3B43] ring-1 ring-[#F6C126]/35">
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-[22px] text-[#0E3B43] ring-1"
+              style={{
+                backgroundColor: withAlpha(vacationAccent, 0.18),
+                ['--tw-ring-color' as string]: withAlpha(vacationAccent, 0.35),
+              }}
+            >
               <Palmtree className="h-7 w-7" />
             </div>
             <button
@@ -188,7 +138,7 @@ export function VacationModeCompletionFlow({
 
           {step === 'analysis' ? (
             <>
-              <p className="mb-3 text-[0.74rem] font-semibold uppercase tracking-[0.24em] text-[#B88A00]">
+              <p className="mb-3 text-[0.74rem] font-semibold uppercase tracking-[0.24em] text-[#0E3B43]/70">
                 Ferie afslutning
               </p>
               <h2 className="text-4xl font-semibold leading-tight tracking-tight text-foreground">
@@ -204,7 +154,6 @@ export function VacationModeCompletionFlow({
                 <SummaryTile
                   label={wentOver ? 'Overforbrug' : 'Sparet'}
                   value={formatDKK(wentOver ? stats.overspend : stats.surplus)}
-                  highlight
                 />
                 <SummaryTile label="Dags-streak" value={`${stats.streak}`} />
                 <SummaryTile
@@ -232,7 +181,7 @@ export function VacationModeCompletionFlow({
             </>
           ) : (
             <>
-              <p className="mb-3 text-[0.74rem] font-semibold uppercase tracking-[0.24em] text-[#B88A00]">
+              <p className="mb-3 text-[0.74rem] font-semibold uppercase tracking-[0.24em] text-[#0E3B43]/70">
                 Tilbage til Kuvert
               </p>
               <h2 className="text-4xl font-semibold leading-tight tracking-tight text-foreground">
@@ -273,7 +222,10 @@ export function VacationModeCompletionFlow({
                   disabled={saving}
                   className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#0E3B43] text-lg font-semibold text-white transition-transform active:scale-[0.99] disabled:opacity-60"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F6C126] text-[#0E3B43]">
+                  <span
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-[#0E3B43]"
+                    style={{ backgroundColor: vacationAccent }}
+                  >
                     <Check className="h-5 w-5" />
                   </span>
                   {saving ? 'Afslutter...' : 'Afslut feriekuvert'}
@@ -297,18 +249,16 @@ export function VacationModeCompletionFlow({
 function SummaryTile({
   label,
   value,
-  highlight = false,
 }: {
   label: string;
   value: string;
-  highlight?: boolean;
 }) {
   return (
     <div className="rounded-[20px] border border-[#DCE8E8] bg-[#F8FBFA] px-4 py-3">
       <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
         {label}
       </p>
-      <p className={`mt-1 text-base font-semibold leading-snug ${highlight ? 'text-[#B88A00]' : 'text-[#0E3B43]'}`}>
+      <p className="mt-1 text-base font-semibold leading-snug text-[#0E3B43]">
         {value}
       </p>
     </div>

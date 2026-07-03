@@ -11,11 +11,8 @@ import { useUIStrings } from '@/lib/ui-strings-context';
 import { VERSION } from '@/lib/version';
 import type { NavGroupWithItems, MobileNavSlotWithItem } from '@/lib/database.types';
 import { useNotificationCenter } from '@/lib/notification-center-context';
-import { getActiveVacationMode } from '@/lib/vacation-mode-service';
-import { VACATION_MODE_CHANGED_EVENT } from '@/lib/vacation-mode-events';
-
-const NORMAL_NAV_ACCENT = '#2ED3A7';
-const VACATION_NAV_ACCENT = '#F6C126';
+import { getVacationAccentColor } from '@/lib/vacation-theme';
+import { useVacationMode } from '@/lib/vacation-mode-context';
 
 const DEFAULT_BURGER_SECTIONS = [
   {
@@ -63,6 +60,7 @@ export function MobileNav() {
   const router = useRouter();
   const { design } = useSettings();
   const { user, signOut } = useAuth();
+  const { isVacationMode: hasActiveVacationMode } = useVacationMode();
   const { unreadCount } = useNotificationCenter();
   const { getString } = useUIStrings();
   const navHeight = parseInt(getString('mobile_nav_height', '68'), 10) || 68;
@@ -71,23 +69,8 @@ export function MobileNav() {
   const [dbGroups, setDbGroups] = useState<NavGroupWithItems[]>([]);
   const [mobileSlots, setMobileSlots] = useState<MobileNavSlotWithItem[]>([]);
   const [pendingNav, setPendingNav] = useState<{ mode: 'db' | 'default'; index: number } | null>(null);
-  const [hasActiveVacationMode, setHasActiveVacationMode] = useState(false);
   const prefetchedRoutesRef = useRef<Set<string>>(new Set());
-  const navAccent = hasActiveVacationMode ? VACATION_NAV_ACCENT : NORMAL_NAV_ACCENT;
-
-  const refreshVacationNavAccent = useCallback(async () => {
-    if (!user?.id) {
-      setHasActiveVacationMode(false);
-      return;
-    }
-
-    try {
-      const activeVacationMode = await getActiveVacationMode(user.id);
-      setHasActiveVacationMode(Boolean(activeVacationMode));
-    } catch {
-      setHasActiveVacationMode(false);
-    }
-  }, [user?.id]);
+  const navAccent = hasActiveVacationMode ? getVacationAccentColor(design) : design.accentColor;
 
   useEffect(() => {
     getNavGroupsWithItems().then((data) => {
@@ -102,17 +85,6 @@ export function MobileNav() {
     document.body.style.overflow = burgerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [burgerOpen]);
-
-  useEffect(() => {
-    refreshVacationNavAccent();
-  }, [pathname, refreshVacationNavAccent]);
-
-  useEffect(() => {
-    window.addEventListener(VACATION_MODE_CHANGED_EVENT, refreshVacationNavAccent);
-    return () => {
-      window.removeEventListener(VACATION_MODE_CHANGED_EVENT, refreshVacationNavAccent);
-    };
-  }, [refreshVacationNavAccent]);
 
   useEffect(() => {
     setPendingNav(null);

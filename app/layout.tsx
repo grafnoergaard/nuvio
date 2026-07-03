@@ -13,6 +13,7 @@ import { TypographyInspectorProvider } from '@/lib/typography-inspector-context'
 import { TypographyInspector } from '@/components/typography-inspector';
 import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar';
 import { NotificationCenterProvider } from '@/lib/notification-center-context';
+import { VacationModeProvider } from '@/lib/vacation-mode-context';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -48,25 +49,27 @@ export default function RootLayout({
       </head>
       <body className="font-sans">
         <AuthProvider>
-          <NotificationCenterProvider>
-            <UIStringsProvider>
-              <SettingsProvider>
-                <TypographyProvider>
-                  <TypographyInspectorProvider>
-                    <DesignApplier />
-                    <ServiceWorkerRegistrar />
-                    <AdminLabelProvider>
-                      <AppShell>
-                        {children}
-                      </AppShell>
-                    </AdminLabelProvider>
-                    <TypographyInspector />
-                    <Toaster />
-                  </TypographyInspectorProvider>
-                </TypographyProvider>
-              </SettingsProvider>
-            </UIStringsProvider>
-          </NotificationCenterProvider>
+          <VacationModeProvider>
+            <NotificationCenterProvider>
+              <UIStringsProvider>
+                <SettingsProvider>
+                  <TypographyProvider>
+                    <TypographyInspectorProvider>
+                      <DesignApplier />
+                      <ServiceWorkerRegistrar />
+                      <AdminLabelProvider>
+                        <AppShell>
+                          {children}
+                        </AppShell>
+                      </AdminLabelProvider>
+                      <TypographyInspector />
+                      <Toaster />
+                    </TypographyInspectorProvider>
+                  </TypographyProvider>
+                </SettingsProvider>
+              </UIStringsProvider>
+            </NotificationCenterProvider>
+          </VacationModeProvider>
         </AuthProvider>
       </body>
     </html>

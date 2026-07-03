@@ -170,6 +170,41 @@ export function computeMonthlyScoreDelta(
   return Math.max(0, reward);
 }
 
+export async function applyVacationScoreDelta(
+  budgetAmount: number,
+  totalSpent: number
+): Promise<QuickExpenseStreak> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const existing = await getStreak();
+  const prevStreakCount = existing?.current_streak ?? 0;
+  const prevScore = existing?.cumulative_score ?? 0;
+  const wasOnBudget = budgetAmount > 0 && totalSpent <= budgetAmount;
+  const usageRatio = budgetAmount > 0 ? Math.min(1, totalSpent / budgetAmount) : undefined;
+  const delta = computeMonthlyScoreDelta(wasOnBudget, prevStreakCount, prevScore, usageRatio);
+  const cumulativeScore = Math.max(0, prevScore + delta);
+
+  const payload = {
+    user_id: user.id,
+    current_streak: prevStreakCount,
+    longest_streak: existing?.longest_streak ?? 0,
+    cumulative_score: cumulativeScore,
+    last_evaluated_year: existing?.last_evaluated_year ?? null,
+    last_evaluated_month: existing?.last_evaluated_month ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('quick_expense_streaks')
+    .upsert(payload, { onConflict: 'user_id' })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as QuickExpenseStreak;
+}
+
 export function computeEndOfMonthFlowScore(
   totalSpent: number,
   budgetAmount: number,
@@ -223,6 +258,11 @@ export interface WeeklyCarryOverSummary {
   weeks: WeeklyBudgetStatus[];
 }
 
+interface WeeklyCarryOverOptions {
+  periodStartDate?: string;
+  periodEndDate?: string;
+}
+
 function getISOWeekNumber(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
@@ -263,13 +303,26 @@ export function computeWeeklyCarryOver(
   month: number,
   expenses: QuickExpense[],
   today: Date,
-  weekStartDay: number = 1
+  weekStartDay: number = 1,
+  options: WeeklyCarryOverOptions = {},
 ): WeeklyCarryOverSummary {
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const dailyRate = monthlyBudget / daysInMonth;
+  const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
+  const monthEnd = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
+  const periodStart = options.periodStartDate ?? monthStart;
+  const periodEnd = options.periodEndDate ?? monthEnd;
+  const periodStartDate = new Date(`${periodStart}T00:00:00`);
+  const periodEndDate = new Date(`${periodEnd}T00:00:00`);
+  const daysInPeriod = Math.max(1, Math.round((periodEndDate.getTime() - periodStartDate.getTime()) / 86400000) + 1);
+  const dailyRate = monthlyBudget / daysInPeriod;
   const weeklyBase = dailyRate * 7;
 
-  const weeks = getWeeksInMonth(year, month, weekStartDay);
+  const weeks = getWeeksInMonth(year, month, weekStartDay)
+    .map(({ start, end }) => {
+      const clampedStart = start < periodStartDate ? new Date(periodStartDate) : new Date(start);
+      const clampedEnd = end > periodEndDate ? new Date(periodEndDate) : new Date(end);
+      return { start: clampedStart, end: clampedEnd };
+    })
+    .filter(({ start, end }) => start <= end);
   const totalWeeks = weeks.length;
 
   const daysPerWeek: number[] = weeks.map(({ start, end }) =>
@@ -286,7 +339,7 @@ export function computeWeeklyCarryOver(
     return expenses.reduce((sum, e) => {
       const amount = Number(e.amount);
       if (Boolean(e.spread_over_month)) {
-        return sum + (amount / daysInMonth) * daysInWeek;
+        return sum + (amount / daysInPeriod) * daysInWeek;
       }
       if (e.expense_date >= startStr && e.expense_date <= endStr) {
         return sum + amount;

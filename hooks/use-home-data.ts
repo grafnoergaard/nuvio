@@ -18,6 +18,8 @@ import {
 } from '@/lib/quick-expense-service';
 import type { InvestmentSettings } from '@/lib/home-calculations';
 import { toKuvertCopy } from '@/lib/kuvert-copy';
+import { useVacationMode } from '@/lib/vacation-mode-context';
+import { getNormalUntilVacationPeriod } from '@/lib/normal-until-vacation';
 
 export interface FlowStatusConfig {
   warnHealthMin: number;
@@ -182,6 +184,7 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Pro
 }
 
 export function useHomeData(): HomeDataState & HomeDataActions {
+  const { plannedVacationMode } = useVacationMode();
   const initialCache = getHomeDataCache();
   const [budget, setBudget] = useState<HomeBudget | null>(initialCache?.budget ?? null);
   const [expenses, setExpenses] = useState(initialCache?.expenses ?? 0);
@@ -384,6 +387,7 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
+    const normalUntilVacationPeriod = getNormalUntilVacationPeriod(plannedVacationMode, year, month, now);
     const [monthlyBudget, quickExpenses, flowConfigEntries, userWeekStartDay] = await Promise.all([
       getMonthlyBudget(year, month),
       getQuickExpensesForMonth(year, month),
@@ -432,9 +436,23 @@ export function useHomeData(): HomeDataState & HomeDataActions {
     }
 
     setFlowWeeklyStatus(
-      budgetAmount > 0 ? computeWeeklyCarryOver(budgetAmount, year, month, quickExpenses, now, userWeekStartDay) : null
+      budgetAmount > 0
+        ? computeWeeklyCarryOver(budgetAmount, year, month, quickExpenses, now, userWeekStartDay, {
+            periodStartDate: normalUntilVacationPeriod?.startDate,
+            periodEndDate: normalUntilVacationPeriod?.endDate,
+          })
+        : null
     );
   }
+
+  useEffect(() => {
+    if (!userIdRef.current) return;
+    loadFlowSnapshot().catch(() => {});
+  }, [
+    plannedVacationMode?.id,
+    plannedVacationMode?.start_date,
+    plannedVacationMode?.end_date,
+  ]);
 
   function loadAll() {
     loadData();

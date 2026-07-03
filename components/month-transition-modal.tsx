@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, Bot, Flame, Minus } from 'lucide-react';
+import { ArrowRight, Flame, Minus } from 'lucide-react';
 import { WizardShell, useWizardAnimation } from '@/components/wizard-shell';
 import { cn } from '@/lib/utils';
 import { useAiContext } from '@/lib/ai-context';
-import { fetchMonthAiAnalysis, computeMonthlyScoreDelta } from '@/lib/quick-expense-service';
-import type { MonthSummary, QuickExpenseStreak, MonthAiAnalysis } from '@/lib/quick-expense-service';
+import { computeMonthlyScoreDelta } from '@/lib/quick-expense-service';
+import type { MonthSummary, QuickExpenseStreak } from '@/lib/quick-expense-service';
 
 const DANISH_MONTHS = [
   'januar', 'februar', 'marts', 'april', 'maj', 'juni',
@@ -29,7 +29,14 @@ interface Props {
   prevSummary: MonthSummary;
   streak: QuickExpenseStreak | null;
   defaultBudget: number;
-  onConfirm: (budgetAmount: number) => Promise<void>;
+  onConfirm: (input: {
+    budgetAmount: number;
+    vacationPlan: null | {
+      startDate: string;
+      numberOfDays: number;
+      budgetAmount: number | null;
+    };
+  }) => Promise<void>;
   onDismiss: () => void;
 }
 
@@ -67,10 +74,11 @@ export default function MonthTransitionModal({
   const [saving, setSaving] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState(defaultBudget > 0 ? String(defaultBudget) : '');
   const [budgetError, setBudgetError] = useState<string | null>(null);
-
-  const [aiAnalysis, setAiAnalysis] = useState<MonthAiAnalysis | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
+  const [willTakeVacation, setWillTakeVacation] = useState<boolean | null>(null);
+  const [vacationStartDate, setVacationStartDate] = useState(`${currentYear}-${String(currentMonth).padStart(2, '0')}-14`);
+  const [vacationDaysDraft, setVacationDaysDraft] = useState('');
+  const [knowsVacationBudget, setKnowsVacationBudget] = useState<boolean | null>(null);
+  const [vacationBudgetDraft, setVacationBudgetDraft] = useState('');
 
   const isOver = prevSummary.budgetAmount > 0 && prevSummary.totalSpent > prevSummary.budgetAmount;
   const hasPrevData = prevSummary.budgetAmount > 0 || prevSummary.expenseCount > 0;
@@ -127,26 +135,6 @@ export default function MonthTransitionModal({
     };
   }, [isOver]);
 
-  useEffect(() => {
-    if (step >= 3) {
-      startAiFetch();
-    }
-  }, [step]);
-
-  function startAiFetch() {
-    if (aiAnalysis || aiLoading) return;
-    setAiLoading(true);
-    fetchMonthAiAnalysis(prevSummary, currentStreak, longestStreak)
-      .then(result => {
-        setAiAnalysis(result);
-        setAiLoading(false);
-      })
-      .catch(() => {
-        setAiError('AI-analyse er ikke tilgængelig lige nu');
-        setAiLoading(false);
-      });
-  }
-
   function next() {
     animate('forward', () => setStep(s => Math.min(s + 1, TOTAL_STEPS - 1)));
   }
@@ -156,26 +144,60 @@ export default function MonthTransitionModal({
   }
 
   async function handleConfirm() {
-    const parsed = parseFloat(budgetDraft.replace(',', '.'));
-    if (isNaN(parsed) || parsed < 0) {
+    const parsedBudget = parseFloat(budgetDraft.replace(',', '.'));
+    if (isNaN(parsedBudget) || parsedBudget < 0) {
       setBudgetError('Indtast et gyldigt beløb');
       return;
     }
+
+    let vacationPlan: { startDate: string; numberOfDays: number; budgetAmount: number | null } | null = null;
+
+    if (willTakeVacation) {
+      const parsedDays = parseInt(vacationDaysDraft, 10);
+      const vacationDate = new Date(vacationStartDate);
+
+      if (!vacationStartDate || Number.isNaN(vacationDate.getTime())) {
+        setBudgetError('Vælg hvornår ferien starter.');
+        return;
+      }
+      if (vacationDate.getFullYear() !== currentYear || vacationDate.getMonth() + 1 !== currentMonth) {
+        setBudgetError('Ferien skal starte i denne måned.');
+        return;
+      }
+      if (!Number.isFinite(parsedDays) || parsedDays < 1) {
+        setBudgetError('Indtast hvor mange dage ferien varer.');
+        return;
+      }
+      if (knowsVacationBudget === null) {
+        setBudgetError('Vælg om du allerede kender feriebudgettet.');
+        return;
+      }
+
+      let parsedVacationBudget: number | null = null;
+      if (knowsVacationBudget) {
+        parsedVacationBudget = parseFloat(vacationBudgetDraft.replace(',', '.'));
+        if (!Number.isFinite(parsedVacationBudget) || parsedVacationBudget <= 0) {
+          setBudgetError('Indtast et gyldigt feriebudget.');
+          return;
+        }
+      }
+
+      vacationPlan = {
+        startDate: vacationStartDate,
+        numberOfDays: parsedDays,
+        budgetAmount: parsedVacationBudget,
+      };
+    }
+
     setBudgetError(null);
     setSaving(true);
     try {
-      await onConfirm(parsed);
+      await onConfirm({
+        budgetAmount: parsedBudget,
+        vacationPlan,
+      });
     } catch {
       setBudgetError('Kunne ikke gemme. Prøv igen.');
-      setSaving(false);
-    }
-  }
-
-  async function handleFinish() {
-    setSaving(true);
-    try {
-      await onConfirm(defaultBudget);
-    } catch {
       setSaving(false);
     }
   }
@@ -231,37 +253,38 @@ export default function MonthTransitionModal({
       )}
 
       {step === 3 && (
-        <Step3Budget
+        <Step3VacationDecision
           currentMonthName={currentMonthName}
-          prevSummary={prevSummary}
-          isOver={isOver}
-          defaultBudget={defaultBudget}
-          budgetDraft={budgetDraft}
-          setBudgetDraft={setBudgetDraft}
-          budgetError={budgetError}
-          setBudgetError={setBudgetError}
-          saving={saving}
-          onConfirm={handleConfirm}
-          onKeepDefault={async () => {
-            if (defaultBudget <= 0) return;
-            setSaving(true);
-            try {
-              await onConfirm(defaultBudget);
-            } catch {
-              setBudgetError('Kunne ikke gemme. Prøv igen.');
-              setSaving(false);
-            }
+          willTakeVacation={willTakeVacation}
+          onSelect={(value) => {
+            setWillTakeVacation(value);
+            setBudgetError(null);
+            next();
           }}
         />
       )}
 
       {step === 4 && (
-        <Step4Ai
+        <Step4BudgetAndVacation
           currentMonthName={currentMonthName}
-          aiAnalysis={aiAnalysis}
-          aiLoading={aiLoading}
-          aiError={aiError}
-          currentStreak={currentStreak}
+          prevSummary={prevSummary}
+          isOver={isOver}
+          defaultBudget={defaultBudget}
+          willTakeVacation={Boolean(willTakeVacation)}
+          budgetDraft={budgetDraft}
+          setBudgetDraft={setBudgetDraft}
+          vacationStartDate={vacationStartDate}
+          setVacationStartDate={setVacationStartDate}
+          vacationDaysDraft={vacationDaysDraft}
+          setVacationDaysDraft={setVacationDaysDraft}
+          knowsVacationBudget={knowsVacationBudget}
+          setKnowsVacationBudget={setKnowsVacationBudget}
+          vacationBudgetDraft={vacationBudgetDraft}
+          setVacationBudgetDraft={setVacationBudgetDraft}
+          budgetError={budgetError}
+          setBudgetError={setBudgetError}
+          saving={saving}
+          onConfirm={handleConfirm}
         />
       )}
 
@@ -278,19 +301,6 @@ export default function MonthTransitionModal({
         </div>
       )}
 
-      {step === 4 && (
-        <div className="pt-6">
-          <button
-            onClick={handleFinish}
-            disabled={saving}
-            className="w-full h-14 rounded-2xl font-semibold text-base text-white shadow-md active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
-            style={{ background: 'linear-gradient(to right, #0d9488, #10b981)' }}
-          >
-            {saving ? 'Gemmer…' : `Start ${currentMonthName}`}
-            {!saving && <ArrowRight className="h-4 w-4" />}
-          </button>
-        </div>
-      )}
     </WizardShell>
   );
 }
@@ -569,30 +579,93 @@ function Step2Streak({
   );
 }
 
-function Step3Budget({
+function Step3VacationDecision({
+  currentMonthName,
+  willTakeVacation,
+  onSelect,
+}: {
+  currentMonthName: string;
+  willTakeVacation: boolean | null;
+  onSelect: (value: boolean) => void;
+}) {
+  return (
+    <div className="space-y-6 flex-1 flex flex-col justify-center">
+      <p className="text-label font-semibold uppercase tracking-widest text-emerald-600/70">
+        Næste måned
+      </p>
+      <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight capitalize">
+        Skal du på ferie i {currentMonthName}?
+      </h2>
+      <p className="text-foreground/60 text-base leading-relaxed">
+        Hvis ja, hjælper Kuvert dig med at planlægge måneden frem til ferien allerede nu.
+      </p>
+
+      <div className="grid gap-3 pt-2">
+        <button
+          onClick={() => onSelect(false)}
+          className={cn(
+            'w-full rounded-2xl border px-5 py-4 text-left transition-all duration-200',
+            willTakeVacation === false ? 'border-[#0E3B43] bg-white shadow-sm' : 'border-border bg-white/70'
+          )}
+        >
+          <p className="text-base font-semibold text-foreground">Nej, ikke i denne måned</p>
+          <p className="mt-1 text-sm text-muted-foreground">Fortsæt som normalt flow.</p>
+        </button>
+        <button
+          onClick={() => onSelect(true)}
+          className={cn(
+            'w-full rounded-2xl border px-5 py-4 text-left transition-all duration-200',
+            willTakeVacation === true ? 'border-[#0E3B43] bg-white shadow-sm' : 'border-border bg-white/70'
+          )}
+        >
+          <p className="text-base font-semibold text-foreground">Ja, jeg skal på ferie</p>
+          <p className="mt-1 text-sm text-muted-foreground">Planlæg normal budget frem til ferien og feriekuvert bagefter.</p>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Step4BudgetAndVacation({
   currentMonthName,
   prevSummary,
   isOver,
   defaultBudget,
+  willTakeVacation,
   budgetDraft,
   setBudgetDraft,
+  vacationStartDate,
+  setVacationStartDate,
+  vacationDaysDraft,
+  setVacationDaysDraft,
+  knowsVacationBudget,
+  setKnowsVacationBudget,
+  vacationBudgetDraft,
+  setVacationBudgetDraft,
   budgetError,
   setBudgetError,
   saving,
   onConfirm,
-  onKeepDefault,
 }: {
   currentMonthName: string;
   prevSummary: MonthSummary;
   isOver: boolean;
   defaultBudget: number;
+  willTakeVacation: boolean;
   budgetDraft: string;
   setBudgetDraft: (v: string) => void;
+  vacationStartDate: string;
+  setVacationStartDate: (v: string) => void;
+  vacationDaysDraft: string;
+  setVacationDaysDraft: (v: string) => void;
+  knowsVacationBudget: boolean | null;
+  setKnowsVacationBudget: (v: boolean) => void;
+  vacationBudgetDraft: string;
+  setVacationBudgetDraft: (v: string) => void;
   budgetError: string | null;
   setBudgetError: (v: string | null) => void;
   saving: boolean;
   onConfirm: () => void;
-  onKeepDefault: () => void;
 }) {
   const prevMonthName = DANISH_MONTHS[prevSummary.month - 1];
 
@@ -606,7 +679,9 @@ function Step3Budget({
       </p>
 
       <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight capitalize">
-        {isOver ? 'Justér dit budget for' : 'Sæt dit budget for'} {currentMonthName}
+        {willTakeVacation
+          ? 'Hvad har du i normal mode frem til ferien?'
+          : `${isOver ? 'Justér dit budget for' : 'Sæt dit budget for'} ${currentMonthName}`}
       </h2>
 
       {prevSummary.budgetAmount > 0 && (
@@ -620,7 +695,7 @@ function Step3Budget({
 
       <div className="space-y-2">
         <label className="text-sm font-semibold text-foreground block capitalize">
-          Budget for {currentMonthName}
+          {willTakeVacation ? 'Beløb frem til ferien' : `Budget for ${currentMonthName}`}
         </label>
         <div className="relative">
           <input
@@ -644,12 +719,86 @@ function Step3Budget({
         </div>
         {budgetError && <p className="text-xs text-red-600">{budgetError}</p>}
         <p className="text-xs text-muted-foreground leading-relaxed">
-          {isOver
+          {willTakeVacation
+            ? 'Det er det beløb Kuvert styrer efter, indtil ferien starter.'
+            : isOver
             ? 'Overvej at sætte budgettet lidt højere end sidst.'
             : 'Du kan justere det, hvis du vil udfordre dig selv lidt.'
           }
         </p>
       </div>
+
+      {willTakeVacation && (
+        <div className="space-y-4 rounded-2xl border border-foreground/8 bg-white/70 px-4 py-4">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-foreground block">Hvornår starter ferien?</label>
+            <input
+              type="date"
+              value={vacationStartDate}
+              onChange={(event) => { setVacationStartDate(event.target.value); setBudgetError(null); }}
+              className="w-full h-12 rounded-xl border border-border bg-white/80 px-4 text-sm font-medium"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-foreground block">Hvor mange dage varer den?</label>
+            <input
+              type="number"
+              min="1"
+              inputMode="numeric"
+              placeholder="f.eks. 12"
+              value={vacationDaysDraft}
+              onChange={(event) => { setVacationDaysDraft(event.target.value); setBudgetError(null); }}
+              className="w-full h-12 rounded-xl border border-border bg-white/80 px-4 text-sm font-medium"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">Kender du allerede nu dit feriebudget?</p>
+            <div className="grid gap-2">
+              <button
+                type="button"
+                onClick={() => { setKnowsVacationBudget(true); setBudgetError(null); }}
+                className={cn(
+                  'rounded-xl border px-4 py-3 text-left transition-all',
+                  knowsVacationBudget === true ? 'border-[#0E3B43] bg-white shadow-sm' : 'border-border bg-white/70'
+                )}
+              >
+                <span className="text-sm font-semibold text-foreground">Ja, jeg kender det</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setKnowsVacationBudget(false); setVacationBudgetDraft(''); setBudgetError(null); }}
+                className={cn(
+                  'rounded-xl border px-4 py-3 text-left transition-all',
+                  knowsVacationBudget === false ? 'border-[#0E3B43] bg-white shadow-sm' : 'border-border bg-white/70'
+                )}
+              >
+                <span className="text-sm font-semibold text-foreground">Nej, ikke endnu</span>
+              </button>
+            </div>
+          </div>
+
+          {knowsVacationBudget && (
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground block">Feriebudget</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="f.eks. 8000"
+                  value={vacationBudgetDraft}
+                  onChange={(event) => { setVacationBudgetDraft(event.target.value); setBudgetError(null); }}
+                  className="w-full h-12 rounded-xl border border-border bg-white/80 px-4 pr-14 text-sm font-semibold"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground pointer-events-none">
+                  kr.
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="space-y-2 pt-2">
         <button
@@ -661,84 +810,7 @@ function Step3Budget({
           {saving ? 'Gemmer…' : `Gem og start ${currentMonthName}`}
           {!saving && <ArrowRight className="h-4 w-4" />}
         </button>
-
-        {defaultBudget > 0 && (
-          <button
-            onClick={onKeepDefault}
-            disabled={saving}
-            className="w-full h-10 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground transition-colors capitalize"
-          >
-            Behold {formatDKK(defaultBudget)}
-          </button>
-        )}
       </div>
-    </div>
-  );
-}
-
-function Step4Ai({
-  currentMonthName,
-  aiAnalysis,
-  aiLoading,
-  aiError,
-  currentStreak,
-}: {
-  currentMonthName: string;
-  aiAnalysis: MonthAiAnalysis | null;
-  aiLoading: boolean;
-  aiError: string | null;
-  currentStreak: number;
-}) {
-  return (
-    <div className="space-y-5 flex-1 flex flex-col justify-center">
-      <p className="text-label font-semibold uppercase tracking-widest text-emerald-600/70">
-        Kuvert AI
-      </p>
-
-      {aiLoading && (
-        <div className="space-y-4">
-          <div className="h-8 bg-foreground/5 rounded-full animate-pulse w-3/4" />
-          <div className="h-5 bg-foreground/5 rounded-full animate-pulse w-full" />
-          <div className="h-5 bg-foreground/5 rounded-full animate-pulse w-4/5" />
-          <div className="h-5 bg-foreground/5 rounded-full animate-pulse w-3/5" />
-          <p className="text-xs text-muted-foreground/50 pt-2">Analyserer din måned…</p>
-        </div>
-      )}
-
-      {!aiLoading && aiError && (
-        <div className="space-y-3">
-          <h2 className="text-3xl font-bold leading-tight tracking-tight text-foreground capitalize">
-            Ny måned venter
-          </h2>
-          <p className="text-foreground/60 text-base leading-relaxed capitalize">
-            Hold momentum ind i {currentMonthName}.
-          </p>
-          {currentStreak > 0 && (
-            <p className="text-foreground/50 text-sm leading-relaxed">
-              Du er på en streak — fortsæt den gode vane.
-            </p>
-          )}
-        </div>
-      )}
-
-      {!aiLoading && aiAnalysis && (
-        <div className="space-y-5">
-          <h2 className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight">
-            {aiAnalysis.message}
-          </h2>
-
-          {aiAnalysis.focusNextMonth && (
-            <div className="bg-foreground/[0.04] border border-foreground/8 rounded-2xl px-5 py-4">
-              <div className="flex items-start gap-3">
-                <Bot className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                <p className="text-sm text-foreground/70 leading-relaxed">
-                  {aiAnalysis.focusNextMonth}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

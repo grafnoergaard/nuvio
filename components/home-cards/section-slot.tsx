@@ -22,6 +22,7 @@ interface SectionSlotProps {
   weeklyStreak: QuickExpenseWeeklyStreak | null;
   quickExpenses: QuickExpense[];
   vacationMode?: VacationMode | null;
+  plannedVacationMode?: VacationMode | null;
   flowMonthlyBudget: number;
   flowMonthlySpent: number;
   flowScoreThreshold: number;
@@ -52,6 +53,7 @@ export function SectionSlot({
   weeklyStreak,
   quickExpenses,
   vacationMode,
+  plannedVacationMode,
   flowMonthlyBudget,
   flowMonthlySpent,
   flowScoreThreshold,
@@ -79,6 +81,7 @@ export function SectionSlot({
       weeklyStreak={weeklyStreak}
       quickExpenses={quickExpenses}
       vacationMode={vacationMode}
+      plannedVacationMode={plannedVacationMode}
       flowMonthlyBudget={flowMonthlyBudget}
       flowMonthlySpent={flowMonthlySpent}
       flowScoreThreshold={flowScoreThreshold}

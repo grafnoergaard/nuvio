@@ -173,6 +173,55 @@ export async function updateVacationMode(
   return data as VacationMode;
 }
 
+export async function upsertPlannedVacationMode(
+  userId: string,
+  input: {
+    budget_amount: number;
+    start_date: string;
+    end_date: string;
+    number_of_days: number;
+  },
+  client: SupabaseLike = supabase
+): Promise<VacationMode> {
+  const existing = await getPlannedVacationMode(userId, client);
+
+  if (existing) {
+    const { data, error } = await client
+      .from('vacation_modes')
+      .update({
+        budget_amount: input.budget_amount,
+        start_date: input.start_date,
+        end_date: input.end_date,
+        number_of_days: input.number_of_days,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id)
+      .eq('user_id', userId)
+      .eq('status', 'planned')
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data as VacationMode;
+  }
+
+  const { data, error } = await client
+    .from('vacation_modes')
+    .insert({
+      user_id: userId,
+      status: 'planned',
+      budget_amount: input.budget_amount,
+      number_of_days: input.number_of_days,
+      start_date: input.start_date,
+      end_date: input.end_date,
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return data as VacationMode;
+}
+
 export async function cancelVacationMode(
   vacationModeId: string,
   userId: string,

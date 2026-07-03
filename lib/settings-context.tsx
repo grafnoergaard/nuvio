@@ -32,6 +32,7 @@ export interface PageDesignSettings {
 export interface DesignSettings {
   primaryColor: string;
   accentColor: string;
+  vacationAccentColor: string;
   backgroundColor: string;
   textColor: string;
   minusColor: string;
@@ -122,6 +123,7 @@ export const DEFAULT_PAGE_DESIGN: PageDesignSettings = {
 export const DEFAULT_DESIGN: DesignSettings = {
   primaryColor: '#0E3B43',
   accentColor: '#2ED3A7',
+  vacationAccentColor: '#F6C126',
   backgroundColor: '#F6F4EF',
   textColor: '#1E1E1E',
   minusColor: '#E45C5C',

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { useSettings } from '@/lib/settings-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays, Loader2, LogOut, Palmtree, Pencil, Settings, Trash2, TriangleAlert, Info, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -27,9 +28,11 @@ import {
   getPlannedVacationMode,
   type VacationMode,
 } from '@/lib/vacation-mode-service';
+import { getVacationAccentColor, getVacationAccentMid, withAlpha } from '@/lib/vacation-theme';
 
 export default function IndstillingerPage() {
   const { user, signOut } = useAuth();
+  const { design } = useSettings();
   const [weekStartDay, setWeekStartDayState] = useState<number>(1);
   const [savingWeekStartDay, setSavingWeekStartDay] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -41,11 +44,34 @@ export default function IndstillingerPage() {
   const [cancellingVacationMode, setCancellingVacationMode] = useState(false);
   const [showCancelVacationConfirm, setShowCancelVacationConfirm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const vacationAccent = getVacationAccentColor(design);
+  const vacationAccentMid = getVacationAccentMid(vacationAccent);
   const now = new Date();
   const DANISH_MONTHS_FULL = [
     'januar', 'februar', 'marts', 'april', 'maj', 'juni',
     'juli', 'august', 'september', 'oktober', 'november', 'december',
   ];
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const color = 'rgb(236,253,245)';
+    const previousHtmlBackground = document.documentElement.style.backgroundColor;
+    const previousBodyBackground = document.body.style.backgroundColor;
+    document.documentElement.style.backgroundColor = color;
+    document.body.style.backgroundColor = color;
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    meta.content = color;
+    return () => {
+      document.documentElement.style.backgroundColor = previousHtmlBackground;
+      document.body.style.backgroundColor = previousBodyBackground;
+      if (meta) meta.content = '#f8f9f2';
+    };
+  }, []);
 
   useEffect(() => {
     getUserWeekStartDay()
@@ -125,7 +151,8 @@ export default function IndstillingerPage() {
   return (
     <div
       ref={scrollRef}
-      className="min-h-screen bg-gradient-to-b from-[#f5f4f1] via-[#f8f7f4] to-white"
+      className="min-h-screen bg-gradient-to-b from-emerald-50/60 via-white to-white"
+      style={{ backgroundColor: 'rgb(236,253,245)' }}
     >
       <div
         className="max-w-lg mx-auto px-4 pb-32 sm:pb-16 space-y-6"
@@ -227,6 +254,7 @@ export default function IndstillingerPage() {
                 title="Aktiv feriekuvert"
                 mode={activeVacationMode}
                 tone="active"
+                vacationAccent={vacationAccent}
                 primaryLabel="Rediger"
                 onPrimary={() => openVacationWizard(activeVacationMode)}
               />
@@ -235,6 +263,7 @@ export default function IndstillingerPage() {
                 title="Planlagt feriekuvert"
                 mode={plannedVacationMode}
                 tone="planned"
+                vacationAccent={vacationAccent}
                 primaryLabel="Rediger"
                 onPrimary={() => openVacationWizard(plannedVacationMode)}
                 secondaryLabel={cancellingVacationMode ? 'Annullerer...' : 'Annuller'}
@@ -260,7 +289,11 @@ export default function IndstillingerPage() {
                   <button
                     type="button"
                     onClick={() => openVacationWizard()}
-                    className="rounded-full border border-[#F6C126]/40 bg-[#F6C126]/10 px-4 py-2 text-xs font-semibold text-[#0E3B43] transition-transform active:scale-[0.98]"
+                    className="rounded-full border px-4 py-2 text-xs font-semibold text-[#0E3B43] transition-transform active:scale-[0.98]"
+                    style={{
+                      borderColor: withAlpha(vacationAccent, 0.40),
+                      backgroundColor: withAlpha(vacationAccent, 0.10),
+                    }}
                   >
                     Planlæg ferie
                   </button>
@@ -299,14 +332,23 @@ export default function IndstillingerPage() {
       />
       <AlertDialog open={showCancelVacationConfirm} onOpenChange={setShowCancelVacationConfirm}>
         <AlertDialogContent className="top-auto bottom-[max(1rem,env(safe-area-inset-bottom))] max-w-[calc(100vw-1.5rem)] translate-x-[-50%] translate-y-0 rounded-[32px] border border-foreground/10 bg-white px-6 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:slide-in-from-bottom-8 sm:top-[50%] sm:bottom-auto sm:max-w-md sm:translate-y-[-50%] sm:rounded-[28px] sm:pb-6">
-          <div className="absolute inset-x-0 top-0 h-1 rounded-t-[32px] bg-gradient-to-r from-[#F6C126] to-[#FFD977] sm:rounded-t-[28px]" />
+          <div
+            className="absolute inset-x-0 top-0 h-1 rounded-t-[32px] sm:rounded-t-[28px]"
+            style={{ background: `linear-gradient(to right, ${vacationAccent}, ${vacationAccentMid})` }}
+          />
           <AlertDialogHeader className="space-y-3 text-left">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#F6C126]/30 bg-[#F6C126]/12">
-                <Palmtree className="h-6 w-6 text-[#8C6900]" />
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl border"
+                style={{
+                  borderColor: withAlpha(vacationAccent, 0.30),
+                  backgroundColor: withAlpha(vacationAccent, 0.12),
+                }}
+              >
+                <Palmtree className="h-6 w-6 text-[#0E3B43]" />
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8C6900]/80">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#0E3B43]/70">
                   Ferie mode
                 </p>
                 <AlertDialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
@@ -318,7 +360,13 @@ export default function IndstillingerPage() {
               Den planlagte feriekuvert bliver slettet. Din normale Kuvert fortsætter bare derfra, hvor den er nu.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="mt-4 rounded-2xl border border-[#F6C126]/18 bg-[#F6C126]/8 px-4 py-3 text-sm text-[#0E3B43]">
+          <div
+            className="mt-4 rounded-2xl border px-4 py-3 text-sm text-[#0E3B43]"
+            style={{
+              borderColor: withAlpha(vacationAccent, 0.18),
+              backgroundColor: withAlpha(vacationAccent, 0.08),
+            }}
+          >
             Du kan altid planlaegge en ny feriekuvert senere.
           </div>
           <AlertDialogFooter className="mt-6 flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -361,6 +409,7 @@ function VacationModeSummary({
   title,
   mode,
   tone,
+  vacationAccent,
   primaryLabel,
   onPrimary,
   secondaryLabel,
@@ -370,6 +419,7 @@ function VacationModeSummary({
   title: string;
   mode: VacationMode;
   tone: 'active' | 'planned';
+  vacationAccent: string;
   primaryLabel: string;
   onPrimary: () => void;
   secondaryLabel?: string;
@@ -385,11 +435,10 @@ function VacationModeSummary({
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-foreground">{title}</p>
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                tone === 'active'
-                  ? 'bg-[#F6C126]/20 text-[#8C6900]'
-                  : 'bg-[#0E3B43]/8 text-[#0E3B43]'
-              }`}
+              className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-[#0E3B43]"
+              style={{
+                backgroundColor: tone === 'active' ? withAlpha(vacationAccent, 0.20) : 'rgba(14,59,67,0.08)',
+              }}
             >
               {tone === 'active' ? 'Aktiv' : 'Planlagt'}
             </span>
@@ -412,8 +461,14 @@ function VacationModeSummary({
         </button>
       </div>
 
-      <div className="rounded-2xl border border-[#F6C126]/24 bg-[#F6C126]/8 px-3 py-2.5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8C6900]/70">Feriebudget</p>
+      <div
+        className="rounded-2xl border px-3 py-2.5"
+        style={{
+          borderColor: withAlpha(vacationAccent, 0.24),
+          backgroundColor: withAlpha(vacationAccent, 0.08),
+        }}
+      >
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#0E3B43]/70">Feriebudget</p>
         <div className="mt-1 flex items-end justify-between gap-3">
           <p className="text-2xl font-semibold tracking-tight text-[#0E3B43]">
             {formatVacationAmount(Number(mode.budget_amount))}

@@ -753,6 +753,12 @@ export default function AdminPage() {
                 onChange={(v) => updateDesign('accentColor', v)}
               />
               <ColorField
+                label="Ferie accent"
+                description="Bruges i ferie-mode til accenter og top-streg gradient"
+                value={design.vacationAccentColor}
+                onChange={(v) => updateDesign('vacationAccentColor', v)}
+              />
+              <ColorField
                 label="Baggrund"
                 description="Sidens baggrundfarve"
                 value={design.backgroundColor}

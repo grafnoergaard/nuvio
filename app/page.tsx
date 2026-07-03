@@ -32,17 +32,26 @@ import { VacationModeWizard } from '@/components/vacation-mode-wizard';
 import { VacationModeActivationFlow } from '@/components/vacation-mode-activation-flow';
 import { VacationModeCompletionFlow } from '@/components/vacation-mode-completion-flow';
 import {
-  getActiveVacationMode,
   getReadyVacationMode,
   isVacationModeReadyToEnd,
   type VacationMode,
 } from '@/lib/vacation-mode-service';
 import { getQuickExpensesForRange, type QuickExpense } from '@/lib/quick-expense-service';
+import { useSettings } from '@/lib/settings-context';
+import { getVacationAccentColor, withAlpha } from '@/lib/vacation-theme';
+import { useVacationMode } from '@/lib/vacation-mode-context';
 
 export default function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { design } = useSettings();
+  const {
+    activeVacationMode,
+    plannedVacationMode,
+    isResolved: vacationModeResolved,
+    refreshVacationMode,
+  } = useVacationMode();
 
   const data = useHomeData();
   const ui = useHomeUI();
@@ -79,7 +88,7 @@ export default function HomePage() {
   const [showHonestEntriesReminder, setShowHonestEntriesReminder] = useState(false);
   const [showSingleAccountMethodReminder, setShowSingleAccountMethodReminder] = useState(false);
   const [showVacationWizard, setShowVacationWizard] = useState(false);
-  const [activeVacationMode, setActiveVacationMode] = useState<VacationMode | null>(null);
+  const [vacationModeToEdit, setVacationModeToEdit] = useState<VacationMode | null>(null);
   const [vacationQuickExpenses, setVacationQuickExpenses] = useState<QuickExpense[]>([]);
   const [readyVacationMode, setReadyVacationMode] = useState<VacationMode | null>(null);
   const [showVacationActivation, setShowVacationActivation] = useState(false);
@@ -109,6 +118,21 @@ export default function HomePage() {
     () => flowWeeklyStatus?.weeks.find((week) => week.isCurrentWeek) ?? null,
     [flowWeeklyStatus]
   );
+  const vacationAccent = useMemo(() => getVacationAccentColor(design), [design]);
+  const pageBackground = useMemo(() => {
+    if (activeVacationMode) {
+      const top = withAlpha(vacationAccent, 0.16);
+      return {
+        top,
+        gradient: `linear-gradient(to bottom, ${top}, rgba(255,252,243,0.88), #ffffff)`,
+      };
+    }
+    return {
+      top: 'rgb(236,253,245)',
+      gradient: 'linear-gradient(to bottom, rgba(236,253,245,0.95), rgba(255,255,255,0.92), #ffffff)',
+    };
+  }, [activeVacationMode, vacationAccent]);
+  const topBgColor = pageBackground.top;
 
   useEffect(() => {
     setUserRef(user?.id);
@@ -131,7 +155,6 @@ export default function HomePage() {
   useEffect(() => {
     if (!user) {
       markWhyWizardChecked();
-      setActiveVacationMode(null);
       setVacationQuickExpenses([]);
       setReadyVacationMode(null);
       setShowVacationActivation(false);
@@ -141,36 +164,6 @@ export default function HomePage() {
     setUserRef(user.id);
     loadHousehold();
   }, [user]);
-
-  async function loadActiveVacationMode() {
-    if (!user) {
-      setActiveVacationMode(null);
-      setVacationQuickExpenses([]);
-      setShowVacationCompletion(false);
-      return;
-    }
-
-    try {
-      const activeMode = await getActiveVacationMode(user.id);
-      setActiveVacationMode(activeMode);
-      if (!activeMode) {
-        setVacationQuickExpenses([]);
-        setShowVacationCompletion(false);
-        return;
-      }
-
-      const expenses = await getQuickExpensesForRange(activeMode.start_date, activeMode.end_date, 'vacation');
-      setVacationQuickExpenses(expenses);
-      if (isVacationModeReadyToEnd(activeMode) && !vacationCompletionDismissed) {
-        setShowVacationCompletion(true);
-      }
-    } catch (error) {
-      console.warn('Kunne ikke hente aktiv feriekuvert', error);
-      setActiveVacationMode(null);
-      setVacationQuickExpenses([]);
-      setShowVacationCompletion(false);
-    }
-  }
 
   async function loadReadyVacationMode({ forceOpen = false } = {}) {
     if (!user) return;
@@ -193,8 +186,45 @@ export default function HomePage() {
   useEffect(() => {
     if (!user || loading || showVacationWizard) return;
     loadReadyVacationMode();
-    loadActiveVacationMode();
   }, [user?.id, loading, showVacationWizard]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVacationQuickExpenses() {
+      if (!activeVacationMode) {
+        setVacationQuickExpenses([]);
+        setShowVacationCompletion(false);
+        return;
+      }
+
+      try {
+        const expenses = await getQuickExpensesForRange(
+          activeVacationMode.start_date,
+          activeVacationMode.end_date,
+          'vacation'
+        );
+        if (!cancelled) {
+          setVacationQuickExpenses(expenses);
+          if (isVacationModeReadyToEnd(activeVacationMode) && !vacationCompletionDismissed) {
+            setShowVacationCompletion(true);
+          }
+        }
+      } catch (error) {
+        console.warn('Kunne ikke hente ferieudgifter', error);
+        if (!cancelled) {
+          setVacationQuickExpenses([]);
+          setShowVacationCompletion(false);
+        }
+      }
+    }
+
+    loadVacationQuickExpenses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeVacationMode, vacationCompletionDismissed]);
 
   async function saveOpeningBalance() {
     if (!budget) return;
@@ -216,11 +246,14 @@ export default function HomePage() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const color = 'rgb(236,253,245)';
+    const color = topBgColor;
+    const previousHtmlBackground = document.documentElement.style.backgroundColor;
+    const previousBodyBackground = document.body.style.backgroundColor;
     const previousHtmlOverflow = document.documentElement.style.overflow;
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyOverscroll = document.body.style.overscrollBehavior;
     document.body.style.backgroundColor = color;
+    document.documentElement.style.backgroundColor = color;
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
@@ -232,13 +265,14 @@ export default function HomePage() {
     }
     meta.content = color;
     return () => {
-      document.body.style.backgroundColor = '';
+      document.body.style.backgroundColor = previousBodyBackground;
+      document.documentElement.style.backgroundColor = previousHtmlBackground;
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.overscrollBehavior = previousBodyOverscroll;
       if (meta) meta.content = '#f8f9f2';
     };
-  }, []);
+  }, [topBgColor]);
 
   useEffect(() => {
     const scroller = homeScrollRef.current;
@@ -408,12 +442,18 @@ export default function HomePage() {
     setVacationActivationDismissed(true);
   }
 
+  function openVacationWizard(mode: VacationMode | null = null) {
+    setVacationModeToEdit(mode);
+    setShowVacationWizard(true);
+    setShowVacationActivation(false);
+  }
+
   function completeVacationActivation() {
     setShowVacationActivation(false);
     setReadyVacationMode(null);
     setVacationActivationDismissed(false);
     loadAll();
-    loadActiveVacationMode();
+    refreshVacationMode();
   }
 
   function openVacationCompletion() {
@@ -429,20 +469,30 @@ export default function HomePage() {
   function completeVacationCompletion() {
     setShowVacationCompletion(false);
     setVacationCompletionDismissed(false);
-    setActiveVacationMode(null);
     setVacationQuickExpenses([]);
     loadAll();
-    loadActiveVacationMode();
+    refreshVacationMode();
   }
 
   function handleQuickExpenseSaved() {
     loadAll();
-    loadActiveVacationMode();
   }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Indlæser...</p>
+      </div>
+    );
+  }
+
+  if (user && authLoading) {
+    return null;
+  }
+
+  if (user && !vacationModeResolved) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-muted-foreground">Indlæser...</p>
       </div>
     );
@@ -458,6 +508,7 @@ export default function HomePage() {
     weeklyStreak,
     quickExpenses: activeVacationMode ? vacationQuickExpenses : quickExpenses,
     vacationMode: activeVacationMode,
+    plannedVacationMode,
     flowMonthlyBudget,
     flowMonthlySpent,
     flowScoreThreshold,
@@ -475,7 +526,7 @@ export default function HomePage() {
     },
     onShowQuickExpense: () => setShowQuickExpenseModal(true),
     onQuickExpenseSaved: handleQuickExpenseSaved,
-    onPlanVacation: () => setShowVacationWizard(true),
+    onPlanVacation: () => openVacationWizard(),
     onEndVacation: activeVacationMode ? openVacationCompletion : undefined,
     heroVariant: KUVERT_HOME_VARIANT,
   };
@@ -488,8 +539,8 @@ export default function HomePage() {
       onToggleCard={handleToggleCard}
     >
       <div
-        className="h-[100dvh] min-h-[100dvh] overflow-hidden bg-gradient-to-b from-emerald-50/60 via-white to-white"
-        style={{ backgroundColor: 'rgb(236,253,245)' }}
+        className="h-[100dvh] min-h-[100dvh] overflow-hidden"
+        style={{ background: pageBackground.gradient, backgroundColor: topBgColor }}
       >
         <div
           ref={homeScrollRef}
@@ -554,10 +605,12 @@ export default function HomePage() {
       )}
       <VacationModeWizard
         open={showVacationWizard}
-        onClose={() => setShowVacationWizard(false)}
+        onClose={() => { setShowVacationWizard(false); setVacationModeToEdit(null); }}
+        vacationMode={vacationModeToEdit}
         onSaved={() => {
           loadAll();
           loadReadyVacationMode({ forceOpen: true });
+          refreshVacationMode();
         }}
       />
       <VacationModeActivationFlow
@@ -565,6 +618,7 @@ export default function HomePage() {
         vacationMode={readyVacationMode}
         onClose={dismissVacationActivation}
         onActivated={completeVacationActivation}
+        onNeedsBudget={() => openVacationWizard(readyVacationMode)}
       />
       <VacationModeCompletionFlow
         open={showVacationCompletion}
